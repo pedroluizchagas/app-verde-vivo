@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server"
 import { notFound, redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Edit, Calendar, Clock, User, MapPin, Phone } from "lucide-react"
+import { ArrowLeft, Edit, Calendar, Clock, User, MapPin, Phone, Package } from "lucide-react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
@@ -64,6 +64,23 @@ export default async function AppointmentDetailPage({
     minute: "2-digit",
   })
 
+  // Materials used and cost per service (sum of product_movements linked to this appointment)
+  const { data: usedMaterials } = await supabase
+    .from("product_movements")
+    .select(`
+      id,
+      type,
+      quantity,
+      unit_cost,
+      product:products(name, unit, cost)
+    `)
+    .eq("gardener_id", user!.id)
+    .eq("appointment_id", id)
+    .eq("type", "out")
+    .order("movement_date", { ascending: false })
+
+  const totalCost = (usedMaterials || []).reduce((sum, m: any) => sum + Number(m.quantity) * Number(m.unit_cost ?? m.product?.cost ?? 0), 0)
+
   return (
     <div className="flex flex-col gap-4 p-4">
       <div className="flex items-center justify-between">
@@ -121,6 +138,41 @@ export default async function AppointmentDetailPage({
               <p className="font-medium mb-1">Descrição</p>
               <p className="text-muted-foreground">{appointment.description}</p>
             </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <CardTitle className="text-lg flex items-center gap-2"><Package className="h-5 w-5" />Materiais usados</CardTitle>
+            <Button asChild variant="outline">
+              <Link href={`/dashboard/stock/movements/new?appointment=${id}`}>Adicionar materiais</Link>
+            </Button>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {usedMaterials && usedMaterials.length > 0 ? (
+            <div className="grid gap-2">
+              {usedMaterials.map((m: any) => (
+                <div key={m.id} className="flex items-center justify-between rounded-md border p-3">
+                  <div>
+                    <p className="font-medium">{m.product?.name}</p>
+                    <p className="text-xs text-muted-foreground">{Number(m.quantity)} {m.product?.unit}</p>
+                  </div>
+                  <div className="text-right">
+                    <p className="text-sm">Custo unitário: R$ {Number(m.unit_cost ?? m.product?.cost ?? 0).toFixed(2)}</p>
+                    <p className="text-xs text-muted-foreground">Subtotal: R$ {(Number(m.quantity) * Number(m.unit_cost ?? m.product?.cost ?? 0)).toFixed(2)}</p>
+                  </div>
+                </div>
+              ))}
+              <div className="flex items-center justify-between rounded-md bg-muted p-3">
+                <p className="font-medium">Custo total do serviço</p>
+                <p className="text-lg font-bold">R$ {totalCost.toFixed(2)}</p>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Nenhum material vinculado a este serviço.</p>
           )}
         </CardContent>
       </Card>
