@@ -6,6 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Package, AlertTriangle, Plus, ArrowDownCircle, ArrowUpCircle } from "lucide-react"
 
 const number = (v: number) => new Intl.NumberFormat("pt-BR").format(v)
+const currency = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
 
 export default async function StockPage() {
   const supabase = await createClient()
@@ -44,6 +45,35 @@ export default async function StockPage() {
 
   const totalProducts = products?.length || 0
   const totalLowStock = lowStock.length
+
+  // Última compra (entrada com unit_cost)
+  const { data: lastInList } = await supabase
+    .from("product_movements")
+    .select("id, product_id, type, quantity, movement_date, description, unit_cost, product:products(name, unit)")
+    .eq("gardener_id", user!.id)
+    .eq("type", "in")
+    .not("unit_cost", "is", null)
+    .order("movement_date", { ascending: false })
+    .limit(1)
+
+  const lastIn = (lastInList || [])[0]
+  const lastTotal = lastIn ? Number(lastIn.quantity) * Number(lastIn.unit_cost ?? 0) : 0
+  const lastDateISO = lastIn ? new Date(lastIn.movement_date).toISOString().slice(0, 10) : null
+
+  // Tenta localizar o lançamento financeiro correspondente (heurística: data e valor iguais, pago)
+  let lastExpense: any = null
+  if (lastIn && lastDateISO) {
+    const { data: expenseCandidates } = await supabase
+      .from("financial_transactions")
+      .select("id, amount, transaction_date, status, category:financial_categories(name, parent_id)")
+      .eq("gardener_id", user!.id)
+      .eq("type", "expense")
+      .eq("status", "paid")
+      .eq("transaction_date", lastDateISO)
+      .eq("amount", lastTotal)
+      .limit(1)
+    lastExpense = (expenseCandidates || [])[0] || null
+  }
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -122,6 +152,43 @@ export default async function StockPage() {
             </div>
           ) : (
             <p className="text-sm text-muted-foreground">Nenhum produto cadastrado.</p>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Resumo da última compra</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {lastIn ? (
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="font-medium">{lastIn.product?.name}</p>
+                  <p className="text-xs text-muted-foreground">{number(Number(lastIn.quantity))} {lastIn.product?.unit} • Unitário: {currency(Number(lastIn.unit_cost))}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-lg font-bold">{currency(lastTotal)}</p>
+                  <p className="text-xs text-muted-foreground">{new Date(lastIn.movement_date).toLocaleDateString("pt-BR")}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-xs text-muted-foreground">{lastIn.description || "(sem descrição)"}</span>
+                <div className="flex gap-2">
+                  <Button asChild variant="outline" size="sm">
+                    <Link href="/dashboard/finance">Abrir Financeiro</Link>
+                  </Button>
+                  {lastExpense ? (
+                    <Button asChild variant="outline" size="sm">
+                      <Link href={`/dashboard/finance`}>Lançamento #{lastExpense.id}</Link>
+                    </Button>
+                  ) : null}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <p className="text-sm text-muted-foreground">Sem compras com custo registradas.</p>
           )}
         </CardContent>
       </Card>

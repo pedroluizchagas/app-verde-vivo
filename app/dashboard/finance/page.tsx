@@ -83,6 +83,17 @@ export default async function FinancePage() {
   const currency = (value: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
+  // Partner credits (available)
+  const { data: partnerCredits } = await supabase
+    .from("partner_credits")
+    .select("id, partner_name, credit_amount, credit_type, status, created_at")
+    .eq("gardener_id", user!.id)
+    .eq("status", "available")
+    .order("created_at", { ascending: false })
+    .limit(5)
+
+  const totalPartnerCredits = (partnerCredits || []).reduce((sum, c) => sum + Number(c.credit_amount), 0)
+
   // Export helpers (CSV via link; PDF via print-friendly route)
   // We will generate CSV on client in a small inline script using data attributes
 
@@ -128,6 +139,26 @@ export default async function FinancePage() {
           </CardHeader>
           <CardContent>
             <p className="text-2xl font-bold text-red-600">{currency(monthExpense)}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle>Créditos de parceiros</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-2xl font-bold text-emerald-600">{currency(totalPartnerCredits)}</p>
+            {partnerCredits && partnerCredits.length > 0 ? (
+              <div className="mt-2 grid gap-1">
+                {partnerCredits.map((c) => (
+                  <div key={c.id} className="flex items-center justify-between text-xs">
+                    <span>{c.partner_name}</span>
+                    <span className="text-muted-foreground">{currency(Number(c.credit_amount))}</span>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground">Nenhum crédito disponível</p>
+            )}
           </CardContent>
         </Card>
       </div>

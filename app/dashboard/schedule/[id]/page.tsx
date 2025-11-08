@@ -6,6 +6,7 @@ import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DeleteAppointmentButton } from "@/components/schedule/delete-appointment-button"
+import { ServiceNote } from "@/components/schedule/service-note"
 
 const statusColors = {
   scheduled: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -80,6 +81,9 @@ export default async function AppointmentDetailPage({
     .order("movement_date", { ascending: false })
 
   const totalCost = (usedMaterials || []).reduce((sum, m: any) => sum + Number(m.quantity) * Number(m.unit_cost ?? m.product?.cost ?? 0), 0)
+  const laborCost = Number((appointment as any)?.labor_cost ?? 0)
+  const serviceTotal = laborCost + totalCost
+  const currency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -167,8 +171,8 @@ export default async function AppointmentDetailPage({
                 </div>
               ))}
               <div className="flex items-center justify-between rounded-md bg-muted p-3">
-                <p className="font-medium">Custo total do serviço</p>
-                <p className="text-lg font-bold">R$ {totalCost.toFixed(2)}</p>
+                <p className="font-medium">Custo total de materiais</p>
+                <p className="text-lg font-bold">{currency(totalCost)}</p>
               </div>
             </div>
           ) : (
@@ -176,6 +180,24 @@ export default async function AppointmentDetailPage({
           )}
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Mão de obra</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-between rounded-md border p-3">
+            <span className="text-sm text-muted-foreground">Valor da mão de obra</span>
+            <span className="text-lg font-bold">{currency(laborCost)}</span>
+          </div>
+          <div className="mt-3 flex items-center justify-between rounded-md bg-muted p-3">
+            <span className="font-medium">Total do serviço</span>
+            <span className="text-xl font-bold">{currency(serviceTotal)}</span>
+          </div>
+        </CardContent>
+      </Card>
+
+      <ServiceNote appointment={appointment} materials={usedMaterials || []} totals={{ laborCost, materialsCost: totalCost, serviceTotal }} />
 
       
 

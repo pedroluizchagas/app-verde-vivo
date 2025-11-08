@@ -236,6 +236,89 @@ export async function approveBudgetAndRecordIncome(userId: string, params: any) 
   return { ok: true, budget_id: budgetRow?.id, transaction_id: trxRow?.id }
 }
 
+export async function recordExpense(userId: string, params: any) {
+  const supabase = await createSupabaseServer()
+  let { amount, category_name, parent_category_name, description, transaction_date, status = "paid", due_date } = params || {}
+
+  const parsedAmount = typeof amount === "number" ? amount : parseAmount(String(amount))
+  if (!parsedAmount || parsedAmount <= 0) throw new Error("amount inválido")
+
+  const categoryId = await findOrCreateCategoryId(supabase, userId, category_name, parent_category_name)
+
+  const today = new Date().toISOString().slice(0, 10)
+  const trxDate = transaction_date ?? today
+
+  const { data, error } = await supabase
+    .from("financial_transactions")
+    .insert([
+      {
+        gardener_id: userId,
+        type: "expense",
+        amount: parsedAmount,
+        transaction_date: trxDate,
+        description: description ?? null,
+        category_id: categoryId,
+        client_id: null,
+        status: status ?? "paid",
+        due_date: status === "pending" ? (due_date ?? today) : null,
+        paid_at: status === "paid" ? new Date().toISOString() : null,
+      },
+    ])
+    .select("id")
+    .single()
+  if (error) throw error
+  return { ok: true, id: data?.id }
+}
+
+function parseAmount(raw: string): number {
+  // Remove R$, espaços, pontos de milhar e converte vírgula em ponto
+  const s = raw.replace(/[^0-9,\.]/g, "").replace(/\./g, "").replace(/,/g, ".")
+  const n = Number.parseFloat(s)
+  return Number.isFinite(n) ? n : 0
+}
+
+async function findOrCreateCategoryId(supabase: any, userId: string, name?: string, parentName?: string) {
+  const categoryName = name?.trim() || "Operacional"
+  let parentId: string | null = null
+  if (parentName) {
+    const { data: p } = await supabase
+      .from("financial_categories")
+      .select("id")
+      .eq("gardener_id", userId)
+      .eq("name", parentName)
+      .limit(1)
+      .maybeSingle()
+    if (p?.id) parentId = p.id
+    else {
+      const { data: newParent, error: pe } = await supabase
+        .from("financial_categories")
+        .insert([{ gardener_id: userId, name: parentName, parent_id: null }])
+        .select("id")
+        .single()
+      if (pe) throw pe
+      parentId = newParent?.id ?? null
+    }
+  }
+
+  const { data: c } = await supabase
+    .from("financial_categories")
+    .select("id")
+    .eq("gardener_id", userId)
+    .eq("name", categoryName)
+    .eq("parent_id", parentId)
+    .limit(1)
+    .maybeSingle()
+  if (c?.id) return c.id
+
+  const { data: created, error } = await supabase
+    .from("financial_categories")
+    .insert([{ gardener_id: userId, name: categoryName, parent_id: parentId }])
+    .select("id")
+    .single()
+  if (error) throw error
+  return created?.id ?? null
+}
+
 export async function recordServiceIncome(userId: string, params: any) {
   const supabase = await createSupabaseServer()
   const { client_id, client_name, service_name, title = service_name || "Serviço", description, total_amount, due_date } = params || {}
@@ -311,4 +394,110 @@ async function findProductIdByName(supabase: any, userId: string, name?: string)
   if (!name) return null
   const { data } = await supabase.from("products").select("id").eq("gardener_id", userId).ilike("name", name).limit(1).single()
   return data?.id ?? null
+}
+
+async function findOrCreateProductId(supabase: any, userId: string, name: string) {
+  const existing = await findProductIdByName(supabase, userId, name)
+  if (existing) return existing
+  const { data, error } = await supabase
+    .from("products")
+    .insert([{ gardener_id: userId, name, unit: "un", cost: 0 }])
+    .select("id")
+    .single()
+  if (error) throw error
+  return data?.id ?? null
+}
+
+export async function recordInventoryPurchase(userId: string, params: any) {
+  const supabase = await createSupabaseServer()
+  const { product_id, product_name, quantity, unit_cost, movement_date, description, also_record_expense } = params || {}
+  if (!product_id && !product_name) throw new Error("Informe product_id ou product_name")
+  const pid = product_id || (await findOrCreateProductId(supabase, userId, String(product_name)))
+  if (!pid) throw new Error("Produto não encontrado/criado")
+
+  const qty = quantity && Number(quantity) > 0 ? Number(quantity) : 1
+  const ucost = unit_cost && Number(unit_cost) > 0 ? Number(unit_cost) : null
+
+  const { error } = await supabase.from("product_movements").insert([
+    {
+      gardener_id: userId,
+      product_id: pid,
+      type: "in",
+      quantity: qty,
+      unit_cost: ucost,
+      movement_date: movement_date ?? new Date().toISOString().slice(0, 10),
+      description: description ?? null,
+      appointment_id: null,
+    },
+  ])
+  if (error) throw error
+  let expenseId: string | undefined
+  let expenseRecorded = false
+  // Lançar saída financeira vinculada à categoria "Estoque > Insumos" quando solicitado (padrão: true)
+  if (also_record_expense !== false && ucost) {
+    const total = qty * (ucost ?? 0)
+    const date = (movement_date ?? new Date().toISOString().slice(0, 10))
+    const catId = await findOrCreateCategoryId(supabase, userId, "Insumos", "Estoque")
+    const { data: trx, error: terr } = await supabase
+      .from("financial_transactions")
+      .insert([
+        {
+          gardener_id: userId,
+          type: "expense",
+          amount: total,
+          transaction_date: date,
+          description: description ?? `Compra de ${product_name ?? "produto"}`,
+          category_id: catId,
+          client_id: null,
+          status: "paid",
+          due_date: null,
+          paid_at: new Date().toISOString(),
+        },
+      ])
+      .select("id")
+      .single()
+    if (terr) throw terr
+    expenseId = trx?.id
+    expenseRecorded = true
+  }
+  return { ok: true, product_id: pid, expense_id: expenseId, expense_recorded: expenseRecorded }
+}
+
+export async function recordPartnerCommission(userId: string, params: any) {
+  const supabase = await createSupabaseServer()
+  const { partner_name, percent = 0.10, amount, movement_id, credit_type = "insumos", description } = params || {}
+  if (!partner_name) throw new Error("partner_name é obrigatório")
+
+  let creditAmount = amount as number | undefined
+  if (!creditAmount) {
+    if (!movement_id) throw new Error("Informe amount ou movement_id para calcular a comissão")
+    const { data: mov } = await supabase
+      .from("product_movements")
+      .select("quantity, unit_cost")
+      .eq("gardener_id", userId)
+      .eq("id", movement_id)
+      .maybeSingle()
+    const total = mov ? Number(mov.quantity) * Number(mov.unit_cost ?? 0) : 0
+    if (!total || total <= 0) throw new Error("Movimentação inválida para calcular comissão")
+    creditAmount = Number((total * percent).toFixed(2))
+  }
+
+  const { data, error } = await supabase
+    .from("partner_credits")
+    .insert([
+      {
+        gardener_id: userId,
+        partner_name,
+        credit_amount: creditAmount,
+        credit_type,
+        percentage: percent,
+        movement_id: movement_id ?? null,
+        description: description ?? null,
+        status: "available",
+      },
+    ])
+    .select("id")
+    .single()
+  if (error) throw error
+  return { ok: true, credit_id: data?.id }
 }

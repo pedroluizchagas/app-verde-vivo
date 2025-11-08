@@ -70,6 +70,7 @@ export function AppointmentForm({ clients, services, appointment }: AppointmentF
       scheduled_date: scheduledDate.toISOString(),
       duration_minutes: Number.parseInt(formData.get("duration") as string),
       status: status,
+      labor_cost: formData.get("labor_cost") ? Number(formData.get("labor_cost")) : 0,
       gardener_id: user.id,
     }
 
@@ -191,6 +192,20 @@ export function AppointmentForm({ clients, services, appointment }: AppointmentF
               </Select>
             </div>
           )}
+
+          <div className="grid gap-2">
+            <Label htmlFor="labor_cost">Mão de obra (R$)</Label>
+            <Input
+              id="labor_cost"
+              name="labor_cost"
+              type="number"
+              step="0.01"
+              min="0"
+              placeholder="0,00"
+              defaultValue={typeof (appointment as any)?.labor_cost === "number" ? (appointment as any).labor_cost : 0}
+              className="h-11"
+            />
+          </div>
 
           <div className="grid gap-2">
             <Label htmlFor="description">Descrição</Label>

@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { scheduleVisit, createBudget, updateBudgetStatus, updateStock, createClient, approveBudgetAndRecordIncome, recordServiceIncome } from "./actions"
+import { scheduleVisit, createBudget, updateBudgetStatus, updateStock, createClient, approveBudgetAndRecordIncome, recordServiceIncome, recordExpense, recordInventoryPurchase, recordPartnerCommission } from "./actions"
 
 export const schemas = {
   create_client: z.object({
@@ -60,6 +60,32 @@ export const schemas = {
     total_amount: z.number().positive().optional(),
     due_date: z.string().optional(),
   }),
+  record_expense: z.object({
+    amount: z.number().positive(),
+    category_name: z.string().min(2).optional(),
+    parent_category_name: z.string().min(2).optional(),
+    description: z.string().optional(),
+    transaction_date: z.string().optional(),
+    status: z.enum(["paid", "pending"]).optional(),
+    due_date: z.string().optional(),
+  }),
+  record_inventory_purchase: z.object({
+    product_id: z.string().uuid().optional(),
+    product_name: z.string().min(2).optional(),
+    quantity: z.number().positive().optional(),
+    unit_cost: z.number().positive().optional(),
+    movement_date: z.string().optional(),
+    description: z.string().optional(),
+    also_record_expense: z.boolean().optional(),
+  }),
+  record_partner_commission: z.object({
+    partner_name: z.string().min(2),
+    percent: z.number().positive().max(1).optional(),
+    amount: z.number().positive().optional(),
+    movement_id: z.string().uuid().optional(),
+    credit_type: z.enum(["cash", "insumos"]).optional(),
+    description: z.string().optional(),
+  }),
 } as const
 
 type Intent = keyof typeof schemas
@@ -72,6 +98,9 @@ export const registry: Record<Intent, { schema: (typeof schemas)[Intent]; action
   update_stock: { schema: schemas.update_stock, action: updateStock, critical: true },
   approve_budget_and_record_income: { schema: schemas.approve_budget_and_record_income, action: approveBudgetAndRecordIncome, critical: true },
   record_service_income: { schema: schemas.record_service_income, action: recordServiceIncome, critical: true },
+  record_expense: { schema: schemas.record_expense, action: recordExpense, critical: true },
+  record_inventory_purchase: { schema: schemas.record_inventory_purchase, action: recordInventoryPurchase, critical: true },
+  record_partner_commission: { schema: schemas.record_partner_commission, action: recordPartnerCommission, critical: true },
 }
 
 export function validateIntent(intent: string, params: any) {
