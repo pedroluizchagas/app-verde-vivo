@@ -48,6 +48,27 @@ export async function runAssistant(userId: string, input: string, mode: "dry" | 
         parent_category_name: cls.parent_category_name,
       }
     }
+
+    // Se não veio 'amount', tenta extrair do texto (suporta "50,00" ou "50 conto")
+    const amt = (parsed.params as any)?.amount
+    if (amt == null) {
+      const m = input.match(/(\d{1,3}(?:[\.,]\d{3})*[\.,]\d{1,2}|\d{1,6})/)
+      if (m) {
+        const s = m[1].replace(/\./g, "").replace(/,/g, ".")
+        const n = Number.parseFloat(s)
+        if (Number.isFinite(n)) {
+          parsed.params = { ...(parsed.params || {}), amount: n }
+        }
+      }
+    }
+
+    // Determinar status: por padrão 'pending', exceto quando há sinais claros de pagamento
+    const paidCues = [/\bpaguei\b/i, /\bagora\b/i, /\bà vista\b/i, /\bavista\b/i, /\bcomprei\b/i, /\bno débito\b/i, /\bno credito\b/i, /\bem dinheiro\b/i]
+    const pendingCues = [/\bpendente\b/i, /\bvencimento\b/i, /\ba pagar\b/i, /\bfatura\b/i, /\bboleto\b/i]
+    let status: "paid" | "pending" = "pending"
+    if (paidCues.some((r) => r.test(input))) status = "paid"
+    if (pendingCues.some((r) => r.test(input))) status = "pending"
+    parsed.params = { ...(parsed.params || {}), status }
   }
 
   // Ajuste de data natural para schedule_visit: interpreta "segunda-feira", "amanhã" etc. como datas futuras

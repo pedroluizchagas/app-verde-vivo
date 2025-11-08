@@ -29,6 +29,19 @@ export function classifyText(text: string): Classification | null {
   }
 
   // Caso contrário, classifica como despesa operacional
+  // Combustível: decidir entre Máquinas vs Veículos
+  if (["gasolina", "combustível", "combustivel", "diesel", "etanol"].some((k) => t.includes(k))) {
+    const machinesHints = ["máquina", "maquina", "roçadeira", "rocadeira", "equipamento"]
+    const vehicleHints = ["carro", "veículo", "veiculo", "caminhonete", "van", "moto"]
+    if (machinesHints.some((k) => t.includes(k))) {
+      return { kind: "expense", category_name: "Combustível Máquinas", parent_category_name: "Operacional" }
+    }
+    if (vehicleHints.some((k) => t.includes(k))) {
+      return { kind: "expense", category_name: "Combustível Veículos", parent_category_name: "Operacional" }
+    }
+    return { kind: "expense", category_name: "Combustível", parent_category_name: "Operacional" }
+  }
+
   for (const entry of expenseKeywords) {
     if (entry.keywords.some((k) => t.includes(k))) {
       return { kind: "expense", category_name: entry.category, parent_category_name: entry.parent }

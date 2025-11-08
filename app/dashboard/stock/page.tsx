@@ -181,7 +181,7 @@ export default async function StockPage() {
                   </Button>
                   {lastExpense ? (
                     <Button asChild variant="outline" size="sm">
-                      <Link href={`/dashboard/finance`}>Lançamento #{lastExpense.id}</Link>
+                      <Link href={`/dashboard/finance/transactions/${lastExpense.id}`}>Lançamento #{lastExpense.id}</Link>
                     </Button>
                   ) : null}
                 </div>
