@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Users, Calendar, FileText, LogOut, BarChart3, Package } from "lucide-react"
+import { Home, Users, Calendar, FileText, LogOut, BarChart3, Package, Bot } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { createClient } from "@/lib/supabase/client"
 import {
@@ -25,6 +25,7 @@ const navItems = [
   { href: "/dashboard/budgets", icon: FileText, label: "Orçamentos" },
   { href: "/dashboard/finance", icon: BarChart3, label: "Financeiro" },
   { href: "/dashboard/stock", icon: Package, label: "Estoque" },
+  { href: "/dashboard/assistant", icon: Bot, label: "Assistente" },
 ]
 
 export function MobileNav() {

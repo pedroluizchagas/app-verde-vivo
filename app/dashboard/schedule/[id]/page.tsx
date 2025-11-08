@@ -177,6 +177,8 @@ export default async function AppointmentDetailPage({
         </CardContent>
       </Card>
 
+      
+
       {appointment.client && (
         <Card>
           <CardHeader>
