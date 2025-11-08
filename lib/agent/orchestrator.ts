@@ -24,6 +24,19 @@ export async function runAssistant(userId: string, input: string, mode: "dry" | 
     parsed = { intent: "none", params: {}, reply: text }
   }
 
+  // Ajuste de data natural para schedule_visit: interpreta "segunda-feira", "amanhã" etc. como datas futuras
+  if (parsed.intent === "schedule_visit") {
+    const resolved = resolveNaturalDate(input)
+    const provided = parsed.params?.scheduled_date as string | undefined
+    const providedDate = provided ? new Date(provided) : null
+    const now = new Date()
+
+    // Se não veio data ou veio uma data passada e há uma data natural no texto, usa a resolvida
+    if ((!provided || (providedDate && providedDate < now)) && resolved) {
+      parsed.params = { ...(parsed.params || {}), scheduled_date: resolved }
+    }
+  }
+
   const validation = validateIntent(parsed.intent, parsed.params)
   if (!validation.ok) {
     const needList = validation.need?.length ? `Campos faltantes: ${validation.need.join(", ")}.` : "Dados insuficientes."
@@ -69,4 +82,96 @@ async function buildContext(userId: string): Promise<string> {
 
   const serialize = (label: string, arr?: any[]) => `${label}: ` + (arr || []).map((x) => `${x.name} (${x.id})`).join(", ")
   return [serialize("Clientes", clients.data), serialize("Serviços", services.data), serialize("Produtos", products.data)].join("\n")
+}
+
+function resolveNaturalDate(text: string): string | undefined {
+  const t = text.toLowerCase()
+  const now = new Date()
+
+  // Extrai horário "às 15h", "às 15:30", "15:00", "15h" e ajusta período
+  let hour = 9
+  let minute = 0
+  const timePatterns = [
+    /\b(?:às|as)\s*(\d{1,2})(?::(\d{2}))?\s*h?\b/i,
+    /\b(\d{1,2}):(\d{2})\b/,
+    /\b(\d{1,2})\s*h\b/,
+  ]
+  for (const rx of timePatterns) {
+    const m = rx.exec(text)
+    if (m) {
+      hour = Math.max(0, Math.min(23, parseInt(m[1], 10)))
+      minute = Math.max(0, Math.min(59, m[2] ? parseInt(m[2], 10) : 0))
+      break
+    }
+  }
+  const isAfternoon = /\bda tarde\b/.test(t)
+  const isNight = /\bda noite\b/.test(t)
+  const isMorning = /\bda manh[ãa]\b/.test(t)
+  if ((isAfternoon || isNight) && hour < 12) hour += 12
+  if (isMorning && hour === 12) hour = 8 // evita 12h como manhã
+
+  const addDays = (d: number) => {
+    const dt = new Date(now)
+    dt.setDate(dt.getDate() + d)
+    dt.setHours(hour, minute, 0, 0)
+    return dt.toISOString()
+  }
+
+  // Modificadores: próxima / que vem / semana que vem | esta / nesta
+  const hasNext = /\b(próxima|proxima|que vem|semana que vem)\b/.test(t)
+  const hasThis = /\b(esta|nesta)\b/.test(t) || /\besta semana\b/.test(t) || /\bnesta semana\b/.test(t)
+
+  // amanhã / hoje / depois de amanhã
+  if (/\bamanh[ãa]\b/.test(t)) return addDays(1)
+  if (/\bhoje\b/.test(t)) return addDays(0)
+  if (/\bdepois de amanh[ãa]\b/.test(t)) return addDays(2)
+
+  // dias da semana (pt-BR)
+  const weekdays: Record<string, number> = {
+    domingo: 0,
+    segunda: 1,
+    'segunda-feira': 1,
+    terca: 2,
+    terça: 2,
+    'terça-feira': 2,
+    quarta: 3,
+    'quarta-feira': 3,
+    quinta: 4,
+    'quinta-feira': 4,
+    sexta: 5,
+    'sexta-feira': 5,
+    sabado: 6,
+    sábado: 6,
+    'sábado-feira': 6,
+  }
+
+  // encontra o primeiro dia da semana citado
+  let targetDow: number | undefined
+  for (const key of Object.keys(weekdays)) {
+    if (t.includes(key)) {
+      targetDow = weekdays[key]
+      break
+    }
+  }
+  if (typeof targetDow === 'number') {
+    const currentDow = now.getDay() // 0..6 (domingo..sábado)
+
+    if (hasThis) {
+      // Este/nesta semana: somente hoje ou dias adiante nesta semana
+      const deltaWithinWeek = targetDow - currentDow
+      if (deltaWithinWeek < 0) return undefined // já passou nesta semana; peça confirmação
+      return addDays(deltaWithinWeek)
+    }
+
+    let delta = (targetDow - currentDow + 7) % 7
+    if (hasNext && delta === 0) delta = 7 // força próxima semana se pedida "próxima"
+    if (!hasNext && delta === 0) delta = 7 // por padrão, "segunda" significa próxima segunda, não hoje
+    // "semana que vem" sem dia específico não é resolvido aqui; precisa do dia
+    if (hasNext) {
+      // já está tratando próxima semana quando delta==0; se delta>0 mantém
+    }
+    return addDays(delta)
+  }
+
+  return undefined
 }
