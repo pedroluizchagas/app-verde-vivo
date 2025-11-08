@@ -63,12 +63,26 @@ export async function runAssistant(userId: string, input: string, mode: "dry" | 
     }
 
     // Determinar status: por padrão 'pending', exceto quando há sinais claros de pagamento
-    const paidCues = [/\bpaguei\b/i, /\bagora\b/i, /\bà vista\b/i, /\bavista\b/i, /\bcomprei\b/i, /\bno débito\b/i, /\bno credito\b/i, /\bem dinheiro\b/i]
+    const paidCues = [/\bpaguei\b/i, /\bagora\b/i, /\bà vista\b/i, /\bavista\b/i, /\bcomprei\b/i, /\bno débito\b/i, /\bem dinheiro\b/i]
     const pendingCues = [/\bpendente\b/i, /\bvencimento\b/i, /\ba pagar\b/i, /\bfatura\b/i, /\bboleto\b/i]
     let status: "paid" | "pending" = "pending"
     if (paidCues.some((r) => r.test(input))) status = "paid"
     if (pendingCues.some((r) => r.test(input))) status = "pending"
     parsed.params = { ...(parsed.params || {}), status }
+    // Cartão de crédito: considerar pendente e definir due_date pelas preferências do usuário
+    const creditCues = [/\bcart[aã]o\b/i, /\bcr[eé]dito\b/i]
+    if (creditCues.some((r) => r.test(input))) {
+      parsed.params.status = "pending"
+      const prefs = await getUserPreferences(userId)
+      if (prefs?.credit_card_due_day) {
+        parsed.params.due_date = computeNextDueDate(prefs.credit_card_due_day).slice(0, 10)
+      } else {
+        const days = prefs?.default_pending_days ?? 7
+        const dt = new Date()
+        dt.setDate(dt.getDate() + days)
+        parsed.params.due_date = dt.toISOString().slice(0, 10)
+      }
+    }
   }
 
   // Ajuste de data natural para schedule_visit: interpreta "segunda-feira", "amanhã" etc. como datas futuras
@@ -93,6 +107,12 @@ export async function runAssistant(userId: string, input: string, mode: "dry" | 
     if ((!provided || (providedDate && providedDate < now)) && resolvedDue) {
       parsed.params = { ...(parsed.params || {}), due_date: resolvedDue.slice(0, 10) }
     }
+    // receitas indicadas como recebidas: marcar como paid
+    const incomeCues = [/\breceita\b/i, /\brecebimento\b/i, /\bvenda\b/i, /\bcomiss[aã]o\b/i, /\brecebi\b/i, /\bpago\b/i, /\bpix\b/i, /\bem dinheiro\b/i]
+    if (incomeCues.some((r) => r.test(input))) {
+      parsed.params = { ...(parsed.params || {}), status: "paid" }
+      delete (parsed.params as any).due_date
+    }
   }
 
   // Ajuste de data natural para despesas: transaction_date e opcional due_date
@@ -109,6 +129,15 @@ export async function runAssistant(userId: string, input: string, mode: "dry" | 
     const providedDueDate = providedDue ? new Date(providedDue) : null
     if ((!providedDue || (providedDueDate && providedDueDate < now)) && resolvedDue) {
       parsed.params = { ...(parsed.params || {}), due_date: resolvedDue.slice(0, 10) }
+    }
+  }
+
+  // Receitas diretas: se usuário disser "receita/recebimento/venda/comissão", garantir status paid
+  if (parsed.intent === "record_service_income" || parsed.intent === "record_income") {
+    const incomeCues = [/\breceita\b/i, /\brecebimento\b/i, /\bvenda\b/i, /\bcomiss[aã]o\b/i, /\brecebi\b/i, /\bpago\b/i, /\bpix\b/i, /\bem dinheiro\b/i]
+    if (incomeCues.some((r) => r.test(input))) {
+      parsed.params = { ...(parsed.params || {}), status: "paid" }
+      delete (parsed.params as any).due_date
     }
   }
 
@@ -157,6 +186,36 @@ async function buildContext(userId: string): Promise<string> {
 
   const serialize = (label: string, arr?: any[]) => `${label}: ` + (arr || []).map((x) => `${x.name} (${x.id})`).join(", ")
   return [serialize("Clientes", clients.data), serialize("Serviços", services.data), serialize("Produtos", products.data)].join("\n")
+}
+
+async function getUserPreferences(userId: string): Promise<{ credit_card_due_day?: number | null; default_pending_days?: number | null } | null> {
+  const supabase = await createSupabaseServer()
+  const { data } = await supabase
+    .from("user_preferences")
+    .select("credit_card_due_day, default_pending_days")
+    .eq("gardener_id", userId)
+    .maybeSingle()
+  return data || null
+}
+
+function computeNextDueDate(dueDay: number): string {
+  const now = new Date()
+  const y = now.getFullYear()
+  const m = now.getMonth()
+  const thisMonthDate = new Date(y, m, Math.min(dueDay, daysInMonth(y, m)))
+  let target = thisMonthDate
+  if (now > thisMonthDate) {
+    const nextMonth = m + 1
+    const ny = nextMonth > 11 ? y + 1 : y
+    const nm = nextMonth > 11 ? 0 : nextMonth
+    target = new Date(ny, nm, Math.min(dueDay, daysInMonth(ny, nm)))
+  }
+  target.setHours(0, 0, 0, 0)
+  return target.toISOString()
+}
+
+function daysInMonth(y: number, m: number): number {
+  return new Date(y, m + 1, 0).getDate()
 }
 
 function resolveNaturalDate(text: string): string | undefined {

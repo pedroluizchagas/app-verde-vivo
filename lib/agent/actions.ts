@@ -173,7 +173,7 @@ export async function updateStock(userId: string, params: any) {
 
 export async function approveBudgetAndRecordIncome(userId: string, params: any) {
   const supabase = await createSupabaseServer()
-  const { client_id, client_name, appointment_id, title = "Serviço de manutenção", description, total_amount, due_date } = params || {}
+  const { client_id, client_name, appointment_id, title = "Serviço de manutenção", description, total_amount, due_date, status = "paid" } = params || {}
   const cid = client_id || (await findClientIdByName(supabase, userId, client_name))
   if (!cid) throw new Error("Cliente não encontrado. Informe client_id ou client_name")
 
@@ -211,7 +211,7 @@ export async function approveBudgetAndRecordIncome(userId: string, params: any) 
     .single()
   if (bErr) throw bErr
 
-  // 2) Lança receita pendente (receitas a receber)
+  // 2) Lança receita (paga ou pendente)
   const today = new Date().toISOString().slice(0, 10)
   const { data: trxRow, error: tErr } = await supabase
     .from("financial_transactions")
@@ -224,9 +224,9 @@ export async function approveBudgetAndRecordIncome(userId: string, params: any) 
         description: `${title}${apptDesc}`,
         category_id: null,
         client_id: cid,
-        status: "pending",
-        due_date: finalDueDate,
-        paid_at: null,
+        status,
+        due_date: status === "pending" ? finalDueDate : null,
+        paid_at: status === "paid" ? new Date().toISOString() : null,
       },
     ])
     .select("id")
@@ -321,7 +321,7 @@ async function findOrCreateCategoryId(supabase: any, userId: string, name?: stri
 
 export async function recordServiceIncome(userId: string, params: any) {
   const supabase = await createSupabaseServer()
-  const { client_id, client_name, service_name, title = service_name || "Serviço", description, total_amount, due_date } = params || {}
+  const { client_id, client_name, service_name, title = service_name || "Serviço", description, total_amount, due_date, status = "paid" } = params || {}
   const cid = client_id || (await findClientIdByName(supabase, userId, client_name))
   if (!cid) throw new Error("Cliente não encontrado. Informe client_id ou client_name")
 
@@ -353,7 +353,7 @@ export async function recordServiceIncome(userId: string, params: any) {
     return { ok: false, need: ["total_amount"], appointment_id: apptRow?.id }
   }
 
-  // Lança receita a receber
+  // Lança receita (paga ou pendente)
   const today = now.toISOString().slice(0, 10)
   const { data: trxRow, error: tErr } = await supabase
     .from("financial_transactions")
@@ -366,9 +366,9 @@ export async function recordServiceIncome(userId: string, params: any) {
         description: `${title}`,
         category_id: null,
         client_id: cid,
-        status: "pending",
-        due_date: due_date ?? today,
-        paid_at: null,
+        status,
+        due_date: status === "pending" ? (due_date ?? today) : null,
+        paid_at: status === "paid" ? new Date().toISOString() : null,
       },
     ])
     .select("id")
@@ -500,4 +500,34 @@ export async function recordPartnerCommission(userId: string, params: any) {
     .single()
   if (error) throw error
   return { ok: true, credit_id: data?.id }
+}
+
+export async function recordIncome(userId: string, params: any) {
+  const supabase = await createSupabaseServer()
+  const { amount, title = "Receita", description, transaction_date, client_id, category_id } = params || {}
+  const parsedAmount = typeof amount === "number" ? amount : parseAmount(String(amount))
+  if (!parsedAmount || parsedAmount <= 0) throw new Error("amount inválido")
+  const today = new Date().toISOString().slice(0, 10)
+  const trxDate = transaction_date ?? today
+
+  const { data, error } = await supabase
+    .from("financial_transactions")
+    .insert([
+      {
+        gardener_id: userId,
+        type: "income",
+        amount: parsedAmount,
+        transaction_date: trxDate,
+        description: description ?? title,
+        category_id: category_id ?? null,
+        client_id: client_id ?? null,
+        status: "paid",
+        due_date: null,
+        paid_at: new Date().toISOString(),
+      },
+    ])
+    .select("id")
+    .single()
+  if (error) throw error
+  return { ok: true, id: data?.id }
 }

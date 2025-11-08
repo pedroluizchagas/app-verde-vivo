@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { scheduleVisit, createBudget, updateBudgetStatus, updateStock, createClient, approveBudgetAndRecordIncome, recordServiceIncome, recordExpense, recordInventoryPurchase, recordPartnerCommission } from "./actions"
+import { scheduleVisit, createBudget, updateBudgetStatus, updateStock, createClient, approveBudgetAndRecordIncome, recordServiceIncome, recordIncome, recordExpense, recordInventoryPurchase, recordPartnerCommission } from "./actions"
 
 export const schemas = {
   create_client: z.object({
@@ -60,6 +60,14 @@ export const schemas = {
     total_amount: z.number().positive().optional(),
     due_date: z.string().optional(),
   }),
+  record_income: z.object({
+    amount: z.number().positive(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    transaction_date: z.string().optional(),
+    client_id: z.string().uuid().optional(),
+    category_id: z.string().uuid().optional(),
+  }),
   record_expense: z.object({
     amount: z.number().positive(),
     category_name: z.string().min(2).optional(),
@@ -98,6 +106,7 @@ export const registry: Record<Intent, { schema: (typeof schemas)[Intent]; action
   update_stock: { schema: schemas.update_stock, action: updateStock, critical: true },
   approve_budget_and_record_income: { schema: schemas.approve_budget_and_record_income, action: approveBudgetAndRecordIncome, critical: true },
   record_service_income: { schema: schemas.record_service_income, action: recordServiceIncome, critical: true },
+  record_income: { schema: schemas.record_income, action: recordIncome, critical: true },
   record_expense: { schema: schemas.record_expense, action: recordExpense, critical: true },
   record_inventory_purchase: { schema: schemas.record_inventory_purchase, action: recordInventoryPurchase, critical: true },
   record_partner_commission: { schema: schemas.record_partner_commission, action: recordPartnerCommission, critical: true },
