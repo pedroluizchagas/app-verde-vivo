@@ -243,7 +243,7 @@ export async function recordExpense(userId: string, params: any) {
   const parsedAmount = typeof amount === "number" ? amount : parseAmount(String(amount))
   if (!parsedAmount || parsedAmount <= 0) throw new Error("amount inválido")
 
-  const categoryId = await findOrCreateCategoryId(supabase, userId, category_name, parent_category_name)
+  const categoryId = await findOrCreateCategoryId(supabase, userId, category_name, parent_category_name, "expense")
 
   const today = new Date().toISOString().slice(0, 10)
   const trxDate = transaction_date ?? today
@@ -277,7 +277,7 @@ function parseAmount(raw: string): number {
   return Number.isFinite(n) ? n : 0
 }
 
-async function findOrCreateCategoryId(supabase: any, userId: string, name?: string, parentName?: string) {
+async function findOrCreateCategoryId(supabase: any, userId: string, name?: string, parentName?: string, kind?: "expense" | "income") {
   const categoryName = name?.trim() || "Operacional"
   let parentId: string | null = null
   if (parentName) {
@@ -302,17 +302,23 @@ async function findOrCreateCategoryId(supabase: any, userId: string, name?: stri
 
   const { data: c } = await supabase
     .from("financial_categories")
-    .select("id")
+    .select("id, kind")
     .eq("gardener_id", userId)
     .eq("name", categoryName)
     .eq("parent_id", parentId)
     .limit(1)
     .maybeSingle()
-  if (c?.id) return c.id
+  if (c?.id) {
+    // opcional: se existir mas sem kind, e fornecemos kind, podemos atualizar
+    if (!c.kind && kind) {
+      await supabase.from("financial_categories").update({ kind }).eq("id", c.id)
+    }
+    return c.id
+  }
 
   const { data: created, error } = await supabase
     .from("financial_categories")
-    .insert([{ gardener_id: userId, name: categoryName, parent_id: parentId }])
+    .insert([{ gardener_id: userId, name: categoryName, parent_id: parentId, kind: kind ?? null }])
     .select("id")
     .single()
   if (error) throw error
@@ -437,7 +443,7 @@ export async function recordInventoryPurchase(userId: string, params: any) {
   if (also_record_expense !== false && ucost) {
     const total = qty * (ucost ?? 0)
     const date = (movement_date ?? new Date().toISOString().slice(0, 10))
-    const catId = await findOrCreateCategoryId(supabase, userId, "Insumos", "Estoque")
+    const catId = await findOrCreateCategoryId(supabase, userId, "Insumos", "Estoque", "expense")
     const { data: trx, error: terr } = await supabase
       .from("financial_transactions")
       .insert([

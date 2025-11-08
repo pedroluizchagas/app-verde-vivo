@@ -11,6 +11,7 @@ export function CategoryForm({ parents }: { parents: { id: string; name: string 
   const supabase = createClient()
   const [name, setName] = useState("")
   const [parentId, setParentId] = useState<string | null>(null)
+  const [kind, setKind] = useState<"expense" | "income" | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
@@ -19,10 +20,11 @@ export function CategoryForm({ parents }: { parents: { id: string; name: string 
     setIsLoading(true)
     setError(null)
     try {
-      const { error: insertError } = await supabase.from("financial_categories").insert({ name, parent_id: parentId })
+      const { error: insertError } = await supabase.from("financial_categories").insert({ name, parent_id: parentId, kind })
       if (insertError) throw insertError
       setName("")
       setParentId(null)
+      setKind(null)
       // soft refresh
       // @ts-ignore
       window?.location?.reload()
@@ -40,15 +42,28 @@ export function CategoryForm({ parents }: { parents: { id: string; name: string 
       </div>
       <div>
         <Label>Categoria pai (opcional)</Label>
-        <Select value={parentId || undefined} onValueChange={(v) => setParentId(v)}>
+        <Select value={parentId || undefined} onValueChange={(v) => setParentId(v === "none" ? null : v)}>
           <SelectTrigger>
             <SelectValue placeholder="Selecione" />
           </SelectTrigger>
           <SelectContent>
-            <SelectItem value="">Sem pai</SelectItem>
+            <SelectItem value="none">Sem pai</SelectItem>
             {parents.map((p) => (
               <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
             ))}
+          </SelectContent>
+        </Select>
+      </div>
+      <div>
+        <Label>Tipo</Label>
+        <Select value={kind || undefined} onValueChange={(v) => setKind(v === "none" ? null : (v as any))}>
+          <SelectTrigger>
+            <SelectValue placeholder="Selecione" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Sem tipo</SelectItem>
+            <SelectItem value="expense">Despesa</SelectItem>
+            <SelectItem value="income">Receita</SelectItem>
           </SelectContent>
         </Select>
       </div>

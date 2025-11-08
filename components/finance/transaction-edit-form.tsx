@@ -23,7 +23,7 @@ interface TransactionEditFormProps {
     client_id: string | null
     description: string | null
   }
-  categories: { id: string; name: string; parent_id: string | null }[]
+  categories: { id: string; name: string; parent_id: string | null; kind?: "expense" | "income" | null }[]
   clients: { id: string; name: string }[]
   onDone?: () => void
 }
@@ -44,7 +44,7 @@ export function TransactionEditForm({ transaction, categories, clients, onDone }
   const [description, setDescription] = useState<string>(transaction.description || "")
 
   const categoryOptions = useMemo(() => {
-    const byParent: Record<string, { id: string; name: string; parent_id: string | null }[]> = {}
+    const byParent: Record<string, { id: string; name: string; parent_id: string | null; kind?: "expense" | "income" | null }[]> = {}
     categories.forEach((c) => {
       const key = c.parent_id || "root"
       byParent[key] = byParent[key] || []
@@ -53,15 +53,11 @@ export function TransactionEditForm({ transaction, categories, clients, onDone }
     const result: { id: string; label: string }[] = []
     const roots = byParent["root"] || []
     roots.forEach((root) => {
-      const children = byParent[root.id] || []
-      if (children.length === 0) {
-        result.push({ id: root.id, label: root.name })
-      } else {
-        children.forEach((ch) => result.push({ id: ch.id, label: `${root.name} > ${ch.name}` }))
-      }
+      const children = (byParent[root.id] || []).filter((ch) => ch.kind === type)
+      children.forEach((ch) => result.push({ id: ch.id, label: `${root.name} > ${ch.name}` }))
     })
     return result
-  }, [categories])
+  }, [categories, type])
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -152,12 +148,12 @@ export function TransactionEditForm({ transaction, categories, clients, onDone }
 
           <div>
             <Label>Categoria</Label>
-            <Select value={categoryId || undefined} onValueChange={(v) => setCategoryId(v)}>
+            <Select value={categoryId || undefined} onValueChange={(v) => setCategoryId(v === "none" ? null : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem categoria</SelectItem>
+                <SelectItem value="none">Sem categoria</SelectItem>
                 {categoryOptions.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.label}</SelectItem>
                 ))}
@@ -167,12 +163,12 @@ export function TransactionEditForm({ transaction, categories, clients, onDone }
 
           <div>
             <Label>Cliente (opcional)</Label>
-            <Select value={clientId || undefined} onValueChange={(v) => setClientId(v)}>
+            <Select value={clientId || undefined} onValueChange={(v) => setClientId(v === "none" ? null : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem cliente</SelectItem>
+                <SelectItem value="none">Sem cliente</SelectItem>
                 {clients.map((c) => (
                   <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>
                 ))}

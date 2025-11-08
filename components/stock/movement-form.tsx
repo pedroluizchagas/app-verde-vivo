@@ -104,12 +104,12 @@ export function MovementForm({ products, appointments, defaultAppointmentId = nu
           </div>
           <div>
             <Label>Vincular a serviço (opcional)</Label>
-            <Select value={appointmentId || undefined} onValueChange={(v) => setAppointmentId(v)}>
+            <Select value={appointmentId || undefined} onValueChange={(v) => setAppointmentId(v === "none" ? null : v)}>
               <SelectTrigger>
                 <SelectValue placeholder="Selecione" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Sem vínculo</SelectItem>
+                <SelectItem value="none">Sem vínculo</SelectItem>
                 {appointments.map((a) => (
                   <SelectItem key={a.id} value={a.id}>{a.title || a.id}</SelectItem>
                 ))}

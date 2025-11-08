@@ -34,7 +34,7 @@ export default async function TransactionDetailPage({ params }: { params: { id: 
 
   const { data: categories } = await supabase
     .from("financial_categories")
-    .select("id, name, parent_id")
+    .select("id, name, parent_id, kind")
     .eq("gardener_id", user!.id)
 
   const { data: clients } = await supabase

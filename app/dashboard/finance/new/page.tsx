@@ -12,7 +12,7 @@ export default async function NewTransactionPage() {
 
   const { data: categories } = await supabase
     .from("financial_categories")
-    .select("id, name, parent_id")
+    .select("id, name, parent_id, kind")
     .eq("gardener_id", user!.id)
     .order("name")
 
