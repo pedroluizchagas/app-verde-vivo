@@ -163,6 +163,8 @@ export default function AssistantPage() {
                     msg += ` (já existia, id: ${r.id})`
                   } else if (r?.id) {
                     msg += ` (id: ${r.id})`
+                  } else if (r?.transaction_id || r?.appointment_id) {
+                    msg += ` (lançado: ${[r?.appointment_id && `serviço ${r.appointment_id}`, r?.transaction_id && `receita ${r.transaction_id}`].filter(Boolean).join(", ")})`
                   }
                   setItems((prev) => [...prev, { role: "assistant", content: msg }])
                 } catch (err: any) {

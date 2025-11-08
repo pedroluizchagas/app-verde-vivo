@@ -37,6 +37,17 @@ export async function runAssistant(userId: string, input: string, mode: "dry" | 
     }
   }
 
+  // Ajuste de due_date natural para receitas (approve_budget_and_record_income)
+  if (parsed.intent === "approve_budget_and_record_income") {
+    const resolvedDue = resolveNaturalDate(input)
+    const provided = parsed.params?.due_date as string | undefined
+    const providedDate = provided ? new Date(provided) : null
+    const now = new Date()
+    if ((!provided || (providedDate && providedDate < now)) && resolvedDue) {
+      parsed.params = { ...(parsed.params || {}), due_date: resolvedDue.slice(0, 10) }
+    }
+  }
+
   const validation = validateIntent(parsed.intent, parsed.params)
   if (!validation.ok) {
     const needList = validation.need?.length ? `Campos faltantes: ${validation.need.join(", ")}.` : "Dados insuficientes."

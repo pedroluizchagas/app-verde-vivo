@@ -171,6 +171,130 @@ export async function updateStock(userId: string, params: any) {
   return { ok: true }
 }
 
+export async function approveBudgetAndRecordIncome(userId: string, params: any) {
+  const supabase = await createSupabaseServer()
+  const { client_id, client_name, appointment_id, title = "Serviço de manutenção", description, total_amount, due_date } = params || {}
+  const cid = client_id || (await findClientIdByName(supabase, userId, client_name))
+  if (!cid) throw new Error("Cliente não encontrado. Informe client_id ou client_name")
+
+  // Se houver appointment_id, tenta pegar data agendada para due_date e compor descrição
+  let finalDueDate = due_date || null
+  let apptDesc = ""
+  if (appointment_id) {
+    const { data: appt } = await supabase
+      .from("appointments")
+      .select("id, title, scheduled_date")
+      .eq("gardener_id", userId)
+      .eq("id", appointment_id)
+      .maybeSingle()
+    if (appt) {
+      finalDueDate = finalDueDate || (appt.scheduled_date ? new Date(appt.scheduled_date).toISOString().slice(0, 10) : null)
+      apptDesc = ` (Agendamento: ${appt.title ?? appt.id})`
+    }
+  }
+
+  // 1) Cria orçamento aprovado
+  const { data: budgetRow, error: bErr } = await supabase
+    .from("budgets")
+    .insert([
+      {
+        gardener_id: userId,
+        client_id: cid,
+        title,
+        description: description ? `${description}${apptDesc}` : apptDesc || null,
+        total_amount,
+        status: "approved",
+        valid_until: null,
+      },
+    ])
+    .select("id")
+    .single()
+  if (bErr) throw bErr
+
+  // 2) Lança receita pendente (receitas a receber)
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: trxRow, error: tErr } = await supabase
+    .from("financial_transactions")
+    .insert([
+      {
+        gardener_id: userId,
+        type: "income",
+        amount: total_amount,
+        transaction_date: today,
+        description: `${title}${apptDesc}`,
+        category_id: null,
+        client_id: cid,
+        status: "pending",
+        due_date: finalDueDate,
+        paid_at: null,
+      },
+    ])
+    .select("id")
+    .single()
+  if (tErr) throw tErr
+
+  return { ok: true, budget_id: budgetRow?.id, transaction_id: trxRow?.id }
+}
+
+export async function recordServiceIncome(userId: string, params: any) {
+  const supabase = await createSupabaseServer()
+  const { client_id, client_name, service_name, title = service_name || "Serviço", description, total_amount, due_date } = params || {}
+  const cid = client_id || (await findClientIdByName(supabase, userId, client_name))
+  if (!cid) throw new Error("Cliente não encontrado. Informe client_id ou client_name")
+
+  const sid = await findServiceIdByName(supabase, userId, service_name)
+
+  // Cria um registro de serviço (appointment) concluído agora
+  const now = new Date()
+  const scheduled_date = now.toISOString()
+  const { data: apptRow, error: aErr } = await supabase
+    .from("appointments")
+    .insert([
+      {
+        gardener_id: userId,
+        client_id: cid,
+        service_id: sid,
+        title,
+        description: description ?? null,
+        scheduled_date,
+        duration_minutes: 60,
+        status: "completed",
+      },
+    ])
+    .select("id")
+    .single()
+  if (aErr) throw aErr
+
+  // Se não houver valor, retorna necessidade de valor
+  if (total_amount == null) {
+    return { ok: false, need: ["total_amount"], appointment_id: apptRow?.id }
+  }
+
+  // Lança receita a receber
+  const today = now.toISOString().slice(0, 10)
+  const { data: trxRow, error: tErr } = await supabase
+    .from("financial_transactions")
+    .insert([
+      {
+        gardener_id: userId,
+        type: "income",
+        amount: total_amount,
+        transaction_date: today,
+        description: `${title}`,
+        category_id: null,
+        client_id: cid,
+        status: "pending",
+        due_date: due_date ?? today,
+        paid_at: null,
+      },
+    ])
+    .select("id")
+    .single()
+  if (tErr) throw tErr
+
+  return { ok: true, appointment_id: apptRow?.id, transaction_id: trxRow?.id }
+}
+
 async function findClientIdByName(supabase: any, userId: string, name?: string) {
   if (!name) return null
   const { data } = await supabase.from("clients").select("id").eq("gardener_id", userId).ilike("name", name).limit(1).single()

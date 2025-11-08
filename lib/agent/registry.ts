@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { scheduleVisit, createBudget, updateBudgetStatus, updateStock, createClient } from "./actions"
+import { scheduleVisit, createBudget, updateBudgetStatus, updateStock, createClient, approveBudgetAndRecordIncome, recordServiceIncome } from "./actions"
 
 export const schemas = {
   create_client: z.object({
@@ -42,6 +42,24 @@ export const schemas = {
     description: z.string().optional(),
     appointment_id: z.string().uuid().optional(),
   }),
+  approve_budget_and_record_income: z.object({
+    client_id: z.string().uuid().optional(),
+    client_name: z.string().min(2).optional(),
+    appointment_id: z.string().uuid().optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    total_amount: z.number().positive(),
+    due_date: z.string().optional(),
+  }),
+  record_service_income: z.object({
+    client_id: z.string().uuid().optional(),
+    client_name: z.string().min(2).optional(),
+    service_name: z.string().min(2).optional(),
+    title: z.string().optional(),
+    description: z.string().optional(),
+    total_amount: z.number().positive().optional(),
+    due_date: z.string().optional(),
+  }),
 } as const
 
 type Intent = keyof typeof schemas
@@ -52,6 +70,8 @@ export const registry: Record<Intent, { schema: (typeof schemas)[Intent]; action
   create_budget: { schema: schemas.create_budget, action: createBudget },
   update_budget_status: { schema: schemas.update_budget_status, action: updateBudgetStatus, critical: true },
   update_stock: { schema: schemas.update_stock, action: updateStock, critical: true },
+  approve_budget_and_record_income: { schema: schemas.approve_budget_and_record_income, action: approveBudgetAndRecordIncome, critical: true },
+  record_service_income: { schema: schemas.record_service_income, action: recordServiceIncome, critical: true },
 }
 
 export function validateIntent(intent: string, params: any) {
