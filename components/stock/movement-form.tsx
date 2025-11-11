@@ -37,8 +37,11 @@ export function MovementForm({ products, appointments, defaultAppointmentId = nu
     setIsLoading(true)
     setError(null)
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Não autenticado")
       if (!productId) throw new Error("Selecione um produto")
       const payload: any = {
+        gardener_id: user.id,
         product_id: productId,
         type,
         quantity,
@@ -49,6 +52,73 @@ export function MovementForm({ products, appointments, defaultAppointmentId = nu
       }
       const { error: insertError } = await supabase.from("product_movements").insert(payload)
       if (insertError) throw insertError
+
+      // Se for entrada com custo, registra automaticamente a despesa no Financeiro
+      if (type === 'in') {
+        const unit = payload.unit_cost ?? selectedProduct?.cost ?? 0
+        const total = Number(quantity) * Number(unit)
+        if (total > 0) {
+          // Tenta localizar categoria "Estoque > Insumos"; cria se não existir
+          let rootId: string | null = null
+          let catId: string | null = null
+          try {
+            const { data: rootCat } = await supabase
+              .from("financial_categories")
+              .select("id")
+              .eq("gardener_id", user.id)
+              .eq("name", "Estoque")
+              .limit(1)
+              .maybeSingle()
+            rootId = rootCat?.id ?? null
+
+            const { data: childCat } = await supabase
+              .from("financial_categories")
+              .select("id")
+              .eq("gardener_id", user.id)
+              .eq("name", "Insumos")
+              .eq("parent_id", rootId)
+              .limit(1)
+              .maybeSingle()
+            catId = childCat?.id ?? null
+
+            // Cria categorias sugeridas se não existirem
+            if (!catId) {
+              if (!rootId) {
+                const { data: newRoot, error: rErr } = await supabase
+                  .from("financial_categories")
+                  .insert([{ gardener_id: user.id, name: "Estoque", parent_id: null, kind: "expense" }])
+                  .select("id")
+                  .single()
+                if (!rErr) rootId = newRoot?.id ?? null
+              }
+              const { data: newChild, error: cErr } = await supabase
+                .from("financial_categories")
+                .insert([{ gardener_id: user.id, name: "Insumos", parent_id: rootId, kind: "expense" }])
+                .select("id")
+                .single()
+              if (!cErr) catId = newChild?.id ?? null
+            }
+
+            await supabase.from("financial_transactions").insert([
+              {
+                gardener_id: user.id,
+                type: "expense",
+                amount: total,
+                transaction_date: movementDate,
+                description: description || `Compra de ${selectedProduct?.name || "produto"}`,
+                category_id: catId,
+                client_id: null,
+                status: "paid",
+                due_date: null,
+                paid_at: new Date().toISOString(),
+              },
+            ])
+          } catch (e) {
+            // Não bloqueia o fluxo caso o registro financeiro falhe; apenas mantém o movimento
+            console.warn("Falha ao registrar despesa de estoque:", e)
+          }
+        }
+      }
       router.push("/dashboard/stock")
       router.refresh()
     } catch (err: any) {

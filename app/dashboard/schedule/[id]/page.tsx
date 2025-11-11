@@ -82,7 +82,18 @@ export default async function AppointmentDetailPage({
 
   const totalCost = (usedMaterials || []).reduce((sum, m: any) => sum + Number(m.quantity) * Number(m.unit_cost ?? m.product?.cost ?? 0), 0)
   const laborCost = Number((appointment as any)?.labor_cost ?? 0)
-  const serviceTotal = laborCost + totalCost
+  // Load user margin preference
+  const { data: prefs } = await supabase
+    .from("user_preferences")
+    .select("default_product_margin_pct")
+    .eq("gardener_id", user!.id)
+    .maybeSingle()
+  const marginPct = Number((prefs as any)?.default_product_margin_pct ?? 0)
+  const materialsPrice = (usedMaterials || []).reduce((sum, m: any) => {
+    const base = Number(m.unit_cost ?? m.product?.cost ?? 0)
+    return sum + Number(m.quantity) * base * (1 + (marginPct > 0 ? marginPct / 100 : 0))
+  }, 0)
+  const serviceTotal = laborCost + materialsPrice
   const currency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
   return (
@@ -197,7 +208,7 @@ export default async function AppointmentDetailPage({
         </CardContent>
       </Card>
 
-      <ServiceNote appointment={appointment} materials={usedMaterials || []} totals={{ laborCost, materialsCost: totalCost, serviceTotal }} />
+      <ServiceNote appointment={appointment} materials={usedMaterials || []} totals={{ laborCost, materialsCost: materialsPrice, serviceTotal }} marginPct={marginPct} />
 
       
 

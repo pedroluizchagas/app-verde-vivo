@@ -26,7 +26,7 @@ export default async function StockPage() {
       .from("product_movements")
       .select("product_id, type, quantity")
       .eq("gardener_id", user!.id)
-      .in("product_id", productIds)
+      .in("product_id", productIds);
 
     (movements || []).forEach((m) => {
       stockByProduct[m.product_id] = stockByProduct[m.product_id] || 0
@@ -58,6 +58,7 @@ export default async function StockPage() {
 
   const lastIn = (lastInList || [])[0]
   const lastTotal = lastIn ? Number(lastIn.quantity) * Number(lastIn.unit_cost ?? 0) : 0
+  const lastTotalRounded = Math.round(lastTotal * 100) / 100
   const lastDateISO = lastIn ? new Date(lastIn.movement_date).toISOString().slice(0, 10) : null
 
   // Tenta localizar o lançamento financeiro correspondente (heurística: data e valor iguais, pago)
@@ -70,7 +71,7 @@ export default async function StockPage() {
       .eq("type", "expense")
       .eq("status", "paid")
       .eq("transaction_date", lastDateISO)
-      .eq("amount", lastTotal)
+      .eq("amount", lastTotalRounded)
       .limit(1)
     lastExpense = (expenseCandidates || [])[0] || null
   }

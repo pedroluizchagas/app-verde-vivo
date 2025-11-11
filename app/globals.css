@@ -37,6 +37,42 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+/* Dark theme variables */
+.dark {
+  --background: hsl(240 10% 10%);
+  --foreground: hsl(0 0% 98%);
+  --card: hsl(240 10% 12%);
+  --card-foreground: hsl(0 0% 98%);
+  --popover: hsl(240 10% 12%);
+  --popover-foreground: hsl(0 0% 98%);
+  --primary: hsl(142 70% 45%);
+  --primary-foreground: hsl(0 0% 0%);
+  --secondary: hsl(240 4% 20%);
+  --secondary-foreground: hsl(0 0% 98%);
+  --muted: hsl(240 4% 20%);
+  --muted-foreground: hsl(240 5% 70%);
+  --accent: hsl(240 4% 22%);
+  --accent-foreground: hsl(0 0% 98%);
+  --destructive: hsl(0 70% 45%);
+  --destructive-foreground: hsl(0 0% 98%);
+  --border: hsl(240 4% 25%);
+  --input: hsl(240 4% 25%);
+  --ring: hsl(142 70% 45%);
+  --chart-1: hsl(142 70% 45%);
+  --chart-2: hsl(159 60% 55%);
+  --chart-3: hsl(134 50% 50%);
+  --chart-4: hsl(120 60% 40%);
+  --chart-5: hsl(103 50% 55%);
+  --sidebar: hsl(240 10% 12%);
+  --sidebar-foreground: hsl(0 0% 98%);
+  --sidebar-primary: hsl(142 70% 45%);
+  --sidebar-primary-foreground: hsl(0 0% 0%);
+  --sidebar-accent: hsl(240 4% 20%);
+  --sidebar-accent-foreground: hsl(0 0% 98%);
+  --sidebar-border: hsl(240 4% 25%);
+  --sidebar-ring: hsl(142 70% 45%);
+}
+
 @theme inline {
   --font-sans: var(--font-poppins), "Poppins", system-ui, -apple-system, sans-serif;
   --font-mono: "Geist Mono", "Geist Mono Fallback";
@@ -121,4 +157,19 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-feature-settings: "rlig" 1, "calt" 1;
+}
+/* Page transition animation */
+.page-transition {
+  animation: fadeSlideIn 220ms ease-out both;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

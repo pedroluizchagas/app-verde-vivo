@@ -10,7 +10,7 @@ export default async function FinanceSettingsPage() {
   const { data: { user } } = await supabase.auth.getUser()
   const { data: prefs } = await supabase
     .from("user_preferences")
-    .select("credit_card_due_day, default_pending_days")
+    .select("credit_card_due_day, default_pending_days, default_product_margin_pct")
     .eq("gardener_id", user!.id)
     .maybeSingle()
 
@@ -22,7 +22,7 @@ export default async function FinanceSettingsPage() {
       </div>
       <Card>
         <CardHeader>
-          <CardTitle>Vencimento e pendências</CardTitle>
+          <CardTitle>Vencimento, pendências e margem</CardTitle>
         </CardHeader>
         <CardContent>
           <PreferencesForm initial={prefs || {}} />

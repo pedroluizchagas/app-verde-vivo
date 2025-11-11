@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 
@@ -43,28 +43,39 @@ export function CategorySeedButton() {
       // Fetch existing categories to avoid duplicates
       const { data: existing } = await supabase
         .from("financial_categories")
-        .select("id, name, parent_id")
+        .select("id, name, parent_id, kind")
         .eq("gardener_id", user.id)
 
-      const byNameRoot = new Map<string, string>() // root name -> id
+      const byNameRoot = new Map<string, { id: string; kind: "expense" | "income" | null }>() // root name -> info
       const childrenByName = new Map<string, string>() // child name -> id
-      (existing || []).forEach((c: any) => {
-        if (c.parent_id == null) byNameRoot.set(c.name, c.id)
+      ;(existing || []).forEach((c: any) => {
+        if (c.parent_id == null) byNameRoot.set(c.name, { id: c.id, kind: c.kind ?? null })
         else childrenByName.set(c.name, c.id)
       })
 
       for (const root of Object.keys(suggested)) {
         // upsert root
-        let rootId = byNameRoot.get(root) || null
+        const desiredKind = kindByParent[root]
+        let rootInfo = byNameRoot.get(root) || null
+        let rootId = rootInfo?.id || null
         if (!rootId) {
           const { data: insertedRoot, error } = await supabase
             .from("financial_categories")
-            .insert([{ gardener_id: user.id, name: root, parent_id: null }])
+            .insert([{ gardener_id: user.id, name: root, parent_id: null, kind: desiredKind }])
             .select("id")
             .single()
           if (error) throw error
           rootId = insertedRoot?.id || null
-          if (rootId) byNameRoot.set(root, rootId)
+          if (rootId) byNameRoot.set(root, { id: rootId, kind: desiredKind })
+        } else {
+          // If root exists but kind is missing or different, update it
+          if (!rootInfo?.kind || rootInfo.kind !== desiredKind) {
+            await supabase
+              .from("financial_categories")
+              .update({ kind: desiredKind })
+              .eq("id", rootId)
+            byNameRoot.set(root, { id: rootId, kind: desiredKind })
+          }
         }
 
         // upsert children under root
@@ -88,6 +99,28 @@ export function CategorySeedButton() {
       setBusy(false)
     }
   }
+
+  // Auto-seed on first load if no categories exist for the user
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const { data: anyCat, error } = await supabase
+          .from("financial_categories")
+          .select("id")
+          .eq("gardener_id", user.id)
+          .limit(1)
+        if (error) return
+        if (mounted && (!anyCat || anyCat.length === 0)) {
+          await seed()
+          setMsg((m) => m || "Categorias sugeridas adicionadas automaticamente.")
+        }
+      } catch {}
+    })()
+    return () => { mounted = false }
+  }, [])
 
   return (
     <div className="flex items-center gap-2">

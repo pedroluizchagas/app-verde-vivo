@@ -168,25 +168,25 @@ export default async function DashboardPage() {
     .slice(0, 5)
     .map(([label, value]) => ({ label, value }))
 
-  const { data: profile } = await supabase.from("profiles").select("full_name").eq("id", user!.id).single()
+  const { data: profile } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", user!.id).single()
 
   // Cards de topo removidos conforme solicitado (Agendamentos/Orçamentos)
 
   return (
-    <div id="dashboard-root" className="flex flex-col gap-6 p-4">
-      <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-bold text-balance">Olá, {profile?.full_name || "Jardineiro"}</h1>
+    <div id="dashboard-root" className="flex flex-col gap-8">
+      <div className="relative flex flex-col gap-2">
+        <h1 className="text-3xl font-bold tracking-tight">Olá, {profile?.full_name || "Jardineiro"}</h1>
         <p className="text-sm text-muted-foreground">Bem-vindo ao VerdeVivo</p>
       </div>
 
       {/* Cards de topo removidos: a visão agora concentra-se no Resumo geral e nas listas abaixo */}
 
       {/* Resumo geral */}
-      <Card>
+      <Card className="shadow-sm">
         <CardHeader>
           <CardTitle className="text-lg flex items-center gap-2"><TrendingUp className="h-5 w-5" />Resumo geral</CardTitle>
         </CardHeader>
-        <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
+        <CardContent className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
           <div className="rounded-md border p-4">
             <p className="text-sm text-muted-foreground">Clientes</p>
             <p className="text-2xl font-bold">{clientsCount || 0}</p>
@@ -219,7 +219,7 @@ export default async function DashboardPage() {
       </Card>
 
       {/* Relatórios financeiros */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <SimpleBarChart
           title="Financeiro mensal (receitas vs despesas)"
           data={[
@@ -237,7 +237,7 @@ export default async function DashboardPage() {
       </div>
 
       {/* Produtividade e Serviços mais realizados */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
             <CardTitle className="text-lg">Produtividade (mês)</CardTitle>

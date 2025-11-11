@@ -2,9 +2,8 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Users, Calendar, FileText, LogOut, BarChart3, Package, Bot } from "lucide-react"
+import { Home, Users, Calendar, FileText, BarChart3, Package, Bot, User as UserIcon } from "lucide-react"
 import { cn } from "@/lib/utils"
-import { createClient } from "@/lib/supabase/client"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -26,26 +25,12 @@ const navItems = [
   { href: "/dashboard/finance", icon: BarChart3, label: "Financeiro" },
   { href: "/dashboard/stock", icon: Package, label: "Estoque" },
   { href: "/dashboard/assistant", icon: Bot, label: "Assistente" },
+  { href: "/dashboard/profile", icon: UserIcon, label: "Perfil" },
 ]
 
 export function MobileNav() {
   const pathname = usePathname()
   const router = useRouter()
-  const [isLoggingOut, setIsLoggingOut] = useState(false)
-
-  const handleLogout = async () => {
-    setIsLoggingOut(true)
-    const supabase = createClient()
-
-    try {
-      await supabase.auth.signOut()
-      router.push("/auth/login")
-      router.refresh()
-    } catch (error) {
-      console.error("Error logging out:", error)
-      setIsLoggingOut(false)
-    }
-  }
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card">
@@ -69,26 +54,7 @@ export function MobileNav() {
           )
         })}
 
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <button className="flex flex-1 flex-col items-center gap-1 py-3 text-xs text-muted-foreground hover:text-foreground transition-colors">
-              <LogOut className="h-5 w-5" />
-              <span className="font-medium">Sair</span>
-            </button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Sair da conta?</AlertDialogTitle>
-              <AlertDialogDescription>Você será desconectado do aplicativo.</AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancelar</AlertDialogCancel>
-              <AlertDialogAction onClick={handleLogout} disabled={isLoggingOut}>
-                {isLoggingOut ? "Saindo..." : "Sair"}
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
+        {/* Logout removido do nav — agora disponível na página de Perfil */}
       </div>
     </nav>
   )

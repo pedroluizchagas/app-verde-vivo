@@ -5,9 +5,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Share2, FileText } from "lucide-react"
 import { ExportDashboardPDFButton } from "@/components/reports/export-button"
 
-export function ServiceNote({ appointment, materials, totals }: { appointment: any; materials: any[]; totals: { laborCost: number; materialsCost: number; serviceTotal: number } }) {
+export function ServiceNote({ appointment, materials, totals, marginPct = 0 }: { appointment: any; materials: any[]; totals: { laborCost: number; materialsCost: number; serviceTotal: number }; marginPct?: number }) {
   const handleShare = async () => {
-    const noteText = buildNoteText(appointment, materials, totals)
+    const noteText = buildNoteText(appointment, materials, totals, marginPct)
     if ((navigator as any).share) {
       try {
         await (navigator as any).share({ title: appointment.title, text: noteText })
@@ -20,7 +20,7 @@ export function ServiceNote({ appointment, materials, totals }: { appointment: a
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(buildNoteText(appointment, materials, totals))
+      await navigator.clipboard.writeText(buildNoteText(appointment, materials, totals, marginPct))
       alert("Nota copiada para a área de transferência")
     } catch {}
   }
@@ -62,7 +62,7 @@ export function ServiceNote({ appointment, materials, totals }: { appointment: a
                 materials.map((m: any) => (
                   <div key={m.id} className="flex items-center justify-between text-sm">
                     <span>{m.product?.name} — {Number(m.quantity)} {m.product?.unit}</span>
-                    <span className="text-muted-foreground">{currency(Number(m.quantity) * Number(m.unit_cost ?? m.product?.cost ?? 0))}</span>
+                    <span className="text-muted-foreground">{currency(Number(m.quantity) * Number(m.unit_cost ?? m.product?.cost ?? 0) * (1 + (marginPct > 0 ? marginPct / 100 : 0)))}</span>
                   </div>
                 ))
               ) : (
@@ -108,7 +108,7 @@ function currency(value: number) {
   return new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 }
 
-function buildNoteText(appointment: any, materials: any[], totals: { laborCost: number; materialsCost: number; serviceTotal: number }) {
+function buildNoteText(appointment: any, materials: any[], totals: { laborCost: number; materialsCost: number; serviceTotal: number }, marginPct: number = 0) {
   const date = new Date(appointment.scheduled_date)
   const lines = [
     `Serviço: ${appointment.title}`,
@@ -117,7 +117,7 @@ function buildNoteText(appointment: any, materials: any[], totals: { laborCost: 
     appointment.description ? `Descrição: ${appointment.description}` : undefined,
     `Materiais:`,
     ...(materials.length > 0
-      ? materials.map((m: any) => `${m.product?.name} — ${Number(m.quantity)} ${m.product?.unit} (${currency(Number(m.quantity) * Number(m.unit_cost ?? m.product?.cost ?? 0))})`)
+      ? materials.map((m: any) => `${m.product?.name} — ${Number(m.quantity)} ${m.product?.unit} (${currency(Number(m.quantity) * Number(m.unit_cost ?? m.product?.cost ?? 0) * (1 + (marginPct > 0 ? marginPct / 100 : 0)))})`)
       : ["Nenhum"]),
     `Mão de obra: ${currency(totals.laborCost)}`,
     `Materiais: ${currency(totals.materialsCost)}`,

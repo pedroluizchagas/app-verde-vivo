@@ -26,7 +26,10 @@ export function ProductForm() {
     setIsLoading(true)
     setError(null)
     try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error("Não autenticado")
       const { error: insertError } = await supabase.from("products").insert({
+        gardener_id: user.id,
         name,
         unit,
         cost,

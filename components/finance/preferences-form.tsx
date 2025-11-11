@@ -7,14 +7,15 @@ import { Label } from "@/components/ui/label"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 
-export function PreferencesForm({ initial }: { initial?: { credit_card_due_day?: number | null; default_pending_days?: number | null } }) {
+export function PreferencesForm({ initial }: { initial?: { credit_card_due_day?: number | null; default_pending_days?: number | null; default_product_margin_pct?: number | null } }) {
   const supabase = createClient()
   const [creditDue, setCreditDue] = useState<number | "">(initial?.credit_card_due_day ?? "")
   const [pendingDays, setPendingDays] = useState<number>(initial?.default_pending_days ?? 7)
+  const [productMargin, setProductMargin] = useState<number>(initial?.default_product_margin_pct ?? 0)
   const [saving, setSaving] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
 
-  useEffect(() => { setMessage(null) }, [creditDue, pendingDays])
+  useEffect(() => { setMessage(null) }, [creditDue, pendingDays, productMargin])
 
   const savePrefs = async () => {
     setSaving(true)
@@ -25,6 +26,7 @@ export function PreferencesForm({ initial }: { initial?: { credit_card_due_day?:
         gardener_id: user.id,
         credit_card_due_day: creditDue === "" ? null : Number(creditDue),
         default_pending_days: Number(pendingDays),
+        default_product_margin_pct: Number(productMargin),
       }
       const { error } = await supabase.from("user_preferences").upsert(payload)
       if (error) throw error
@@ -51,6 +53,11 @@ export function PreferencesForm({ initial }: { initial?: { credit_card_due_day?:
           <Label>Dias padrão para pendências</Label>
           <Input type="number" min={0} value={pendingDays} onChange={(e) => setPendingDays(Number(e.target.value))} />
           <p className="text-xs text-muted-foreground mt-1">Usado para despesas pendentes quando não há outro vencimento indicado.</p>
+        </div>
+        <div>
+          <Label>Margem de lucro padrão (%)</Label>
+          <Input type="number" min={0} step={0.1} value={productMargin} onChange={(e) => setProductMargin(Number(e.target.value))} placeholder="Ex.: 20" />
+          <p className="text-xs text-muted-foreground mt-1">Aplicada automaticamente ao preço dos materiais em serviços e orçamentos. Não é exibida ao cliente como margem separada.</p>
         </div>
         {message && <div className="rounded-md bg-muted p-2 text-sm">{message}</div>}
         <div className="flex gap-2">
