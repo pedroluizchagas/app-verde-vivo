@@ -76,7 +76,8 @@ export function Sidebar({ profile }: { profile?: { full_name: string | null; ava
   }
 
   return (
-    <aside className={cn(
+    <aside data-collapsed={collapsed}
+      className={cn(
       "hidden md:flex md:flex-col border-r bg-gradient-to-b from-background to-muted/40 backdrop-blur-sm shadow-sm transition-all md:sticky md:top-0 md:h-svh",
       collapsed ? "md:w-16" : "md:w-64"
     )}>
@@ -126,7 +127,10 @@ export function Sidebar({ profile }: { profile?: { full_name: string | null; ava
                     >
                       {/* Active indicator */}
                       {isActive && (
-                        <span className="absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r bg-primary" />
+                        <span
+                          aria-hidden="true"
+                          className="sidebar-active-indicator absolute left-0 top-1/2 -translate-y-1/2 h-6 w-1 rounded-r bg-primary"
+                        />
                       )}
                       <Icon className="h-4 w-4" />
                       {!collapsed && <span className="font-medium">{item.label}</span>}

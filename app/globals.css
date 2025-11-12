@@ -173,3 +173,12 @@ body {
     transform: translateY(0);
   }
 }
+
+/* Subtle neon glow for active sidebar indicator without affecting position */
+.sidebar-active-indicator {
+  /* brilho suave sem alterar posição */
+  box-shadow: 0 0 8px 2px var(--color-primary);
+  /* projeção para frente (direita), em direção ao ícone */
+  filter: saturate(1.1) drop-shadow(14px 0 10px var(--color-primary));
+  will-change: filter;
+}
