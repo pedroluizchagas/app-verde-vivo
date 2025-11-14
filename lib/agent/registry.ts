@@ -1,5 +1,5 @@
 import { z } from "zod"
-import { scheduleVisit, createBudget, updateBudgetStatus, updateStock, createClient, approveBudgetAndRecordIncome, recordServiceIncome, recordIncome, recordExpense, recordInventoryPurchase, recordPartnerCommission } from "./actions"
+import { scheduleVisit, createBudget, updateBudgetStatus, updateStock, createClient, approveBudgetAndRecordIncome, recordServiceIncome, recordIncome, recordExpense, recordInventoryPurchase, recordPartnerCommission, createNote, createTask } from "./actions"
 
 export const schemas = {
   create_client: z.object({
@@ -94,6 +94,23 @@ export const schemas = {
     credit_type: z.enum(["cash", "insumos"]).optional(),
     description: z.string().optional(),
   }),
+  create_note: z.object({
+    title: z.string().optional(),
+    content: z.string().min(1),
+    importance: z.enum(["low", "medium", "high"]).optional(),
+    tags: z.array(z.string()).optional(),
+    client_name: z.string().optional(),
+    appointment_id: z.string().uuid().optional(),
+  }),
+  create_task: z.object({
+    title: z.string().optional(),
+    description: z.string().optional(),
+    importance: z.enum(["low", "medium", "high"]).optional(),
+    tags: z.array(z.string()).optional(),
+    due_date: z.string().optional(),
+    client_name: z.string().optional(),
+    status: z.enum(["open", "in_progress", "done"]).optional(),
+  }),
 } as const
 
 type Intent = keyof typeof schemas
@@ -110,6 +127,8 @@ export const registry: Record<Intent, { schema: (typeof schemas)[Intent]; action
   record_expense: { schema: schemas.record_expense, action: recordExpense, critical: true },
   record_inventory_purchase: { schema: schemas.record_inventory_purchase, action: recordInventoryPurchase, critical: true },
   record_partner_commission: { schema: schemas.record_partner_commission, action: recordPartnerCommission, critical: true },
+  create_note: { schema: schemas.create_note, action: createNote },
+  create_task: { schema: schemas.create_task, action: createTask },
 }
 
 export function validateIntent(intent: string, params: any) {

@@ -2,7 +2,7 @@ export const agentSystemPrompt = `Você é o Assistente Groq do Verde Vivo. Sua 
 
 Responda SEMPRE em JSON válido com esta estrutura:
 {
-  "intent": "one_of[create_client|schedule_visit|create_budget|update_budget_status|update_stock|approve_budget_and_record_income|record_service_income|record_income|record_expense|record_partner_commission|none]",
+  "intent": "one_of[create_client|schedule_visit|create_budget|update_budget_status|update_stock|approve_budget_and_record_income|record_service_income|record_income|record_expense|record_partner_commission|create_note|create_task|none]",
   "params": { /* campos necessários para a ação */ },
   "reply": "mensagem amigável para o usuário"
 }
@@ -25,9 +25,11 @@ Regras:
   record_expense: { amount: number, category_name?: string, parent_category_name?: string, description?: string, transaction_date?: string (date), status?: "paid|pending", due_date?: string (date) }
   record_inventory_purchase: { product_name?: string, product_id?: string, quantity?: number, unit_cost?: number, movement_date?: string (date), description?: string, also_record_expense?: boolean }
   record_partner_commission: { partner_name: string, percent?: number, amount?: number, movement_id?: string, credit_type?: "cash|insumos", description?: string }
+  create_note: { title?: string, content: string, importance?: "low|medium|high", tags?: string[], client_name?: string, appointment_id?: string }
+  create_task: { title?: string, description?: string, importance?: "low|medium|high", tags?: string[], due_date?: string (date), client_name?: string, status?: "open|in_progress|done" }
 `
 
-export type AgentIntent = "create_client" | "schedule_visit" | "create_budget" | "update_budget_status" | "update_stock" | "approve_budget_and_record_income" | "record_service_income" | "record_expense" | "record_partner_commission" | "none"
+export type AgentIntent = "create_client" | "schedule_visit" | "create_budget" | "update_budget_status" | "update_stock" | "approve_budget_and_record_income" | "record_service_income" | "record_income" | "record_expense" | "record_partner_commission" | "create_note" | "create_task" | "none"
 
 export interface AgentResponse {
   intent: AgentIntent

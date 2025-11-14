@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname, useRouter } from "next/navigation"
-import { Home, Users, Calendar, FileText, BarChart3, Package, Bot, User as UserIcon } from "lucide-react"
+import { Home, Users, Calendar, FileText, BarChart3, Package, Bot, User as UserIcon, StickyNote, ListTodo, Sprout } from "lucide-react"
 import { cn } from "@/lib/utils"
 import {
   AlertDialog,
@@ -20,8 +20,11 @@ import { useState } from "react"
 const navItems = [
   { href: "/dashboard", icon: Home, label: "Início" },
   { href: "/dashboard/clients", icon: Users, label: "Clientes" },
+  { href: "/dashboard/services", icon: Sprout, label: "Serviços" },
   { href: "/dashboard/schedule", icon: Calendar, label: "Agenda" },
   { href: "/dashboard/budgets", icon: FileText, label: "Orçamentos" },
+  { href: "/dashboard/notes", icon: StickyNote, label: "Notas" },
+  { href: "/dashboard/tasks", icon: ListTodo, label: "Tarefas" },
   { href: "/dashboard/finance", icon: BarChart3, label: "Financeiro" },
   { href: "/dashboard/stock", icon: Package, label: "Estoque" },
   { href: "/dashboard/assistant", icon: Bot, label: "Assistente" },

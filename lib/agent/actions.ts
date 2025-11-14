@@ -1,4 +1,5 @@
 import { createClient as createSupabaseServer } from "@/lib/supabase/server"
+import { createGroqClient } from "@/lib/groq/client"
 
 export async function scheduleVisit(userId: string, params: any) {
   const supabase = await createSupabaseServer()
@@ -530,6 +531,121 @@ export async function recordIncome(userId: string, params: any) {
         status: "paid",
         due_date: null,
         paid_at: new Date().toISOString(),
+      },
+    ])
+    .select("id")
+    .single()
+  if (error) throw error
+  return { ok: true, id: data?.id }
+}
+
+export async function createNote(userId: string, params: any) {
+  const supabase = await createSupabaseServer()
+  const { title, content, importance = "medium", tags, client_name, appointment_id } = params || {}
+  if (!content || String(content).trim().length === 0) throw new Error("content é obrigatório")
+
+  let clientId: string | null = null
+  if (client_name) {
+    clientId = await findClientIdByName(supabase, userId, client_name)
+  }
+
+  let organized: string = String(content)
+  let finalTitle: string = title ?? "Nota"
+
+  try {
+    const groq = createGroqClient()
+    const model = process.env.GROQ_MODEL || process.env.NEXT_PUBLIC_ASSISTANT_MODEL || "llama-3.1-8b-instant"
+    const completion = await groq.chat.completions.create({
+      model,
+      temperature: 0.2,
+      messages: [
+        { role: "system", content: "Organize ideias curtas e soltas em uma nota clara e acionável. Responda em JSON com { title: string, organized_content: string }. Use português." },
+        { role: "user", content: String(content) },
+      ],
+    })
+    const txt = completion.choices[0]?.message?.content ?? ""
+    try {
+      const parsed = JSON.parse(txt)
+      if (parsed?.organized_content) organized = String(parsed.organized_content)
+      if (parsed?.title && !title) finalTitle = String(parsed.title)
+    } catch {
+      organized = txt || organized
+    }
+  } catch {}
+
+  if (!finalTitle || finalTitle.trim().length === 0) {
+    const s = String(content).trim()
+    finalTitle = s.slice(0, 80)
+  }
+
+  const { data, error } = await supabase
+    .from("notes")
+    .insert([
+      {
+        gardener_id: userId,
+        title: finalTitle,
+        content: String(content),
+        organized_content: organized,
+        importance,
+        tags: Array.isArray(tags) ? tags : null,
+        client_id: clientId,
+        appointment_id: appointment_id ?? null,
+      },
+    ])
+    .select("id")
+    .single()
+  if (error) throw error
+  return { ok: true, id: data?.id }
+}
+
+export async function createTask(userId: string, params: any) {
+  const supabase = await createSupabaseServer()
+  const { title, description, importance = "medium", tags, client_name, due_date, status = "open" } = params || {}
+  let clientId: string | null = null
+  if (client_name) {
+    clientId = await findClientIdByName(supabase, userId, client_name)
+  }
+  let organized: string = String(description || "")
+  let finalTitle: string = title ?? "Tarefa"
+  try {
+    if (!title || !description) {
+      const groq = createGroqClient()
+      const model = process.env.GROQ_MODEL || process.env.NEXT_PUBLIC_ASSISTANT_MODEL || "llama-3.1-8b-instant"
+      const completion = await groq.chat.completions.create({
+        model,
+        temperature: 0.2,
+        messages: [
+          { role: "system", content: "Estruture uma tarefa clara e objetiva. Responda em JSON com { title: string, organized_description: string }. Use português." },
+          { role: "user", content: String(description || title || "") },
+        ],
+      })
+      const txt = completion.choices[0]?.message?.content ?? ""
+      try {
+        const parsed = JSON.parse(txt)
+        if (parsed?.organized_description) organized = String(parsed.organized_description)
+        if (parsed?.title && !title) finalTitle = String(parsed.title)
+      } catch {
+        organized = txt || organized
+      }
+    }
+  } catch {}
+  if (!finalTitle || finalTitle.trim().length === 0) {
+    const s = String(description || title || "").trim()
+    finalTitle = s.slice(0, 80) || "Tarefa"
+  }
+  const { data, error } = await supabase
+    .from("tasks")
+    .insert([
+      {
+        gardener_id: userId,
+        title: finalTitle,
+        description: description || null,
+        organized_description: organized || null,
+        importance,
+        tags: Array.isArray(tags) ? tags : null,
+        due_date: due_date ? String(due_date).slice(0, 10) : null,
+        client_id: clientId,
+        status,
       },
     ])
     .select("id")

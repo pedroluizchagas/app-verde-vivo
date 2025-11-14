@@ -115,6 +115,22 @@ export async function runAssistant(userId: string, input: string, mode: "dry" | 
     }
   }
 
+  if (parsed.intent === "create_task") {
+    const resolved = resolveNaturalDate(input)
+    const provided = parsed.params?.due_date as string | undefined
+    const providedDate = provided ? new Date(provided) : null
+    const now = new Date()
+    if ((!provided || (providedDate && providedDate < now)) && resolved) {
+      parsed.params = { ...(parsed.params || {}), due_date: resolved.slice(0, 10) }
+    }
+    const prio = /\burgent(e)?\b|\balta\b|\bprioridade alta\b/i.test(input)
+      ? "high"
+      : /\bbaixa\b|\bprioridade baixa\b/i.test(input)
+      ? "low"
+      : undefined
+    if (prio) parsed.params = { ...(parsed.params || {}), importance: prio }
+  }
+
   // Ajuste de data natural para despesas: transaction_date e opcional due_date
   if (parsed.intent === "record_expense") {
     const resolvedTrx = resolveNaturalDate(input)

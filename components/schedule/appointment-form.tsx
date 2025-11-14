@@ -140,13 +140,20 @@ export function AppointmentForm({ clients, services, appointment }: AppointmentF
                 <SelectValue placeholder="Selecione um serviço (opcional)" />
               </SelectTrigger>
               <SelectContent>
-                {services.map((service) => (
-                  <SelectItem key={service.id} value={service.id}>
-                    {service.name}
-                  </SelectItem>
-                ))}
+                {services.length > 0 ? (
+                  services.map((service) => (
+                    <SelectItem key={service.id} value={service.id}>
+                      {service.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <div className="px-2 py-1 text-sm text-muted-foreground">Nenhum serviço cadastrado</div>
+                )}
               </SelectContent>
             </Select>
+            {services.length === 0 && (
+              <div className="text-xs text-muted-foreground">Cadastre um serviço em <a href="/dashboard/services/new" className="text-primary hover:underline">Serviços</a></div>
+            )}
           </div>
 
           <div className="grid grid-cols-2 gap-4">
