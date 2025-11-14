@@ -131,6 +131,29 @@ export async function runAssistant(userId: string, input: string, mode: "dry" | 
     if (prio) parsed.params = { ...(parsed.params || {}), importance: prio }
   }
 
+  if (parsed.intent === "generate_monthly_task") {
+    const now = new Date()
+    const cyc = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+    if (!parsed.params?.cycle) {
+      parsed.params = { ...(parsed.params || {}), cycle: cyc }
+    }
+  }
+
+  if (parsed.intent === "close_monthly_execution") {
+    const incomeCues = [/\breceita\b/i, /\brecebimento\b/i, /\bvenda\b/i, /\bcomiss[aã]o\b/i, /\brecebi\b/i, /\bpago\b/i, /\bpix\b/i, /\bem dinheiro\b/i]
+    if (incomeCues.some((r) => r.test(input))) {
+      parsed.params = { ...(parsed.params || {}), status: "paid" }
+      delete (parsed.params as any).due_date
+    }
+    const resolvedDue = resolveNaturalDate(input)
+    const provided = parsed.params?.due_date as string | undefined
+    const providedDate = provided ? new Date(provided) : null
+    const now = new Date()
+    if ((!provided || (providedDate && providedDate < now)) && resolvedDue) {
+      parsed.params = { ...(parsed.params || {}), due_date: resolvedDue.slice(0, 10) }
+    }
+  }
+
   // Ajuste de data natural para despesas: transaction_date e opcional due_date
   if (parsed.intent === "record_expense") {
     const resolvedTrx = resolveNaturalDate(input)

@@ -2,7 +2,7 @@ export const agentSystemPrompt = `Você é o Assistente Groq do Verde Vivo. Sua 
 
 Responda SEMPRE em JSON válido com esta estrutura:
 {
-  "intent": "one_of[create_client|schedule_visit|create_budget|update_budget_status|update_stock|approve_budget_and_record_income|record_service_income|record_income|record_expense|record_partner_commission|create_note|create_task|none]",
+  "intent": "one_of[create_client|schedule_visit|create_budget|update_budget_status|update_stock|approve_budget_and_record_income|record_service_income|record_income|record_expense|record_partner_commission|create_note|create_task|create_maintenance_plan|generate_monthly_task|close_monthly_execution|none]",
   "params": { /* campos necessários para a ação */ },
   "reply": "mensagem amigável para o usuário"
 }
@@ -27,9 +27,12 @@ Regras:
   record_partner_commission: { partner_name: string, percent?: number, amount?: number, movement_id?: string, credit_type?: "cash|insumos", description?: string }
   create_note: { title?: string, content: string, importance?: "low|medium|high", tags?: string[], client_name?: string, appointment_id?: string }
   create_task: { title?: string, description?: string, importance?: "low|medium|high", tags?: string[], due_date?: string (date), client_name?: string, status?: "open|in_progress|done" }
+  create_maintenance_plan: { client_name?: string, client_id?: string, service_name?: string, title: string, default_labor_cost?: number, materials_markup_pct?: number, preferred_weekday?: number (0..6), preferred_week_of_month?: number (1..4), window_days?: number, billing_day?: number, status?: "active|paused" }
+  generate_monthly_task: { plan_id?: string, client_name?: string, cycle?: string }
+  close_monthly_execution: { plan_id?: string, execution_id?: string, client_name?: string, title?: string, description?: string, labor_cost?: number, materials_total?: number, status?: "paid|pending", due_date?: string (date) }
 `
 
-export type AgentIntent = "create_client" | "schedule_visit" | "create_budget" | "update_budget_status" | "update_stock" | "approve_budget_and_record_income" | "record_service_income" | "record_income" | "record_expense" | "record_partner_commission" | "create_note" | "create_task" | "none"
+export type AgentIntent = "create_client" | "schedule_visit" | "create_budget" | "update_budget_status" | "update_stock" | "approve_budget_and_record_income" | "record_service_income" | "record_income" | "record_expense" | "record_partner_commission" | "create_note" | "create_task" | "create_maintenance_plan" | "generate_monthly_task" | "close_monthly_execution" | "none"
 
 export interface AgentResponse {
   intent: AgentIntent

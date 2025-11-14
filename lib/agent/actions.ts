@@ -653,3 +653,156 @@ export async function createTask(userId: string, params: any) {
   if (error) throw error
   return { ok: true, id: data?.id }
 }
+
+export async function createMaintenancePlan(userId: string, params: any) {
+  const supabase = await createSupabaseServer()
+  const { client_id, client_name, service_name, title, default_labor_cost = 0, materials_markup_pct = 0, preferred_weekday, preferred_week_of_month, window_days = 7, billing_day, status = "active" } = params || {}
+  if (!title) throw new Error("title é obrigatório")
+  const cid = client_id || (await findClientIdByName(supabase, userId, client_name))
+  if (!cid) throw new Error("Cliente não encontrado")
+  const sid = await findServiceIdByName(supabase, userId, service_name)
+  const { data, error } = await supabase
+    .from("maintenance_plans")
+    .insert([
+      {
+        gardener_id: userId,
+        client_id: cid,
+        service_id: sid ?? null,
+        title,
+        default_description: null,
+        default_labor_cost,
+        materials_markup_pct,
+        preferred_weekday: typeof preferred_weekday === "number" ? preferred_weekday : null,
+        preferred_week_of_month: typeof preferred_week_of_month === "number" ? preferred_week_of_month : null,
+        window_days,
+        billing_day: typeof billing_day === "number" ? billing_day : null,
+        status,
+      },
+    ])
+    .select("id")
+    .single()
+  if (error) throw error
+  return { ok: true, id: data?.id }
+}
+
+export async function generateMonthlyTask(userId: string, params: any) {
+  const supabase = await createSupabaseServer()
+  const { plan_id, client_name, cycle } = params || {}
+  let pid = plan_id as string | undefined
+  if (!pid && client_name) {
+    const { data: plan } = await supabase
+      .from("maintenance_plans")
+      .select("id")
+      .eq("gardener_id", userId)
+      .eq("status", "active")
+      .eq("client_id", await findClientIdByName(supabase, userId, client_name))
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    pid = plan?.id
+  }
+  if (!pid) throw new Error("Plano não encontrado")
+  const now = new Date()
+  const cyc = cycle || `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+  const { data: exists } = await supabase
+    .from("plan_executions")
+    .select("id, task_id")
+    .eq("plan_id", pid)
+    .eq("cycle", cyc)
+    .maybeSingle()
+  if (exists?.task_id) return { ok: true, existed: true, task_id: exists.task_id }
+  const { data: plan } = await supabase
+    .from("maintenance_plans")
+    .select("title, client_id, default_labor_cost")
+    .eq("id", pid)
+    .maybeSingle()
+  if (!plan) throw new Error("Plano inválido")
+  const { data: task, error: tErr } = await supabase
+    .from("tasks")
+    .insert([
+      {
+        gardener_id: userId,
+        title: `Manutenção mensal: ${plan.title}`,
+        description: null,
+        organized_description: null,
+        importance: "medium",
+        tags: ["manutenção", cyc],
+        status: "open",
+        due_date: null,
+      },
+    ])
+    .select("id")
+    .single()
+  if (tErr) throw tErr
+  const { error: eErr } = await supabase
+    .from("plan_executions")
+    .insert([{ plan_id: pid, cycle: cyc, task_id: task?.id, status: "open" }])
+  if (eErr) throw eErr
+  return { ok: true, task_id: task?.id }
+}
+
+export async function closeMonthlyExecution(userId: string, params: any) {
+  const supabase = await createSupabaseServer()
+  const { plan_id, execution_id, client_name, title, description, labor_cost, materials_total, status = "paid", due_date } = params || {}
+  let execId = execution_id as string | undefined
+  let pid = plan_id as string | undefined
+  if (!pid && client_name) {
+    const { data: plan } = await supabase
+      .from("maintenance_plans")
+      .select("id, client_id")
+      .eq("gardener_id", userId)
+      .eq("client_id", await findClientIdByName(supabase, userId, client_name))
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+    pid = plan?.id
+  }
+  if (!execId && pid) {
+    const now = new Date()
+    const cyc = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`
+    const { data: ex } = await supabase
+      .from("plan_executions")
+      .select("id")
+      .eq("plan_id", pid)
+      .eq("cycle", cyc)
+      .maybeSingle()
+    execId = ex?.id
+  }
+  if (!execId) throw new Error("Execução não encontrada")
+  const { data: plan } = await supabase
+    .from("maintenance_plans")
+    .select("client_id, title, default_labor_cost, materials_markup_pct")
+    .eq("id", pid!)
+    .maybeSingle()
+  if (!plan) throw new Error("Plano inválido")
+  const baseLabor = typeof labor_cost === "number" ? labor_cost : Number(plan.default_labor_cost || 0)
+  const mats = typeof materials_total === "number" ? materials_total : 0
+  const markup = Number(plan.materials_markup_pct || 0) / 100
+  const total = Number((baseLabor + mats * (1 + markup)).toFixed(2))
+  const today = new Date().toISOString().slice(0, 10)
+  const { data: trx, error: tErr } = await supabase
+    .from("financial_transactions")
+    .insert([
+      {
+        gardener_id: userId,
+        type: "income",
+        amount: total,
+        transaction_date: today,
+        description: title || `Mensalidade: ${plan.title}`,
+        category_id: null,
+        client_id: plan.client_id,
+        status,
+        due_date: status === "pending" ? (due_date || today) : null,
+        paid_at: status === "paid" ? new Date().toISOString() : null,
+      },
+    ])
+    .select("id")
+    .single()
+  if (tErr) throw tErr
+  const { error: uErr } = await supabase
+    .from("plan_executions")
+    .update({ status: "done", final_amount: total, transaction_id: trx?.id, notes: description || null })
+    .eq("id", execId)
+  if (uErr) throw uErr
+  return { ok: true, transaction_id: trx?.id }
+}

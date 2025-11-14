@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Home, Users, Calendar, FileText, BarChart3, Package, Bot, User as UserIcon, ChevronLeft, ChevronRight, StickyNote, ListTodo, Sprout } from "lucide-react"
+import { Home, Users, Calendar, FileText, BarChart3, Package, Bot, User as UserIcon, ChevronLeft, ChevronRight, StickyNote, ListTodo, Sprout, CalendarCheck } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
@@ -27,6 +27,7 @@ const sections: Array<{ title: string; items: { href: string; icon: any; label: 
       { href: "/dashboard/finance", icon: BarChart3, label: "Financeiro" },
       { href: "/dashboard/stock", icon: Package, label: "Estoque" },
       { href: "/dashboard/services", icon: Sprout, label: "Serviços" },
+      { href: "/dashboard/maintenance", icon: CalendarCheck, label: "Manutenções" },
       { href: "/dashboard/assistant", icon: Bot, label: "Assistente" },
     ],
   },
