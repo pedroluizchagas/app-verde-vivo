@@ -5,6 +5,7 @@
     "scheme": "iris",
     "version": "0.1.0",
     "orientation": "portrait",
+    "icon": "./assets/icons/Assets.xcassets/AppIcon.appiconset/1024.png",
     
     "updates": {
       "fallbackToCacheTimeout": 0
