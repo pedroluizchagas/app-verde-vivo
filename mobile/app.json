@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "Íris",
+    "slug": "iris",
+    "scheme": "iris",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "permissions": [],
+      "package": "com.iris.jardinagem",
+      "useNextNotificationsApi": true
+    },
+    "web": {
+      "bundler": "metro"
+    },
+    "plugins": [
+      "expo-notifications"
+    ]
+  }
+}

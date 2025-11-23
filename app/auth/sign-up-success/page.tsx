@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Mail, Leaf } from "lucide-react"
+import { Mail } from "lucide-react"
 import Link from "next/link"
 
 export default function SignUpSuccessPage() {
@@ -9,10 +9,7 @@ export default function SignUpSuccessPage() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
-              <Leaf className="h-8 w-8 text-primary-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold text-balance">VerdeVivo</h1>
+            <img src="/img/irislogo.png" alt="Íris" className="h-16 w-16 rounded-2xl" />
           </div>
 
           <Card>

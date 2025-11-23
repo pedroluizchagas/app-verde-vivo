@@ -10,7 +10,6 @@ import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Leaf } from "lucide-react"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -45,11 +44,8 @@ export default function LoginPage() {
       <div className="w-full max-w-sm">
         <div className="flex flex-col gap-6">
           <div className="flex flex-col items-center gap-2 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
-              <Leaf className="h-8 w-8 text-primary-foreground" />
-            </div>
-            <h1 className="text-2xl font-bold text-balance">VerdeVivo</h1>
-            <p className="text-sm text-muted-foreground text-balance">Gestão profissional de jardinagem</p>
+            <img src="/img/irislogo.png" alt="Íris" className="h-16 w-16 rounded-2xl" />
+            <p className="text-sm text-muted-foreground text-balance">Assistente inteligente de jardinagem</p>
           </div>
 
           <Card>

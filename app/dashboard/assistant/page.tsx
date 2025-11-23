@@ -102,7 +102,7 @@ export default function AssistantPage() {
     <div className="container mx-auto px-4 py-6 space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle>Assistente Groq</CardTitle>
+          <CardTitle>Assistente Íris</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="min-h-48 rounded-md border p-3 space-y-2">

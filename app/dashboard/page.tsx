@@ -176,7 +176,7 @@ export default async function DashboardPage() {
     <div id="dashboard-root" className="flex flex-col gap-8">
       <div className="relative flex flex-col gap-2">
         <h1 className="text-3xl font-bold tracking-tight">Olá, {profile?.full_name || "Jardineiro"}</h1>
-        <p className="text-sm text-muted-foreground">Bem-vindo ao VerdeVivo</p>
+        <p className="text-sm text-muted-foreground">Bem-vindo à Íris</p>
       </div>
 
       {/* Cards de topo removidos: a visão agora concentra-se no Resumo geral e nas listas abaixo */}

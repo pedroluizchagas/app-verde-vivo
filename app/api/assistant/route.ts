@@ -6,8 +6,33 @@ import { validateIntent, executeIntent } from "@/lib/agent/registry"
 export const runtime = "nodejs"
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  // Try to authenticate via Authorization header (mobile) first
+  const authHeader = request.headers.get("authorization") || request.headers.get("Authorization") || ""
+  const bearer = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : null
+
+  let user: { id: string } | null = null
+  if (bearer) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    try {
+      const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        headers: { Authorization: `Bearer ${bearer}`, apikey: supabaseAnonKey },
+      })
+      if (res.ok) {
+        const data = await res.json()
+        if (data?.id) user = { id: String(data.id) }
+      }
+    } catch {}
+  }
+
+  // Fallback to cookie-based session (web)
+  if (!user) {
+    const supabase = await createClient()
+    const { data: { user: cookieUser } } = await supabase.auth.getUser()
+    if (cookieUser?.id) {
+      user = { id: String(cookieUser.id) }
+    }
+  }
   if (!user) {
     return NextResponse.json({ error: "not_authenticated" }, { status: 401 })
   }
@@ -23,9 +48,10 @@ export async function POST(request: Request) {
 
     if (contentType.includes("multipart/form-data")) {
       const form = await request.formData()
-      const file = form.get("audio") as File | null
-      const prompt = (form.get("text") as string) || ""
-      const m = form.get("mode") as string | null
+      const f: any = form as any
+      const file = f.get ? (f.get("audio") as File | null) : null
+      const prompt = f.get ? ((f.get("text") as string) || "") : ""
+      const m = f.get ? (f.get("mode") as string | null) : null
       if (m === "dry" || m === "execute") mode = m
       if (file) {
         const transcript = await transcribeAudio(file)

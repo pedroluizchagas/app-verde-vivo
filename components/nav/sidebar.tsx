@@ -89,8 +89,8 @@ export function Sidebar({ profile }: { profile?: { full_name: string | null; ava
            aria-label="Barra lateral">
         {!collapsed && (
           <div>
-            <p className="text-sm leading-tight">VerdeVivo</p>
-            <p className="text-xs text-muted-foreground">Gestão de Jardinagem</p>
+            <p className="text-sm leading-tight">Íris</p>
+            <p className="text-xs text-muted-foreground">Assistente de Jardinagem</p>
           </div>
         )}
         <div className={cn("ml-auto", collapsed ? "hidden" : "block")}> 
@@ -156,7 +156,7 @@ export function Sidebar({ profile }: { profile?: { full_name: string | null; ava
           {!collapsed && (
             <div className="flex-1">
               <p className="text-xs font-medium leading-tight">{userName || "Usuário"}</p>
-              <p className="text-[11px] text-muted-foreground">© {new Date().getFullYear()} VerdeVivo</p>
+              <p className="text-[11px] text-muted-foreground">© {new Date().getFullYear()} Íris</p>
             </div>
           )}
           {!collapsed && (

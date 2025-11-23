@@ -149,6 +149,14 @@
   }
 }
 
+@font-face {
+  font-family: "Specify Personal Expanded";
+  src: url("/fonts/SpecifyPERSONAL-ExpBold.ttf") format("truetype");
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+}
+
 * {
   border-color: var(--color-border);
 }
@@ -181,4 +189,19 @@ body {
   /* projeção para frente (direita), em direção ao ícone */
   filter: saturate(1.1) drop-shadow(14px 0 10px var(--color-primary));
   will-change: filter;
+}
+
+.iris-gradient-text {
+  background-image: linear-gradient(90deg, #0F8A41 0%, #22C55E 50%, #00FF4E 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.iris-gradient-btn {
+  background-image: linear-gradient(90deg, #0F8A41 0%, #22C55E 50%, #00FF4E 100%);
+}
+
+.iris-hero-font {
+  font-family: var(--font-iris), var(--font-poppins), system-ui, -apple-system, sans-serif;
 }

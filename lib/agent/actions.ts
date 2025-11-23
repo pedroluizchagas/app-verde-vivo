@@ -328,7 +328,9 @@ async function findOrCreateCategoryId(supabase: any, userId: string, name?: stri
 
 export async function recordServiceIncome(userId: string, params: any) {
   const supabase = await createSupabaseServer()
-  const { client_id, client_name, service_name, title = service_name || "Serviço", description, total_amount, due_date, status = "paid" } = params || {}
+  const { client_id, client_name, title, description, total_amount, due_date, status = "paid" } = params || {}
+  const service_name: string | undefined = params?.service_name
+  const finalTitle: string = title ?? (service_name || "Serviço")
   const cid = client_id || (await findClientIdByName(supabase, userId, client_name))
   if (!cid) throw new Error("Cliente não encontrado. Informe client_id ou client_name")
 
@@ -344,7 +346,7 @@ export async function recordServiceIncome(userId: string, params: any) {
         gardener_id: userId,
         client_id: cid,
         service_id: sid,
-        title,
+        title: finalTitle,
         description: description ?? null,
         scheduled_date,
         duration_minutes: 60,
