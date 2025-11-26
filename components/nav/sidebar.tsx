@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
-import { Home, Users, Calendar, FileText, BarChart3, Package, Bot, User as UserIcon, ChevronLeft, ChevronRight, StickyNote, ListTodo, Sprout, CalendarCheck } from "lucide-react"
+import { Home, Users, Calendar, FileText, BarChart3, Package, Bot, User as UserIcon, ChevronLeft, ChevronRight, StickyNote, ListTodo, Sprout, CalendarCheck, ClipboardList } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
 import { createClient } from "@/lib/supabase/client"
@@ -16,6 +16,7 @@ const sections: Array<{ title: string; items: { href: string; icon: any; label: 
       { href: "/dashboard", icon: Home, label: "Início" },
       { href: "/dashboard/clients", icon: Users, label: "Clientes" },
       { href: "/dashboard/schedule", icon: Calendar, label: "Agenda" },
+      { href: "/dashboard/work-orders", icon: ClipboardList, label: "Ordens de serviço" },
       { href: "/dashboard/budgets", icon: FileText, label: "Orçamentos" },
       { href: "/dashboard/notes", icon: StickyNote, label: "Notas" },
       { href: "/dashboard/tasks", icon: ListTodo, label: "Tarefas" },

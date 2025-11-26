@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Card, CardContent } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog"
 
 interface MovementFormProps {
   products: { id: string; name: string; unit: string; cost: number }[]
@@ -31,6 +32,22 @@ export function MovementForm({ products, appointments, defaultAppointmentId = nu
   const [description, setDescription] = useState<string>("")
 
   const selectedProduct = products.find((p) => p.id === productId)
+  const [openCalc, setOpenCalc] = useState(false)
+  const [lengthM, setLengthM] = useState<number>(0)
+  const [widthM, setWidthM] = useState<number>(0)
+  const [areasCount, setAreasCount] = useState<number>(1)
+  const [wastePct, setWastePct] = useState<number>(0)
+  const isAreaUnit = (() => {
+    const raw = String(selectedProduct?.unit || "").toLowerCase().trim()
+    const normalized = raw.replace(/\s+/g, "").replace(/²/g, "2")
+    return normalized === "m2"
+  })()
+  const computedQty = (() => {
+    const area = Number(lengthM) * Number(widthM) * Number(areasCount)
+    const factor = 1 + (Number(wastePct) > 0 ? Number(wastePct) / 100 : 0)
+    const qty = area * factor
+    return isFinite(qty) && qty > 0 ? qty : 0
+  })()
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -160,8 +177,13 @@ export function MovementForm({ products, appointments, defaultAppointmentId = nu
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <Label>Quantidade</Label>
+              <Label>Quantidade{selectedProduct?.unit ? ` (${selectedProduct.unit})` : ""}</Label>
               <Input type="number" step="0.001" min="0.001" value={quantity} onChange={(e) => setQuantity(Number(e.target.value))} />
+              {isAreaUnit && (
+                <div className="text-xs mt-2">
+                  <Button type="button" variant="outline" size="sm" onClick={() => setOpenCalc(true)}>Calcular área</Button>
+                </div>
+              )}
             </div>
             <div>
               <Label>Custo unitário (R$)</Label>
@@ -172,6 +194,39 @@ export function MovementForm({ products, appointments, defaultAppointmentId = nu
               <Input type="date" value={movementDate} onChange={(e) => setMovementDate(e.target.value)} />
             </div>
           </div>
+          <AlertDialog open={openCalc} onOpenChange={setOpenCalc}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Calcular área (m²)</AlertDialogTitle>
+                <AlertDialogDescription>Informe as medidas para calcular a quantidade automaticamente.</AlertDialogDescription>
+              </AlertDialogHeader>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <Label>Comprimento (m)</Label>
+                  <Input type="number" step="0.01" min="0" value={lengthM} onChange={(e) => setLengthM(Number(e.target.value))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Largura (m)</Label>
+                  <Input type="number" step="0.01" min="0" value={widthM} onChange={(e) => setWidthM(Number(e.target.value))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Áreas</Label>
+                  <Input type="number" min="1" value={areasCount} onChange={(e) => setAreasCount(Number(e.target.value))} />
+                </div>
+                <div className="space-y-1">
+                  <Label>Perda (%)</Label>
+                  <Input type="number" step="0.01" min="0" value={wastePct} onChange={(e) => setWastePct(Number(e.target.value))} />
+                </div>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                Quantidade calculada: <span className="font-medium">{new Intl.NumberFormat("pt-BR", { maximumFractionDigits: 3 }).format(computedQty)}</span>
+              </div>
+              <AlertDialogFooter>
+                <AlertDialogCancel onClick={() => setOpenCalc(false)}>Cancelar</AlertDialogCancel>
+                <AlertDialogAction onClick={() => { setQuantity(computedQty || 0); setOpenCalc(false) }}>Aplicar quantidade</AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
           <div>
             <Label>Vincular a serviço (opcional)</Label>
             <Select value={appointmentId || undefined} onValueChange={(v) => setAppointmentId(v === "none" ? null : v)}>

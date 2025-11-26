@@ -115,6 +115,9 @@ export default async function AppointmentDetailPage({
               <span className="sr-only">Editar</span>
             </Link>
           </Button>
+          <Button asChild variant="outline">
+            <Link href={`/dashboard/work-orders/new?appointment=${id}`}>Criar OS</Link>
+          </Button>
           <DeleteAppointmentButton appointmentId={id} appointmentTitle={appointment.title} />
         </div>
       </div>

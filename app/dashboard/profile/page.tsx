@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { AvatarUpload } from "@/components/profile/avatar-upload"
 import { LogoutButton } from "@/components/profile/logout-button"
 import { PreferencesForm } from "@/components/finance/preferences-form"
+import { BrandForm } from "@/components/profile/brand-form"
 import { User, LogOut, Settings } from "lucide-react"
 
 export default async function ProfilePage() {
@@ -74,6 +75,14 @@ export default async function ProfilePage() {
             </CardHeader>
             <CardContent>
               <PreferencesForm />
+            </CardContent>
+          </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>Empresa e marca d'água</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <BrandForm />
             </CardContent>
           </Card>
         </div>
