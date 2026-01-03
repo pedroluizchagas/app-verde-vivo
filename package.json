@@ -49,7 +49,7 @@
     "groq-sdk": "^0.34.0",
     "input-otp": "1.4.1",
     "lucide-react": "^0.454.0",
-    "next": "16.0.0",
+    "next": "16.1.1",
     "next-themes": "^0.4.6",
     "react": "19.2.0",
     "react-day-picker": "9.8.0",
@@ -66,7 +66,7 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3.2.0",
     "eslint": "^9.17.0",
-    "eslint-config-next": "16.0.0",
+    "eslint-config-next": "16.1.1",
     "@tailwindcss/postcss": "^4.1.9",
     "@types/node": "^22",
     "@types/react": "^19",
