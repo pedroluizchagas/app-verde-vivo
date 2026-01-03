@@ -8,8 +8,12 @@ interface Appointment {
   title: string
   description: string | null
   scheduled_date: string
+  end_date?: string | null
   duration_minutes: number
   status: string
+  type?: string
+  location?: string | null
+  all_day?: boolean
   client: {
     name: string
     phone: string
@@ -31,6 +35,14 @@ const statusLabels = {
   cancelled: "Cancelado",
 }
 
+const typeLabels: Record<string, string> = {
+  service: "Serviço",
+  technical_visit: "Visita técnica",
+  training: "Treinamento",
+  meeting: "Reunião",
+  other: "Outro",
+}
+
 export function AppointmentCard({ appointment }: { appointment: Appointment }) {
   const date = new Date(appointment.scheduled_date)
   const dateStr = date.toLocaleDateString("pt-BR", {
@@ -38,10 +50,9 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
     month: "short",
     year: "numeric",
   })
-  const timeStr = date.toLocaleTimeString("pt-BR", {
-    hour: "2-digit",
-    minute: "2-digit",
-  })
+  const timeStrStart = date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+  const end = appointment.end_date ? new Date(appointment.end_date) : null
+  const timeStrEnd = end ? end.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null
 
   return (
     <Link href={`/dashboard/schedule/${appointment.id}`}>
@@ -61,6 +72,11 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
             </div>
 
             <div className="flex flex-col gap-2 text-sm">
+              {appointment.type && (
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Badge variant="outline">{typeLabels[appointment.type] || "Compromisso"}</Badge>
+                </div>
+              )}
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Calendar className="h-4 w-4 shrink-0" />
                 <span>{dateStr}</span>
@@ -69,20 +85,20 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
               <div className="flex items-center gap-2 text-muted-foreground">
                 <Clock className="h-4 w-4 shrink-0" />
                 <span>
-                  {timeStr} ({appointment.duration_minutes} min)
+                  {appointment.all_day ? "Dia inteiro" : `${timeStrStart}${timeStrEnd ? ` – ${timeStrEnd}` : ""}`}
                 </span>
               </div>
 
-              {appointment.client && (
+              {(appointment.client || appointment.location) && (
                 <>
                   <div className="flex items-center gap-2 text-muted-foreground">
-                    <User className="h-4 w-4 shrink-0" />
-                    <span>{appointment.client.name}</span>
+                    {appointment.client && <User className="h-4 w-4 shrink-0" />}
+                    <span>{appointment.client ? appointment.client.name : ""}</span>
                   </div>
 
                   <div className="flex items-start gap-2 text-muted-foreground">
                     <MapPin className="h-4 w-4 shrink-0 mt-0.5" />
-                    <span className="line-clamp-1">{appointment.client.address}</span>
+                    <span className="line-clamp-1">{appointment.client ? appointment.client.address : (appointment.location || "")}</span>
                   </div>
                 </>
               )}

@@ -46,7 +46,7 @@ export function DeleteTaskButton({ taskId, taskTitle }: { taskId: string; taskTi
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir tarefa?</AlertDialogTitle>
           <AlertDialogDescription>
-            Tem certeza que deseja excluir "{taskTitle}"? Esta ação não pode ser desfeita.
+            Tem certeza que deseja excluir {`"${taskTitle}"`}? Esta ação não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

@@ -29,11 +29,22 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Check active sessions and sets the user
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+    let active = true
+
+    ;(async () => {
+      try {
+        const { data, error } = await supabase.auth.getSession()
+        if (!active) return
+        if (error) throw error
+        setUser(data.session?.user ?? null)
+      } catch {
+        if (!active) return
+        setUser(null)
+      } finally {
+        if (!active) return
+        setLoading(false)
+      }
+    })()
 
     // Listen for changes on auth state (logged in, signed out, etc.)
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -41,6 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     })
 
     return () => {
+      active = false
       authListener.subscription.unsubscribe()
     }
   }, [])

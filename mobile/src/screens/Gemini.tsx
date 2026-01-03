@@ -128,7 +128,7 @@ export function GeminiScreen({ navigation }: any) {
     const a = r.assets?.[0]
     if (!a?.base64 || !a.uri) return
     const mime = a.type === "image" ? (a.mimeType || "image/jpeg") : "image/jpeg"
-    setImages((prev) => [...prev, { uri: a.uri, base64: a.base64, mime }])
+    setImages((prev) => [...prev, { uri: a.uri, base64: a.base64!, mime }])
     setMoreOpen(false)
   }
 
@@ -143,7 +143,7 @@ export function GeminiScreen({ navigation }: any) {
     const a = r.assets?.[0]
     if (!a?.base64 || !a.uri) return
     const mime = a.type === "image" ? (a.mimeType || "image/jpeg") : "image/jpeg"
-    setImages((prev) => [...prev, { uri: a.uri, base64: a.base64, mime }])
+    setImages((prev) => [...prev, { uri: a.uri, base64: a.base64!, mime }])
     setMoreOpen(false)
   }
 
@@ -181,7 +181,7 @@ export function GeminiScreen({ navigation }: any) {
       const seconds = Math.max(1, Math.round((status.durationMillis || 0) / 1000))
       setPendingAudioSeconds(seconds)
       if (uri) {
-        const b64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 })
+        const b64 = await FileSystem.readAsStringAsync(uri, { encoding: 'base64' })
         setMessages((prev) => [...prev, { id: String(Date.now()), role: "user", content: `🎤 ${seconds}s` }])
         await sendAudioBase64(b64, "audio/m4a")
       }

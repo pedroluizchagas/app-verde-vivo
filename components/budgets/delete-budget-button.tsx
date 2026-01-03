@@ -56,7 +56,7 @@ export function DeleteBudgetButton({
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir orçamento?</AlertDialogTitle>
           <AlertDialogDescription>
-            Tem certeza que deseja excluir "{budgetTitle}"? Esta ação não pode ser desfeita.
+            Tem certeza que deseja excluir {`"${budgetTitle}"`}? Esta ação não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

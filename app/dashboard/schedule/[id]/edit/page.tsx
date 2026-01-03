@@ -30,12 +30,12 @@ export default async function EditAppointmentPage({
   // Get clients for the dropdown
   const { data: clients } = await supabase.from("clients").select("id, name").eq("gardener_id", user!.id).order("name")
 
-  // Get services for the dropdown
-  const { data: services } = await supabase
-    .from("services")
-    .select("id, name")
+  // Get service orders for linking
+  const { data: orders } = await supabase
+    .from("service_orders")
+    .select("id, title, status")
     .eq("gardener_id", user!.id)
-    .order("name")
+    .order("created_at", { ascending: false })
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -49,7 +49,7 @@ export default async function EditAppointmentPage({
         <h1 className="text-2xl font-bold">Editar agendamento</h1>
       </div>
 
-      <AppointmentForm clients={clients || []} services={services || []} appointment={appointment} />
+      <AppointmentForm clients={clients || []} orders={(orders || []).map((o: any) => ({ id: String(o.id), title: String(o.title || "OS") }))} appointment={appointment} />
     </div>
   )
 }

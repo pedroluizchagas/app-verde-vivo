@@ -220,11 +220,10 @@ export async function transcribeAudio(file: File): Promise<string> {
 async function buildContext(userId: string): Promise<string> {
   const supabase = await createSupabaseServer()
   const clients = await supabase.from("clients").select("id, name").eq("gardener_id", userId).limit(20)
-  const services = await supabase.from("services").select("id, name").eq("gardener_id", userId).limit(20)
   const products = await supabase.from("products").select("id, name").eq("gardener_id", userId).limit(20)
 
   const serialize = (label: string, arr?: any[]) => `${label}: ` + (arr || []).map((x) => `${x.name} (${x.id})`).join(", ")
-  return [serialize("Clientes", clients.data || []), serialize("Serviços", services.data || []), serialize("Produtos", products.data || [])].join("\n")
+  return [serialize("Clientes", clients.data || []), serialize("Produtos", products.data || [])].join("\n")
 }
 
 async function getUserPreferences(userId: string): Promise<{ credit_card_due_day?: number | null; default_pending_days?: number | null } | null> {

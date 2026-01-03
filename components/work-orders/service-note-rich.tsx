@@ -4,11 +4,13 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Share2, FileText, Image as ImageIcon, Download } from "lucide-react"
 
+const NOW_MS = Date.now()
+
 export function WorkOrderServiceNoteRich({ order, items, companyName, watermarkBase64 }: { order: any; items: any[]; companyName?: string; watermarkBase64?: string }) {
   const selectorId = "work-order-service-note"
   const currency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
   const dateStr = (() => {
-    const d = order?.appointment?.scheduled_date ? new Date(order.appointment.scheduled_date) : new Date(order?.created_at || Date.now())
+    const d = order?.appointment?.scheduled_date ? new Date(order.appointment.scheduled_date) : new Date(order?.created_at || NOW_MS)
     return d.toLocaleString("pt-BR", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })
   })()
   const totals = (() => {

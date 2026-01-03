@@ -81,18 +81,21 @@ export function useOfflineSync<T>(
     }
   }, [key, checkConnection, syncData, cacheAge])
 
-  const createOffline = useCallback(async (table: string, data: any) => {
+  const createOffline = useCallback(async (table: string, newItem: any) => {
     try {
       // Add to sync queue for later sync
       await OfflineSyncService.addToSyncQueue({
         table,
         action: "create",
-        data,
+        data: newItem,
       })
       
       // Optimistically update local data
-      const newData = Array.isArray(data) ? [...(data as any[]), data] : data
-      setData(newData as T)
+      setData((prev) => {
+        return Array.isArray(prev)
+          ? ([...(prev as any[]), newItem] as any)
+          : (newItem as any)
+      })
       
       // Try to sync immediately if online
       if (isOnline) {
@@ -104,22 +107,25 @@ export function useOfflineSync<T>(
     }
   }, [isOnline, syncData])
 
-  const updateOffline = useCallback(async (table: string, id: string, data: any) => {
+  const updateOffline = useCallback(async (table: string, id: string, patch: any) => {
     try {
       // Add to sync queue for later sync
       await OfflineSyncService.addToSyncQueue({
         table,
         action: "update",
-        data: { ...data, id },
+        data: { ...patch, id },
       })
       
       // Optimistically update local data
-      if (Array.isArray(data)) {
-        const updatedData = (data as any[]).map(item => 
-          item.id === id ? { ...item, ...data } : item
-        )
-        setData(updatedData as T)
-      }
+      setData((prev) => {
+        if (Array.isArray(prev)) {
+          const updated = (prev as any[]).map((item) =>
+            item.id === id ? { ...item, ...patch } : item
+          )
+          return updated as any
+        }
+        return prev as any
+      })
       
       // Try to sync immediately if online
       if (isOnline) {
@@ -141,10 +147,13 @@ export function useOfflineSync<T>(
       })
       
       // Optimistically update local data
-      if (Array.isArray(data)) {
-        const filteredData = (data as any[]).filter(item => item.id !== id)
-        setData(filteredData as T)
-      }
+      setData((prev) => {
+        if (Array.isArray(prev)) {
+          const filtered = (prev as any[]).filter((item) => item.id !== id)
+          return filtered as any
+        }
+        return prev as any
+      })
       
       // Try to sync immediately if online
       if (isOnline) {
@@ -154,7 +163,7 @@ export function useOfflineSync<T>(
       console.error("Error deleting offline:", err)
       throw err
     }
-  }, [isOnline, syncData, data])
+  }, [isOnline, syncData])
 
   useEffect(() => {
     loadData()

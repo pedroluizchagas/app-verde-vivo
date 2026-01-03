@@ -91,7 +91,7 @@ export function ChatGPTScreen({ navigation }: any) {
     const a = r.assets?.[0]
     if (!a?.base64 || !a.uri) return
     const mime = a.type === "image" ? (a.mimeType || "image/jpeg") : "image/jpeg"
-    setImages((prev) => [...prev, { uri: a.uri, base64: a.base64, mime }])
+    setImages((prev) => [...prev, { uri: a.uri, base64: a.base64!, mime }])
     setMoreOpen(false)
   }
 

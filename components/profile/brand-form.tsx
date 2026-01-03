@@ -81,7 +81,7 @@ export function BrandForm() {
             <Input value={companyName} onChange={(e) => setCompanyName(e.target.value)} placeholder="Ex.: VerdeVivo Jardinagem" />
           </div>
           <div className="grid gap-2">
-            <Label>Marca d'água (imagem)</Label>
+            <Label>{"Marca d'água (imagem)"}</Label>
             <Input type="file" accept="image/*" onChange={handleFileChange} />
             {previewUrl && (
               <div className="relative">

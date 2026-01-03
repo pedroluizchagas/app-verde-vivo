@@ -452,7 +452,7 @@ export function HomeScreen() {
         id: String(a.id),
         type: "appointment",
         title: "Lembrete de agendamento",
-        subtitle: `${a.title || "Serviço"} — ${Array.isArray(a.client) ? (a.client[0]?.name ?? "Cliente") : (a.client?.name ?? "Cliente")}`,
+        subtitle: `${a.title || "Atendimento"} — ${Array.isArray(a.client) ? (a.client[0]?.name ?? "Cliente") : (a.client?.name ?? "Cliente")}`,
         icon: "calendar-outline",
         color: "#22c55e",
         date: new Date(String(a.scheduled_date)).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
@@ -604,7 +604,7 @@ export function HomeScreen() {
         </View>
         <View style={styles.kpiRow}>
           <KPICard title="Orçamentos" value={stats.budgets} />
-          <KPICard title="Serviços do dia" value={stats.todayServices} />
+          <KPICard title="Atendimentos do dia" value={stats.todayServices} />
         </View>
       </View>
 

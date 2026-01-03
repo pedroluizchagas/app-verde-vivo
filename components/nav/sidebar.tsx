@@ -2,11 +2,10 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useEffect, useState } from "react"
-import { Home, Users, Calendar, FileText, BarChart3, Package, Bot, User as UserIcon, ChevronLeft, ChevronRight, StickyNote, ListTodo, Sprout, CalendarCheck, ClipboardList } from "lucide-react"
+import { useState } from "react"
+import { Home, Users, Calendar, FileText, BarChart3, Package, Bot, User as UserIcon, ChevronLeft, ChevronRight, StickyNote, ListTodo, CalendarCheck, ClipboardList } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { createClient } from "@/lib/supabase/client"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 const sections: Array<{ title: string; items: { href: string; icon: any; label: string }[] }> = [
@@ -27,7 +26,6 @@ const sections: Array<{ title: string; items: { href: string; icon: any; label: 
     items: [
       { href: "/dashboard/finance", icon: BarChart3, label: "Financeiro" },
       { href: "/dashboard/stock", icon: Package, label: "Estoque" },
-      { href: "/dashboard/services", icon: Sprout, label: "Serviços" },
       { href: "/dashboard/maintenance", icon: CalendarCheck, label: "Manutenções" },
       { href: "/dashboard/assistant", icon: Bot, label: "Assistente" },
     ],
@@ -42,37 +40,12 @@ const sections: Array<{ title: string; items: { href: string; icon: any; label: 
 
 export function Sidebar({ profile }: { profile?: { full_name: string | null; avatar_url: string | null } }) {
   const pathname = usePathname()
-  const [collapsed, setCollapsed] = useState(false)
-  const [userName, setUserName] = useState<string | null>(profile?.full_name ?? null)
-  const [avatarUrl, setAvatarUrl] = useState<string | null>(profile?.avatar_url ?? null)
-
-  useEffect(() => {
-    const raw = localStorage.getItem("sidebar.collapsed")
-    setCollapsed(raw === "true")
-  }, [])
-
-  useEffect(() => {
-    if (profile) {
-      setUserName(profile.full_name ?? null)
-      setAvatarUrl(profile.avatar_url ?? null)
-      return
-    }
-    // Fallback fetch on client if no profile was provided from server
-    const supabase = createClient()
-    ;(async () => {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        const { data } = await supabase
-          .from("profiles")
-          .select("full_name, avatar_url")
-          .eq("id", user.id)
-          .maybeSingle()
-        setUserName(data?.full_name ?? null)
-        setAvatarUrl(data?.avatar_url ?? null)
-      } catch {}
-    })()
-  }, [profile])
+  const [collapsed, setCollapsed] = useState(() => {
+    if (typeof window === "undefined") return false
+    try { return localStorage.getItem("sidebar.collapsed") === "true" } catch { return false }
+  })
+  const userName = profile?.full_name ?? null
+  const avatarUrl = profile?.avatar_url ?? null
 
   const toggle = () => {
     const next = !collapsed

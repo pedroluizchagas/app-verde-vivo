@@ -14,10 +14,14 @@ export default async function EditWorkOrderPage({ params }: { params: Promise<{ 
     .eq("gardener_id", user!.id)
     .eq("id", id)
     .maybeSingle()
-  const { data: items } = await supabase
+  const { data: itemsRaw } = await supabase
     .from("service_order_items")
     .select("id, product_id, quantity, unit_cost, unit_price, unit, product:products(name, unit)")
     .eq("order_id", id)
+  const items = (itemsRaw || []).map((it: any) => ({
+    ...it,
+    product: Array.isArray(it.product) ? it.product[0] : it.product,
+  }))
   const { data: clients } = await supabase.from("clients").select("id, name").eq("gardener_id", user!.id).order("name")
   const { data: appointments } = await supabase.from("appointments").select("id, title").eq("gardener_id", user!.id).order("scheduled_date", { ascending: false }).limit(50)
   const { data: products } = await supabase.from("products").select("id, name, unit, cost").eq("gardener_id", user!.id).order("name")

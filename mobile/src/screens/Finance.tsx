@@ -32,12 +32,6 @@ interface PartnerCredit {
   created_at: string
 }
 
-interface ServiceMetric {
-  name: string
-  count: number
-  totalAmount: number
-}
-
 interface ExpenseCategoryTotal {
   name: string
   total: number
@@ -66,7 +60,6 @@ export function FinanceScreen({ navigation }: any) {
   const [statusFilter, setStatusFilter] = useState<"all" | "paid" | "pending">("all")
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState<"all" | "income" | "expense">("all")
-  const [serviceMetrics, setServiceMetrics] = useState<ServiceMetric[]>([])
   const [expenseCategories, setExpenseCategories] = useState<ExpenseCategoryTotal[]>([])
 
   const today = new Date()
@@ -134,15 +127,6 @@ export function FinanceScreen({ navigation }: any) {
         .order("created_at", { ascending: false })
         .limit(5)
 
-      const ninetyDaysAgo = new Date()
-      ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90)
-      const { data: appointmentsData } = await supabase
-        .from("appointments")
-        .select(`id, scheduled_date, status, service:services(id, name, default_price)`) 
-        .eq("gardener_id", user.id)
-        .gte("scheduled_date", ninetyDaysAgo.toISOString())
-        .order("scheduled_date", { ascending: false })
-
       setMonthTransactions(monthData || [])
       setTransactions(monthData || [])
       setFilteredTransactions(monthData || [])
@@ -160,21 +144,6 @@ export function FinanceScreen({ navigation }: any) {
         .sort((a, b) => b.total - a.total)
         .slice(0, 3)
       setExpenseCategories(expenseList)
-
-      const svcTotals: Record<string, { count: number; totalAmount: number }> = {};
-      (appointmentsData || []).forEach(a => {
-        const srv = Array.isArray((a as any).service) ? (a as any).service[0] : (a as any).service
-        const name = srv?.name || "Serviço"
-        const price = Number(srv?.default_price || 0)
-        if (!svcTotals[name]) svcTotals[name] = { count: 0, totalAmount: 0 }
-        svcTotals[name].count += 1
-        svcTotals[name].totalAmount += price
-      })
-      const svcList = Object.keys(svcTotals)
-        .map<ServiceMetric>(name => ({ name, count: svcTotals[name].count, totalAmount: svcTotals[name].totalAmount }))
-        .sort((a, b) => b.totalAmount - a.totalAmount)
-        .slice(0, 3)
-      setServiceMetrics(svcList)
     } catch (error) {
       console.error("Error loading financial data:", error)
     } finally {
@@ -280,7 +249,7 @@ export function FinanceScreen({ navigation }: any) {
           <TouchableOpacity onPress={() => navigation.navigate("TransactionForm")} style={styles.headerIcon}>
             <Ionicons name="add" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon}>
+          <TouchableOpacity onPress={() => navigation.navigate("FinanceCategories")} style={styles.headerIcon} accessibilityRole="button" accessibilityLabel="Gerenciar categorias">
             <Ionicons name="settings-outline" size={24} color={colors.textPrimary} />
           </TouchableOpacity>
         </View>
@@ -352,32 +321,6 @@ export function FinanceScreen({ navigation }: any) {
                   <View style={styles.barBackground}>
                     <View style={[styles.barFillRed, { width: `${Math.max(5, Math.round((cat.total / Math.max(expenseCategories[0]?.total || 1, 1)) * 100))}%` }]} />
                   </View>
-                </View>
-              ))
-            )}
-          </CardContent>
-        </Card>
-      </View>
-
-      <View style={styles.section}>
-        <Card style={styles.cardDark}>
-          <CardHeader>
-            <CardTitle>Métricas de Serviços Prestados</CardTitle>
-          </CardHeader>
-          <CardContent>
-            {serviceMetrics.length === 0 ? (
-              <Text style={styles.listItemSubtitle}>Sem serviços no período</Text>
-            ) : (
-              serviceMetrics.map((svc) => (
-                <View key={svc.name} style={styles.listItem}>
-                  <View style={styles.listItemContent}>
-                    <Ionicons name="leaf-outline" size={20} color="#22c55e" />
-                    <View style={styles.listItemInfo}>
-                      <Text style={styles.listItemTitle}>{svc.name}</Text>
-                      <Text style={styles.listItemSubtitle}>{svc.count} serviços</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.budgetValue}>{currency(svc.totalAmount)}</Text>
                 </View>
               ))
             )}

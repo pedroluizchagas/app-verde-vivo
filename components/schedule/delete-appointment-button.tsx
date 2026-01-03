@@ -56,7 +56,7 @@ export function DeleteAppointmentButton({
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir agendamento?</AlertDialogTitle>
           <AlertDialogDescription>
-            Tem certeza que deseja excluir "{appointmentTitle}"? Esta ação não pode ser desfeita.
+            Tem certeza que deseja excluir {`"${appointmentTitle}"`}? Esta ação não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

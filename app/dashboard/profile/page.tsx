@@ -79,7 +79,7 @@ export default async function ProfilePage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Empresa e marca d'água</CardTitle>
+              <CardTitle>{"Empresa e marca d'água"}</CardTitle>
             </CardHeader>
             <CardContent>
               <BrandForm />

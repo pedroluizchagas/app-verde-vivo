@@ -46,7 +46,7 @@ export function DeleteNoteButton({ noteId, noteTitle }: { noteId: string; noteTi
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir nota?</AlertDialogTitle>
           <AlertDialogDescription>
-            Tem certeza que deseja excluir "{noteTitle}"? Esta ação não pode ser desfeita.
+            Tem certeza que deseja excluir {`"${noteTitle}"`}? Esta ação não pode ser desfeita.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>

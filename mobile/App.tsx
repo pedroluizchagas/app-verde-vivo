@@ -16,17 +16,22 @@ import { ScheduleScreen } from "./src/screens/Schedule"
 import { AppointmentForm } from "./src/screens/AppointmentForm"
 import TasksScreen from "./src/screens/Tasks"
 import NotesScreen from "./src/screens/Notes"
+import { NoteForm } from "./src/screens/NoteForm"
 import BudgetsScreen from "./src/screens/Budgets"
 import { BudgetForm } from "./src/screens/BudgetForm"
 import { FinanceScreen } from "./src/screens/Finance"
 import { TransactionForm } from "./src/screens/TransactionForm"
+import { FinanceCategoriesScreen } from "./src/screens/FinanceCategories"
 import { StockScreen } from "./src/screens/Stock"
 import { ProductForm } from "./src/screens/ProductForm"
 import { MovementForm } from "./src/screens/MovementForm"
-import { ServicesScreen } from "./src/screens/Services"
-import { ServiceForm } from "./src/screens/ServiceForm"
+import { WorkOrdersScreen } from "./src/screens/WorkOrders"
+import { WorkOrderForm } from "./src/screens/WorkOrderForm"
+import { WorkOrderDetailScreen } from "./src/screens/WorkOrderDetail"
+import { WorkOrderEditForm } from "./src/screens/WorkOrderEditForm"
 import { MaintenanceScreen } from "./src/screens/Maintenance"
 import { MaintenancePlanForm } from "./src/screens/MaintenancePlanForm"
+import { MaintenanceDetailScreen } from "./src/screens/MaintenanceDetail"
 import { TaskForm } from "./src/screens/TaskForm"
 import { AssistantScreen } from "./src/screens/Assistant"
 import { ChatGPTScreen } from "./src/screens/ChatGPT"
@@ -54,7 +59,7 @@ function MainTabNavigator() {
       <Tab.Screen name="Tarefas" component={TasksScreen} options={{ tabBarButton: () => null }} />
       <Tab.Screen name="Financeiro" component={FinanceScreen} options={{ tabBarButton: () => null }} />
       <Tab.Screen name="Estoque" component={StockScreen} options={{ tabBarButton: () => null }} />
-      <Tab.Screen name="Serviços" component={ServicesScreen} options={{ tabBarButton: () => null }} />
+      <Tab.Screen name="Ordens de serviço" component={WorkOrdersScreen} options={{ tabBarButton: () => null }} />
       <Tab.Screen name="Manutenções" component={MaintenanceScreen} options={{ tabBarButton: () => null }} />
       <Tab.Screen name="Assistente" component={AssistantScreen} options={{ tabBarButton: () => null }} />
       <Tab.Screen name="Perfil" component={ProfileScreen} options={{ tabBarButton: () => null }} />
@@ -83,12 +88,17 @@ function AppNavigator() {
             <Stack.Screen name="ClientForm" component={ClientForm} />
             <Stack.Screen name="AppointmentForm" component={AppointmentForm} />
             <Stack.Screen name="TransactionForm" component={TransactionForm} />
+            <Stack.Screen name="FinanceCategories" component={FinanceCategoriesScreen} />
             <Stack.Screen name="ProductForm" component={ProductForm} />
             <Stack.Screen name="MovementForm" component={MovementForm} />
             <Stack.Screen name="BudgetForm" component={BudgetForm} />
-            <Stack.Screen name="ServiceForm" component={ServiceForm} />
+            <Stack.Screen name="WorkOrderForm" component={WorkOrderForm} />
+            <Stack.Screen name="WorkOrderDetail" component={WorkOrderDetailScreen} />
+            <Stack.Screen name="WorkOrderEditForm" component={WorkOrderEditForm} />
             <Stack.Screen name="MaintenancePlanForm" component={MaintenancePlanForm} />
+            <Stack.Screen name="MaintenanceDetail" component={MaintenanceDetailScreen} />
             <Stack.Screen name="TaskForm" component={TaskForm} />
+            <Stack.Screen name="NoteForm" component={NoteForm} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
             <Stack.Screen name="ChatGPT" component={ChatGPTScreen} />
             <Stack.Screen name="Gemini" component={GeminiScreen} />
@@ -150,7 +160,7 @@ function MyTabBar({ state, navigation }: any) {
     { label: "Tarefas", icon: "checkbox-outline", route: "Tarefas" },
     { label: "Notas", icon: "book-outline", route: "Notas" },
     { label: "Estoque", icon: "cube-outline", route: "Estoque" },
-    { label: "Serviços", icon: "leaf-outline", route: "Serviços" },
+    { label: "Ordens de serviço", icon: "receipt-outline", route: "Ordens de serviço" },
     { label: "Manutenções", icon: "build-outline", route: "Manutenções" },
   ]
   return (

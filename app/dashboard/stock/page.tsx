@@ -57,6 +57,7 @@ export default async function StockPage() {
     .limit(1)
 
   const lastIn = (lastInList || [])[0]
+  const lastInProduct = Array.isArray(lastIn?.product) ? lastIn.product[0] : lastIn?.product
   const lastTotal = lastIn ? Number(lastIn.quantity) * Number(lastIn.unit_cost ?? 0) : 0
   const lastTotalRounded = Math.round(lastTotal * 100) / 100
   const lastDateISO = lastIn ? new Date(lastIn.movement_date).toISOString().slice(0, 10) : null
@@ -75,6 +76,11 @@ export default async function StockPage() {
       .limit(1)
     lastExpense = (expenseCandidates || [])[0] || null
   }
+
+  const recentMovementsNorm = (recentMovements || []).map((m: any) => ({
+    ...m,
+    product: Array.isArray(m.product) ? m.product[0] : m.product,
+  }))
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -166,8 +172,8 @@ export default async function StockPage() {
             <div className="grid gap-2">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-medium">{lastIn.product?.name}</p>
-                  <p className="text-xs text-muted-foreground">{number(Number(lastIn.quantity))} {lastIn.product?.unit} • Unitário: {currency(Number(lastIn.unit_cost))}</p>
+                  <p className="font-medium">{lastInProduct?.name}</p>
+                  <p className="text-xs text-muted-foreground">{number(Number(lastIn.quantity))} {lastInProduct?.unit} • Unitário: {currency(Number(lastIn.unit_cost))}</p>
                 </div>
                 <div className="text-right">
                   <p className="text-lg font-bold">{currency(lastTotal)}</p>
@@ -201,9 +207,9 @@ export default async function StockPage() {
           <TabsTrigger value="ins">Entradas</TabsTrigger>
         </TabsList>
         <TabsContent value="recent" className="mt-4">
-          {recentMovements && recentMovements.length > 0 ? (
+          {recentMovementsNorm && recentMovementsNorm.length > 0 ? (
             <div className="grid gap-2">
-              {recentMovements.map((m) => (
+              {recentMovementsNorm.map((m: any) => (
                 <div key={m.id} className="flex items-center justify-between rounded-md border p-3">
                   <div className="flex items-center gap-3">
                     {m.type === "in" ? (
@@ -230,9 +236,9 @@ export default async function StockPage() {
           )}
         </TabsContent>
         <TabsContent value="outs" className="mt-4">
-          {recentMovements && recentMovements.filter((m) => m.type === "out").length > 0 ? (
+          {recentMovementsNorm && recentMovementsNorm.filter((m: any) => m.type === "out").length > 0 ? (
             <div className="grid gap-2">
-              {recentMovements.filter((m) => m.type === "out").map((m) => (
+              {recentMovementsNorm.filter((m: any) => m.type === "out").map((m: any) => (
                 <div key={m.id} className="flex items-center justify-between rounded-md border p-3">
                   <div className="flex items-center gap-3">
                     <ArrowDownCircle className="h-5 w-5 text-red-600" />
@@ -252,9 +258,9 @@ export default async function StockPage() {
           )}
         </TabsContent>
         <TabsContent value="ins" className="mt-4">
-          {recentMovements && recentMovements.filter((m) => m.type === "in").length > 0 ? (
+          {recentMovementsNorm && recentMovementsNorm.filter((m: any) => m.type === "in").length > 0 ? (
             <div className="grid gap-2">
-              {recentMovements.filter((m) => m.type === "in").map((m) => (
+              {recentMovementsNorm.filter((m: any) => m.type === "in").map((m: any) => (
                 <div key={m.id} className="flex items-center justify-between rounded-md border p-3">
                   <div className="flex items-center gap-3">
                     <ArrowUpCircle className="h-5 w-5 text-emerald-600" />

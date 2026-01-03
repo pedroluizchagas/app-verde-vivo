@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,26 +14,60 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 
 interface AppointmentFormProps {
   clients: { id: string; name: string }[]
-  services: { id: string; name: string }[]
+  orders?: { id: string; title: string }[]
   appointment?: {
     id: string
     title: string
     description: string | null
     client_id: string
-    service_id: string | null
     scheduled_date: string
+    end_date?: string | null
     duration_minutes: number
     status: string
   }
 }
 
-export function AppointmentForm({ clients, services, appointment }: AppointmentFormProps) {
+export function AppointmentForm({ clients, orders, appointment }: AppointmentFormProps) {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [selectedClient, setSelectedClient] = useState(appointment?.client_id || "")
-  const [selectedService, setSelectedService] = useState(appointment?.service_id || "")
+  const [selectedOrder, setSelectedOrder] = useState("")
   const [status, setStatus] = useState(appointment?.status || "scheduled")
+  const [type, setType] = useState((appointment as any)?.type || "service")
+  const [location, setLocation] = useState((appointment as any)?.location || "")
+  const [allDay, setAllDay] = useState(Boolean((appointment as any)?.all_day) || false)
+
+  const searchParams = useSearchParams()
+  const planIdFromQuery = searchParams?.get("planId") || null
+  const titleFromQuery = searchParams?.get("title") || null
+  const dateFromQuery = searchParams?.get("date") || null
+  const startFromQuery = searchParams?.get("start") || null
+  const endFromQuery = searchParams?.get("end") || null
+  const allDayFromQuery = searchParams?.get("allDay") || null
+  if (!appointment && allDayFromQuery && !allDay) {
+    setAllDay(true)
+  }
+
+  useState(() => {
+    ;(async () => {
+      try {
+        if (!planIdFromQuery) return
+        const supabase = createClient()
+        const { data: plan } = await supabase
+          .from("maintenance_plans")
+          .select("client_id, client:clients(id, address)")
+          .eq("id", planIdFromQuery)
+          .maybeSingle()
+        const cid = Array.isArray((plan as any)?.client) ? ((plan as any)?.client[0]?.id ?? (plan as any)?.client_id ?? "") : ((plan as any)?.client_id ?? (plan as any)?.client?.id ?? "")
+        if (cid) setSelectedClient(String(cid))
+        const addr = Array.isArray((plan as any)?.client) ? ((plan as any)?.client[0]?.address ?? "") : ((plan as any)?.client?.address ?? "")
+        if (!location && addr) {
+          setLocation(String(addr))
+        }
+      } catch {}
+    })()
+  })
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
@@ -52,40 +86,42 @@ export function AppointmentForm({ clients, services, appointment }: AppointmentF
       return
     }
 
-    if (!selectedClient) {
-      setError("Selecione um cliente")
-      setIsLoading(false)
-      return
-    }
-
     const dateStr = formData.get("date") as string
-    const timeStr = formData.get("time") as string
-    const scheduledDate = new Date(`${dateStr}T${timeStr}`)
+    const startStr = formData.get("start_time") as string
+    const endStr = formData.get("end_time") as string
+    const startDate = new Date(`${dateStr}T${(allDay ? "00:00" : startStr) || "00:00"}`)
+    const endDate = new Date(`${dateStr}T${(allDay ? "23:59" : endStr) || "23:59"}`)
 
-    const appointmentData = {
+    const appointmentData: any = {
       title: formData.get("title") as string,
       description: (formData.get("description") as string) || null,
-      client_id: selectedClient,
-      service_id: selectedService || null,
-      scheduled_date: scheduledDate.toISOString(),
-      duration_minutes: Number.parseInt(formData.get("duration") as string),
+      client_id: selectedClient || null,
+      scheduled_date: startDate.toISOString(),
+      end_date: endDate.toISOString(),
+      duration_minutes: allDay ? 0 : Math.max(0, Math.round((endDate.getTime() - startDate.getTime()) / 60000)),
       status: status,
-      labor_cost: formData.get("labor_cost") ? Number(formData.get("labor_cost")) : 0,
+      type,
+      location: location || null,
+      all_day: allDay,
       gardener_id: user.id,
     }
 
     try {
+      let createdId = appointment?.id
       if (appointment) {
         const { error } = await supabase.from("appointments").update(appointmentData).eq("id", appointment.id)
-
         if (error) throw error
-        router.push(`/dashboard/schedule/${appointment.id}`)
       } else {
-        const { error } = await supabase.from("appointments").insert([appointmentData])
-
+        const { data: inserted, error } = await supabase.from("appointments").insert([appointmentData]).select("id").single()
         if (error) throw error
-        router.push("/dashboard/schedule")
+        createdId = inserted?.id
       }
+
+      if (selectedOrder && createdId) {
+        await supabase.from("service_orders").update({ appointment_id: createdId }).eq("id", selectedOrder)
+      }
+
+      router.push(appointment ? `/dashboard/schedule/${appointment.id}` : "/dashboard/schedule")
       router.refresh()
     } catch (error: unknown) {
       setError(error instanceof Error ? error.message : "Erro ao salvar agendamento")
@@ -96,14 +132,30 @@ export function AppointmentForm({ clients, services, appointment }: AppointmentF
 
   const defaultDate = appointment
     ? new Date(appointment.scheduled_date).toISOString().split("T")[0]
-    : new Date().toISOString().split("T")[0]
+    : (dateFromQuery || new Date().toISOString().split("T")[0])
 
-  const defaultTime = appointment ? new Date(appointment.scheduled_date).toTimeString().slice(0, 5) : "09:00"
+  const defaultStart = appointment ? new Date(appointment.scheduled_date).toTimeString().slice(0, 5) : (startFromQuery || "09:00")
+  const defaultEnd = appointment?.end_date ? new Date(appointment.end_date).toTimeString().slice(0, 5) : (endFromQuery || "10:00")
 
   return (
     <Card>
       <CardContent className="p-4">
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          <div className="grid gap-2">
+            <Label htmlFor="type">Tipo *</Label>
+            <Select value={type} onValueChange={setType} required>
+              <SelectTrigger className="h-11">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="service">Serviço</SelectItem>
+                <SelectItem value="technical_visit">Visita técnica</SelectItem>
+                <SelectItem value="training">Treinamento</SelectItem>
+                <SelectItem value="meeting">Reunião</SelectItem>
+                <SelectItem value="other">Outro</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="grid gap-2">
             <Label htmlFor="title">Título *</Label>
             <Input
@@ -112,18 +164,19 @@ export function AppointmentForm({ clients, services, appointment }: AppointmentF
               type="text"
               placeholder="Manutenção do jardim"
               required
-              defaultValue={appointment?.title}
+              defaultValue={appointment?.title ?? titleFromQuery ?? undefined}
               className="h-11"
             />
           </div>
 
           <div className="grid gap-2">
-            <Label htmlFor="client">Cliente *</Label>
-            <Select value={selectedClient} onValueChange={setSelectedClient} required>
+            <Label htmlFor="client">Cliente</Label>
+            <Select value={selectedClient} onValueChange={(v) => setSelectedClient(v === "none" ? "" : v)}>
               <SelectTrigger className="h-11">
                 <SelectValue placeholder="Selecione um cliente" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="none">Sem cliente</SelectItem>
                 {clients.map((client) => (
                   <SelectItem key={client.id} value={client.id}>
                     {client.name}
@@ -133,55 +186,57 @@ export function AppointmentForm({ clients, services, appointment }: AppointmentF
             </Select>
           </div>
 
+          {Array.isArray(orders) && (
+            <div className="grid gap-2">
+              <Label htmlFor="order">Ordem de serviço</Label>
+              <Select value={selectedOrder} onValueChange={(v) => setSelectedOrder(v === "none" ? "" : v)}>
+                <SelectTrigger className="h-11">
+                  <SelectValue placeholder="Selecione uma OS (opcional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Sem OS</SelectItem>
+                  {orders.map((o) => (
+                    <SelectItem key={o.id} value={o.id}>{o.title}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
           <div className="grid gap-2">
-            <Label htmlFor="service">Serviço</Label>
-            <Select value={selectedService} onValueChange={setSelectedService}>
-              <SelectTrigger className="h-11">
-                <SelectValue placeholder="Selecione um serviço (opcional)" />
-              </SelectTrigger>
-              <SelectContent>
-                {services.length > 0 ? (
-                  services.map((service) => (
-                    <SelectItem key={service.id} value={service.id}>
-                      {service.name}
-                    </SelectItem>
-                  ))
-                ) : (
-                  <div className="px-2 py-1 text-sm text-muted-foreground">Nenhum serviço cadastrado</div>
-                )}
-              </SelectContent>
-            </Select>
-            {services.length === 0 && (
-              <div className="text-xs text-muted-foreground">Cadastre um serviço em <a href="/dashboard/services/new" className="text-primary hover:underline">Serviços</a></div>
-            )}
+            <Label htmlFor="location">Local</Label>
+            <Input
+              id="location"
+              name="location"
+              type="text"
+              placeholder={selectedClient ? "Endereço do cliente (padrão)" : "Local do compromisso"}
+              value={location}
+              onChange={(e) => setLocation(e.target.value)}
+              className="h-11"
+            />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-3 gap-4">
             <div className="grid gap-2">
               <Label htmlFor="date">Data *</Label>
               <Input id="date" name="date" type="date" required defaultValue={defaultDate} className="h-11" />
             </div>
-
             <div className="grid gap-2">
-              <Label htmlFor="time">Hora *</Label>
-              <Input id="time" name="time" type="time" required defaultValue={defaultTime} className="h-11" />
+              <Label htmlFor="start_time">Início *</Label>
+              <Input id="start_time" name="start_time" type="time" required={!allDay} defaultValue={defaultStart} disabled={allDay} className="h-11" />
+            </div>
+            <div className="grid gap-2">
+              <Label htmlFor="end_time">Término *</Label>
+              <Input id="end_time" name="end_time" type="time" required={!allDay} defaultValue={defaultEnd} disabled={allDay} className="h-11" />
             </div>
           </div>
 
-          <div className="grid gap-2">
-            <Label htmlFor="duration">Duração (minutos) *</Label>
-            <Input
-              id="duration"
-              name="duration"
-              type="number"
-              min="15"
-              step="15"
-              placeholder="60"
-              required
-              defaultValue={appointment?.duration_minutes || 60}
-              className="h-11"
-            />
+          <div className="flex items-center gap-2">
+            <input id="all_day" name="all_day" type="checkbox" checked={allDay} onChange={(e) => setAllDay(e.target.checked)} />
+            <Label htmlFor="all_day">Dia inteiro</Label>
           </div>
+
+          
 
           {appointment && (
             <div className="grid gap-2">
@@ -200,19 +255,7 @@ export function AppointmentForm({ clients, services, appointment }: AppointmentF
             </div>
           )}
 
-          <div className="grid gap-2">
-            <Label htmlFor="labor_cost">Mão de obra (R$)</Label>
-            <Input
-              id="labor_cost"
-              name="labor_cost"
-              type="number"
-              step="0.01"
-              min="0"
-              placeholder="0,00"
-              defaultValue={typeof (appointment as any)?.labor_cost === "number" ? (appointment as any).labor_cost : 0}
-              className="h-11"
-            />
-          </div>
+          
 
           <div className="grid gap-2">
             <Label htmlFor="description">Descrição</Label>

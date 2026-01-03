@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert } from "react-native"
+import { useEffect, useState, useCallback } from "react"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, Modal } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { supabase } from "../supabase"
 import { Calendar } from "../components/Calendar"
@@ -11,11 +11,13 @@ import { format, parseISO, isSameDay } from "date-fns"
 import { ptBR } from "date-fns/locale"
 import { useTheme } from "../contexts/ThemeContext"
 import type { ThemeColors } from "../theme"
+import { useFocusEffect } from "@react-navigation/native"
 
 interface Appointment {
   id: string
   title: string
   scheduled_date: string
+  end_date?: string
   status: string
   client: {
     id: string
@@ -27,6 +29,7 @@ interface Appointment {
     name: string
   }
   description?: string
+  duration_minutes?: number
 }
 
 export function ScheduleScreen({ navigation }: any) {
@@ -41,10 +44,17 @@ export function ScheduleScreen({ navigation }: any) {
   const [viewMode, setViewMode] = useState<'calendar' | 'list'>('calendar')
   const { colors } = useTheme()
   const styles = createStyles(colors)
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null)
 
-  useEffect(() => {
-    loadAppointments()
-  }, [])
+  
+
+  useFocusEffect(
+    useCallback(() => {
+      loadAppointments()
+      return () => {}
+    }, [])
+  )
 
   useEffect(() => {
     filterAppointments()
@@ -61,8 +71,10 @@ export function ScheduleScreen({ navigation }: any) {
           id, 
           title, 
           scheduled_date, 
+          end_date,
           status, 
           description,
+          duration_minutes,
           client:clients(id, name, phone),
           service:services(id, name)
         `)
@@ -74,8 +86,10 @@ export function ScheduleScreen({ navigation }: any) {
         id: String(a.id),
         title: String(a.title || ''),
         scheduled_date: String(a.scheduled_date),
+        end_date: a.end_date ? String(a.end_date) : undefined,
         status: String(a.status),
         description: a.description ? String(a.description) : undefined,
+        duration_minutes: typeof a.duration_minutes === 'number' ? a.duration_minutes : undefined,
         client: Array.isArray(a.client) ? a.client[0] : a.client,
         service: Array.isArray(a.service) ? a.service[0] : a.service,
       }))
@@ -148,6 +162,60 @@ export function ScheduleScreen({ navigation }: any) {
     }
   }
 
+  const openOptions = (appointment: Appointment) => {
+    setSelectedAppointment(appointment)
+    setMenuOpen(true)
+  }
+
+  const editSelectedAppointment = () => {
+    if (!selectedAppointment) return
+    const a = selectedAppointment
+    const startTime = a.scheduled_date?.slice(11, 16)
+    const duration = (a as any).duration_minutes ?? 60
+    const start = a.scheduled_date ? new Date(a.scheduled_date) : new Date()
+    const endIso = a.end_date
+      ? a.end_date
+      : new Date(start.getTime() + duration * 60 * 1000).toISOString()
+    const payload: any = {
+      id: a.id,
+      title: a.title,
+      client_id: String((a as any)?.client?.id || ''),
+      scheduled_date: a.scheduled_date,
+      start_time: startTime || '09:00',
+      end_time: endIso.slice(11, 16),
+      status: a.status,
+      description: a.description || '',
+    }
+    setMenuOpen(false)
+    setSelectedAppointment(null)
+    ;(navigation as any).navigate('AppointmentForm', { appointment: payload })
+  }
+
+  const deleteSelectedAppointment = async () => {
+    if (!selectedAppointment) return
+    const toDelete = selectedAppointment
+    Alert.alert('Excluir agendamento', 'Deseja realmente excluir este agendamento?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Excluir',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            const { error } = await supabase.from('appointments').delete().eq('id', toDelete.id)
+            if (error) throw error
+            await loadAppointments()
+            Alert.alert('Sucesso', 'Agendamento excluído')
+          } catch (err: any) {
+            Alert.alert('Erro', err?.message || 'Falha ao excluir agendamento')
+          } finally {
+            setMenuOpen(false)
+            setSelectedAppointment(null)
+          }
+        },
+      },
+    ])
+  }
+
   const dailyAppointments = getAppointmentsForDate(selectedDate)
   const appointmentsByDate = getAppointmentsByDate()
 
@@ -208,7 +276,9 @@ export function ScheduleScreen({ navigation }: any) {
               const monthShort = format(dt, 'LLL', { locale: ptBR }).toUpperCase()
               const dayNum = format(dt, 'dd')
               const start = format(dt, 'HH:mm')
-              const end = format(new Date(dt.getTime() + 2 * 60 * 60 * 1000), 'HH:mm')
+              const duration = (appointment as any).duration_minutes ?? 120
+              const endDt = appointment.end_date ? parseISO(appointment.end_date) : new Date(dt.getTime() + duration * 60 * 1000)
+              const end = format(endDt, 'HH:mm')
               return (
                 <View key={appointment.id} style={styles.upcomingCard}>
                   <View style={styles.upcomingLeft}>
@@ -219,20 +289,49 @@ export function ScheduleScreen({ navigation }: any) {
                   <View style={styles.upcomingContent}>
                     <View style={styles.upcomingHeaderRow}>
                       <Text style={styles.upcomingTitle}>{appointment.title}</Text>
-                      <TouchableOpacity style={styles.optionsButton}>
-                        <Ionicons name="ellipsis-vertical" size={20} color="#9ca3af" />
-                      </TouchableOpacity>
                     </View>
                     <Text style={styles.upcomingClient}>Cliente: {appointment.client?.name || '---'}</Text>
                     <Text style={styles.upcomingTime}>{start} - {end}</Text>
                   </View>
-                </View>
+                  <TouchableOpacity style={styles.optionsButtonFloating} onPress={() => openOptions(appointment)}>
+                    <Ionicons name="ellipsis-vertical" size={20} color="#9ca3af" />
+                  </TouchableOpacity>
+                  </View>
               )
             })}
         </View>
       </View>
 
       <View style={{ height: 40 }} />
+      <Modal visible={menuOpen} transparent animationType="fade" onRequestClose={() => setMenuOpen(false)}>
+        <View style={{ flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' }}>
+          <View style={{ backgroundColor: colors.surfaceAlt, borderTopLeftRadius: 16, borderTopRightRadius: 16, paddingBottom: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingTop: 16, paddingBottom: 12 }}>
+              <Text style={{ fontSize: 18, fontWeight: '700', color: colors.textPrimary }}>Ações do agendamento</Text>
+              <TouchableOpacity onPress={() => setMenuOpen(false)} style={{ padding: 4 }}>
+                <Ionicons name="close" size={20} color={colors.textPrimary} />
+              </TouchableOpacity>
+            </View>
+            <View style={{ height: 1, backgroundColor: colors.divider }} />
+            <View style={{ paddingHorizontal: 20, paddingTop: 16 }}>
+              <View style={{ backgroundColor: colors.surface, borderRadius: 12, paddingVertical: 8 }}>
+                <TouchableOpacity onPress={editSelectedAppointment} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14, borderBottomWidth: 1, borderBottomColor: colors.border }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', columnGap: 8 }}>
+                    <Ionicons name="create-outline" size={18} color={colors.textSecondary} />
+                    <Text style={{ color: colors.textPrimary, fontSize: 16 }}>Editar</Text>
+                  </View>
+                </TouchableOpacity>
+                <TouchableOpacity onPress={deleteSelectedAppointment} style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 14 }}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', columnGap: 8 }}>
+                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                    <Text style={{ color: colors.danger, fontSize: 16 }}>Apagar</Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </ScrollView>
   )
 }
@@ -249,14 +348,15 @@ const createStyles = (c: ThemeColors) => StyleSheet.create({
   sectionTitle: { fontSize: 16, fontWeight: '600', color: c.textPrimary, marginTop: 24, marginBottom: 12, paddingHorizontal: 20 },
   appointmentsList: { paddingHorizontal: 20, gap: 14, paddingTop: 8 },
   upcomingSection: { marginTop: 24 },
-  upcomingCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 16, marginBottom: 14 },
+  upcomingCard: { flexDirection: 'row', alignItems: 'center', backgroundColor: c.surface, borderRadius: 14, borderWidth: 1, borderColor: c.border, padding: 16, marginBottom: 14, position: 'relative' },
   upcomingLeft: { width: 64, alignItems: 'center', justifyContent: 'center' },
   upcomingMonth: { fontSize: 12, fontWeight: '700', color: c.link },
   upcomingDay: { fontSize: 20, fontWeight: '700', color: c.textPrimary },
   upcomingSeparator: { width: 2, height: '72%', backgroundColor: c.link, borderRadius: 1, marginHorizontal: 14 },
-  upcomingContent: { flex: 1 },
+  upcomingContent: { flex: 1, paddingRight: 44 },
   upcomingHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  optionsButton: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', marginTop: 2 },
+  optionsButton: { width: 32, height: 32, alignItems: 'center', justifyContent: 'center', alignSelf: 'center' },
+  optionsButtonFloating: { position: 'absolute', right: 12, top: '50%', marginTop: -16, width: 32, height: 32, alignItems: 'center', justifyContent: 'center' },
   upcomingTitle: { fontSize: 16, fontWeight: '600', color: c.textPrimary, lineHeight: 20 },
   upcomingClient: { fontSize: 14, color: c.textSecondary, marginTop: 6 },
   upcomingTime: { fontSize: 12, color: c.textSecondary, marginTop: 6 },

@@ -6,7 +6,6 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icons/Assets.xcassets/AppIcon.appiconset/1024.png",
-    
     "updates": {
       "fallbackToCacheTimeout": 0
     },
@@ -27,7 +26,8 @@
       "bundler": "metro"
     },
     "plugins": [
-      "expo-notifications"
+      "expo-notifications",
+      "expo-audio"
     ]
   }
 }

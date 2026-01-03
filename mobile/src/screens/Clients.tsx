@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react"
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native"
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, Image } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { supabase } from "../supabase"
 import { Card, CardContent } from "../components/Card"
@@ -16,6 +16,7 @@ interface Client {
   email?: string
   phone?: string
   address?: string
+  avatar_url?: string | null
   created_at: string
 }
 
@@ -30,7 +31,7 @@ export function ClientsScreen({ navigation }: any) {
     if (!user) return []
     const { data, error } = await supabase
       .from("clients")
-      .select("id, name, email, phone, address, created_at")
+      .select("id, name, email, phone, address, avatar_url, created_at")
       .eq("gardener_id", user.id)
       .order("name")
     if (error) throw error
@@ -82,7 +83,11 @@ export function ClientsScreen({ navigation }: any) {
         <CardContent>
           <View style={styles.clientRow}>
             <View style={styles.avatar}>
-              <Ionicons name="person" size={20} color="#9ca3af" />
+              {item.avatar_url ? (
+                <Image source={{ uri: String(item.avatar_url) }} style={{ width: 40, height: 40, borderRadius: 20 }} />
+              ) : (
+                <Ionicons name="person" size={20} color="#9ca3af" />
+              )}
             </View>
             <View style={styles.clientCol}>
               <Text style={styles.clientName}>{item.name}</Text>
@@ -153,12 +158,7 @@ export function ClientsScreen({ navigation }: any) {
   return (
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: 16 + insets.top }]}>
-        <View style={styles.headerLeft}>
-          <TouchableOpacity onPress={() => (navigation.canGoBack() ? navigation.goBack() : navigation.navigate('Início'))}>
-            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-          </TouchableOpacity>
-          <Text style={styles.title}>Clientes</Text>
-        </View>
+        <Text style={styles.title}>Clientes</Text>
         <TouchableOpacity onPress={() => navigation.navigate("ClientForm")}>
           <Ionicons name="add" size={24} color={colors.textPrimary} />
         </TouchableOpacity>
@@ -232,7 +232,6 @@ const createStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: c.textPrimary,
-    marginLeft: 4,
   },
   offlineIndicator: {
     flexDirection: 'row',

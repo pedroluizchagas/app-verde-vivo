@@ -1,12 +1,11 @@
 import { createClient } from "@/lib/supabase/server"
 import { notFound, redirect } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { ArrowLeft, Edit, Calendar, Clock, User, MapPin, Phone, Package } from "lucide-react"
+import { ArrowLeft, Edit, Calendar, Clock, User, MapPin, Phone } from "lucide-react"
 import Link from "next/link"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { DeleteAppointmentButton } from "@/components/schedule/delete-appointment-button"
-import { ServiceNote } from "@/components/schedule/service-note"
 
 const statusColors = {
   scheduled: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
@@ -64,37 +63,14 @@ export default async function AppointmentDetailPage({
     hour: "2-digit",
     minute: "2-digit",
   })
+  const endTimeStr = (appointment as any)?.end_date ? new Date((appointment as any).end_date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null
 
-  // Materials used and cost per service (sum of product_movements linked to this appointment)
-  const { data: usedMaterials } = await supabase
-    .from("product_movements")
-    .select(`
-      id,
-      type,
-      quantity,
-      unit_cost,
-      product:products(name, unit, cost)
-    `)
+  const { data: order } = await supabase
+    .from("service_orders")
+    .select("id, title, status")
     .eq("gardener_id", user!.id)
     .eq("appointment_id", id)
-    .eq("type", "out")
-    .order("movement_date", { ascending: false })
-
-  const totalCost = (usedMaterials || []).reduce((sum, m: any) => sum + Number(m.quantity) * Number(m.unit_cost ?? m.product?.cost ?? 0), 0)
-  const laborCost = Number((appointment as any)?.labor_cost ?? 0)
-  // Load user margin preference
-  const { data: prefs } = await supabase
-    .from("user_preferences")
-    .select("default_product_margin_pct")
-    .eq("gardener_id", user!.id)
     .maybeSingle()
-  const marginPct = Number((prefs as any)?.default_product_margin_pct ?? 0)
-  const materialsPrice = (usedMaterials || []).reduce((sum, m: any) => {
-    const base = Number(m.unit_cost ?? m.product?.cost ?? 0)
-    return sum + Number(m.quantity) * base * (1 + (marginPct > 0 ? marginPct / 100 : 0))
-  }, 0)
-  const serviceTotal = laborCost + materialsPrice
-  const currency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
 
   return (
     <div className="flex flex-col gap-4 p-4">
@@ -115,9 +91,11 @@ export default async function AppointmentDetailPage({
               <span className="sr-only">Editar</span>
             </Link>
           </Button>
-          <Button asChild variant="outline">
-            <Link href={`/dashboard/work-orders/new?appointment=${id}`}>Criar OS</Link>
-          </Button>
+          {order && (
+            <Button asChild variant="outline">
+              <Link href={`/dashboard/work-orders/${order.id}`}>Ver OS</Link>
+            </Button>
+          )}
           <DeleteAppointmentButton appointmentId={id} appointmentTitle={appointment.title} />
         </div>
       </div>
@@ -132,6 +110,11 @@ export default async function AppointmentDetailPage({
           </div>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
+          {(appointment as any).type && (
+            <div className="flex items-center gap-3 text-sm">
+              <Badge variant="outline">{({ service: "Serviço", technical_visit: "Visita técnica", training: "Treinamento", meeting: "Reunião", other: "Outro" } as any)[(appointment as any).type] || "Compromisso"}</Badge>
+            </div>
+          )}
           <div className="flex items-center gap-3 text-sm">
             <Calendar className="h-4 w-4 text-muted-foreground" />
             <span className="capitalize">{dateStr}</span>
@@ -140,9 +123,16 @@ export default async function AppointmentDetailPage({
           <div className="flex items-center gap-3 text-sm">
             <Clock className="h-4 w-4 text-muted-foreground" />
             <span>
-              {timeStr} ({appointment.duration_minutes} minutos)
+              {(appointment as any).all_day ? "Dia inteiro" : `${timeStr}${endTimeStr ? ` – ${endTimeStr}` : ""}`}
             </span>
           </div>
+
+          {((appointment as any).location || (appointment as any).client?.address) && (
+            <div className="flex items-center gap-3 text-sm">
+              <MapPin className="h-4 w-4 text-muted-foreground" />
+              <span className="text-muted-foreground">{(appointment as any).location || (appointment as any).client?.address}</span>
+            </div>
+          )}
 
           {appointment.service && (
             <div className="rounded-lg bg-muted p-3 text-sm">
@@ -160,58 +150,9 @@ export default async function AppointmentDetailPage({
         </CardContent>
       </Card>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg flex items-center gap-2"><Package className="h-5 w-5" />Materiais usados</CardTitle>
-            <Button asChild variant="outline">
-              <Link href={`/dashboard/stock/movements/new?appointment=${id}`}>Adicionar materiais</Link>
-            </Button>
-          </div>
-        </CardHeader>
-        <CardContent>
-          {usedMaterials && usedMaterials.length > 0 ? (
-            <div className="grid gap-2">
-              {usedMaterials.map((m: any) => (
-                <div key={m.id} className="flex items-center justify-between rounded-md border p-3">
-                  <div>
-                    <p className="font-medium">{m.product?.name}</p>
-                    <p className="text-xs text-muted-foreground">{Number(m.quantity)} {m.product?.unit}</p>
-                  </div>
-                  <div className="text-right">
-                    <p className="text-sm">Custo unitário: R$ {Number(m.unit_cost ?? m.product?.cost ?? 0).toFixed(2)}</p>
-                    <p className="text-xs text-muted-foreground">Subtotal: R$ {(Number(m.quantity) * Number(m.unit_cost ?? m.product?.cost ?? 0)).toFixed(2)}</p>
-                  </div>
-                </div>
-              ))}
-              <div className="flex items-center justify-between rounded-md bg-muted p-3">
-                <p className="font-medium">Custo total de materiais</p>
-                <p className="text-lg font-bold">{currency(totalCost)}</p>
-              </div>
-            </div>
-          ) : (
-            <p className="text-sm text-muted-foreground">Nenhum material vinculado a este serviço.</p>
-          )}
-        </CardContent>
-      </Card>
+      
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-lg">Mão de obra</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between rounded-md border p-3">
-            <span className="text-sm text-muted-foreground">Valor da mão de obra</span>
-            <span className="text-lg font-bold">{currency(laborCost)}</span>
-          </div>
-          <div className="mt-3 flex items-center justify-between rounded-md bg-muted p-3">
-            <span className="font-medium">Total do serviço</span>
-            <span className="text-xl font-bold">{currency(serviceTotal)}</span>
-          </div>
-        </CardContent>
-      </Card>
-
-      <ServiceNote appointment={appointment} materials={usedMaterials || []} totals={{ laborCost, materialsCost: materialsPrice, serviceTotal }} marginPct={marginPct} />
+      
 
       
 

@@ -4,7 +4,7 @@ import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
-import { Home, Settings, Users, Calendar, FileText, StickyNote, ListTodo, BarChart3, Package, Bot, Sprout, CalendarCheck } from "lucide-react"
+import { Home, Settings, Users, Calendar, FileText, StickyNote, ListTodo, BarChart3, Package, Bot, CalendarCheck, ClipboardList } from "lucide-react"
 
 export function MobileNav() {
   const pathname = usePathname()
@@ -82,6 +82,7 @@ export function MobileNav() {
                 <div className="grid grid-cols-2 gap-2">
                   <SheetLink href="/dashboard/clients" icon={Users} label="Clientes" onClose={() => { setClosing(true); setTimeout(() => { setOpen(null); setClosing(false) }, 200) }} active={isActive("/dashboard/clients")} />
                   <SheetLink href="/dashboard/schedule" icon={Calendar} label="Agenda" onClose={() => { setClosing(true); setTimeout(() => { setOpen(null); setClosing(false) }, 200) }} active={isActive("/dashboard/schedule")} />
+                  <SheetLink href="/dashboard/work-orders" icon={ClipboardList} label="Ordens de serviço" onClose={() => { setClosing(true); setTimeout(() => { setOpen(null); setClosing(false) }, 200) }} active={isActive("/dashboard/work-orders")} />
                   <SheetLink href="/dashboard/budgets" icon={FileText} label="Orçamentos" onClose={() => { setClosing(true); setTimeout(() => { setOpen(null); setClosing(false) }, 200) }} active={isActive("/dashboard/budgets")} />
                   <SheetLink href="/dashboard/notes" icon={StickyNote} label="Notas" onClose={() => { setClosing(true); setTimeout(() => { setOpen(null); setClosing(false) }, 200) }} active={isActive("/dashboard/notes")} />
                   <SheetLink href="/dashboard/tasks" icon={ListTodo} label="Tarefas" onClose={() => { setClosing(true); setTimeout(() => { setOpen(null); setClosing(false) }, 200) }} active={isActive("/dashboard/tasks")} />
@@ -91,7 +92,6 @@ export function MobileNav() {
                 <div className="grid grid-cols-2 gap-2">
                   <SheetLink href="/dashboard/finance" icon={BarChart3} label="Financeiro" onClose={() => { setClosing(true); setTimeout(() => { setOpen(null); setClosing(false) }, 200) }} active={isActive("/dashboard/finance")} />
                   <SheetLink href="/dashboard/stock" icon={Package} label="Estoque" onClose={() => { setClosing(true); setTimeout(() => { setOpen(null); setClosing(false) }, 200) }} active={isActive("/dashboard/stock")} />
-                  <SheetLink href="/dashboard/services" icon={Sprout} label="Serviços" onClose={() => { setClosing(true); setTimeout(() => { setOpen(null); setClosing(false) }, 200) }} active={isActive("/dashboard/services")} />
                   <SheetLink href="/dashboard/maintenance" icon={CalendarCheck} label="Manutenções" onClose={() => { setClosing(true); setTimeout(() => { setOpen(null); setClosing(false) }, 200) }} active={isActive("/dashboard/maintenance")} />
                   <SheetLink href="/dashboard/assistant" icon={Bot} label="Assistente" onClose={() => { setClosing(true); setTimeout(() => { setOpen(null); setClosing(false) }, 200) }} active={isActive("/dashboard/assistant")} />
                 </div>

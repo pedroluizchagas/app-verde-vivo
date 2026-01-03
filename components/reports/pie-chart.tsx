@@ -16,7 +16,6 @@ export function SimplePieChart({ title, data }: { title: string; data: { label: 
   const colors = ["#22c55e", "#ef4444", "#3b82f6", "#f59e0b", "#8b5cf6", "#14b8a6"]
   const slices = data.map((d, i) => ({ color: colors[i % colors.length], percent: d.value / total }))
   const gradient = buildConicGradient(slices)
-  const fmt = (v: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
   return (
     <Card>
       <CardContent className="p-4">
@@ -24,13 +23,16 @@ export function SimplePieChart({ title, data }: { title: string; data: { label: 
         <div className="flex items-center gap-4">
           <div className="h-24 w-24 rounded-full" style={{ background: gradient }} />
           <div className="grid gap-2 text-xs">
-            {data.map((d, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="inline-block h-3 w-3 rounded" style={{ background: colors[i % colors.length] }} />
-                <span className="text-muted-foreground">{d.label}</span>
-                <span className="ml-auto font-medium">{fmt(d.value)}</span>
-              </div>
-            ))}
+            {data.map((d, i) => {
+              const percent = Math.round(((d.value / total) * 100))
+              return (
+                <div key={i} className="flex items-center gap-2">
+                  <span className="inline-block h-3 w-3 rounded" style={{ background: colors[i % colors.length] }} />
+                  <span className="text-muted-foreground">{d.label}</span>
+                  <span className="ml-auto font-medium">{percent}%</span>
+                </div>
+              )
+            })}
           </div>
         </div>
       </CardContent>

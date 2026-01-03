@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Users, Calendar, FileText, BarChart3, PieChart, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
@@ -40,7 +41,7 @@ export default async function DashboardPage() {
   // Próximos agendamentos (após hoje)
   const { data: upcomingAppointmentsBrief } = await supabase
     .from("appointments")
-    .select("id, scheduled_date, status, client:clients(id, name)")
+    .select("*, client:clients(id, name)")
     .eq("gardener_id", user!.id)
     .gt("scheduled_date", dayEnd.toISOString())
     .order("scheduled_date", { ascending: true })
@@ -49,7 +50,7 @@ export default async function DashboardPage() {
   // Orçamentos pendentes (recentes)
   const { data: pendingBudgets } = await supabase
     .from("budgets")
-    .select("id, title, total_amount, status, client:clients(id, name)")
+    .select("id, title, total_amount, status, created_at, client:clients(id, name)")
     .eq("gardener_id", user!.id)
     .eq("status", "pending")
     .order("created_at", { ascending: false })
@@ -65,7 +66,7 @@ export default async function DashboardPage() {
 
   const { data: todayAppointments } = await supabase
     .from("appointments")
-    .select("id, scheduled_date, status, client:clients(id, name, phone)")
+    .select("*, client:clients(id, name, phone)")
     .eq("gardener_id", user!.id)
     .gte("scheduled_date", dayStart.toISOString())
     .lte("scheduled_date", dayEnd.toISOString())
@@ -127,14 +128,12 @@ export default async function DashboardPage() {
     .gte("scheduled_date", startMonth.toISOString())
     .lte("scheduled_date", endMonth.toISOString())
 
-  // Serviços mais realizados (top 5 nos últimos 90 dias)
-  const since90 = new Date()
-  since90.setDate(since90.getDate() - 90)
-  const { data: recentServices } = await supabase
+  const { count: totalMonthAppointments } = await supabase
     .from("appointments")
-    .select("service:services(name)")
+    .select("*", { count: "exact", head: true })
     .eq("gardener_id", user!.id)
-    .gte("scheduled_date", since90.toISOString())
+    .gte("scheduled_date", startMonth.toISOString())
+    .lte("scheduled_date", endMonth.toISOString())
 
   // Clientes ativos (últimos 30 dias) — deduplicado
   const since30 = new Date()
@@ -158,17 +157,15 @@ export default async function DashboardPage() {
   }
   const activeClients = Array.from(activeClientsMap.values()).slice(0, 8)
 
-  const serviceCounts: Record<string, number> = {}
-  for (const a of recentServices || []) {
-    const name = (a as any).service?.name || "(Sem serviço)"
-    serviceCounts[name] = (serviceCounts[name] || 0) + 1
-  }
-  const topServices = Object.entries(serviceCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5)
-    .map(([label, value]) => ({ label, value }))
-
   const { data: profile } = await supabase.from("profiles").select("full_name, avatar_url").eq("id", user!.id).single()
+
+  const typeLabels: Record<string, string> = {
+    service: "Serviço",
+    technical_visit: "Visita técnica",
+    training: "Treinamento",
+    meeting: "Reunião",
+    other: "Outro",
+  }
 
   // Cards de topo removidos conforme solicitado (Agendamentos/Orçamentos)
 
@@ -200,7 +197,7 @@ export default async function DashboardPage() {
             <p className="text-2xl font-bold">{budgetsCount || 0}</p>
           </div>
           <div className="rounded-md border p-4">
-            <p className="text-sm text-muted-foreground">Serviços do dia</p>
+            <p className="text-sm text-muted-foreground">Atendimentos do dia</p>
             <p className="text-2xl font-bold">{todayServices || 0}</p>
           </div>
           <div className="rounded-md border p-4">
@@ -236,22 +233,18 @@ export default async function DashboardPage() {
         />
       </div>
 
-      {/* Produtividade e Serviços mais realizados */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Produtividade (mês)</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4">
-            <p className="text-sm text-muted-foreground">Serviços concluídos</p>
-            <p className="text-2xl font-bold">{completedThisMonth || 0}</p>
-          </CardContent>
-        </Card>
-
-        <SimplePieChart title="Serviços mais realizados (90 dias)" data={topServices} />
+      {/* Produtividade */}
+      <div className="grid grid-cols-1 gap-6">
+        <SimplePieChart
+          title="Produtividade (mês)"
+          data={[
+            { label: "Concluídos", value: completedThisMonth || 0 },
+            { label: "Restantes", value: Math.max((totalMonthAppointments || 0) - (completedThisMonth || 0), 0) },
+          ]}
+        />
       </div>
 
-      {/* Clientes ativos (30 dias) e Serviços do dia */}
+      {/* Clientes ativos (30 dias) e Atendimentos do dia */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
@@ -269,7 +262,7 @@ export default async function DashboardPage() {
                       {c.name}
                     </Link>
                     <div className="text-right">
-                      <p className="text-xs text-muted-foreground">Último serviço: {new Date(c.lastService).toLocaleDateString("pt-BR")}</p>
+                      <p className="text-xs text-muted-foreground">Último atendimento: {new Date(c.lastService).toLocaleDateString("pt-BR")}</p>
                       {c.phone && (
                         <a href={`tel:${c.phone}`} className="text-xs text-primary hover:underline">{c.phone}</a>
                       )}
@@ -286,25 +279,37 @@ export default async function DashboardPage() {
         <Card>
           <CardHeader>
             <CardTitle className="text-lg flex items-center justify-between">
-              <span>Serviços do dia</span>
+              <span>Atendimentos do dia</span>
               <Link href="/dashboard/schedule" className="text-sm text-primary hover:underline">Ver todos</Link>
             </CardTitle>
           </CardHeader>
           <CardContent className="p-4">
             {todayAppointments && todayAppointments.length > 0 ? (
               <div className="grid gap-2">
-                {todayAppointments.map((a) => (
-                  <div key={(a as any).id} className="flex items-center justify-between rounded-md border p-3">
-                    <div>
-                      <p className="font-medium">{(a as any).client?.name || "(Sem cliente)"}</p>
-                      <p className="text-xs text-muted-foreground">{new Date((a as any).scheduled_date).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}</p>
+                {todayAppointments.map((a) => {
+                  const start = new Date((a as any).scheduled_date)
+                  const end = (a as any).end_date ? new Date((a as any).end_date) : null
+                  const startStr = start.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                  const endStr = end ? end.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null
+                  const isAllDay = Boolean((a as any).all_day)
+                  const typeLabel = typeLabels[(a as any).type as string] || "Compromisso"
+                  const clientName = (a as any).client?.name || "(Sem cliente)"
+                  const title = (a as any).title || typeLabel
+                  const location = (a as any).location || ""
+                  return (
+                    <div key={(a as any).id} className="flex items-center justify-between rounded-md border p-3">
+                      <div>
+                        <p className="font-medium">{title}</p>
+                        <p className="text-xs text-muted-foreground">{clientName}{location ? ` • ${location}` : ""}</p>
+                        <p className="text-xs text-muted-foreground">{isAllDay ? "Dia inteiro" : `${startStr}${endStr ? ` – ${endStr}` : ""}`}</p>
+                      </div>
+                      <Link href={`/dashboard/schedule/${(a as any).id}`} className="text-xs text-primary hover:underline">Detalhes</Link>
                     </div>
-                    <Link href={`/dashboard/schedule/${(a as any).id}`} className="text-xs text-primary hover:underline">Detalhes</Link>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
-              <p className="text-sm text-muted-foreground">Nenhum serviço hoje.</p>
+              <p className="text-sm text-muted-foreground">Nenhum atendimento hoje.</p>
             )}
           </CardContent>
         </Card>
@@ -322,15 +327,32 @@ export default async function DashboardPage() {
           <CardContent className="p-4">
             {upcomingAppointmentsBrief && upcomingAppointmentsBrief.length > 0 ? (
               <div className="grid gap-2">
-                {upcomingAppointmentsBrief.map((a) => (
-                  <div key={(a as any).id} className="flex items-center justify-between rounded-md border p-3">
-                    <div>
-                      <p className="font-medium">{(a as any).client?.name || "(Sem cliente)"}</p>
-                      <p className="text-xs text-muted-foreground">{new Date((a as any).scheduled_date).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" })}</p>
+                {upcomingAppointmentsBrief.map((a) => {
+                  const start = new Date((a as any).scheduled_date)
+                  const end = (a as any).end_date ? new Date((a as any).end_date) : null
+                  const dateStr = start.toLocaleDateString("pt-BR", { day: "2-digit", month: "2-digit" })
+                  const startStr = start.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+                  const endStr = end ? end.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" }) : null
+                  const isAllDay = Boolean((a as any).all_day)
+                  const typeLabel = typeLabels[(a as any).type as string] || "Compromisso"
+                  const clientName = (a as any).client?.name || "(Sem cliente)"
+                  const location = (a as any).location || ""
+                  return (
+                    <div key={(a as any).id} className="flex items-center justify-between rounded-md border p-3">
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium">{(a as any).title || typeLabel}</p>
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <Badge variant="outline">{typeLabel}</Badge>
+                          <span>{dateStr} • {isAllDay ? "Dia inteiro" : `${startStr}${endStr ? ` – ${endStr}` : ""}`}</span>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                          <span>{clientName}</span>{location ? <span> • {location}</span> : null}
+                        </div>
+                      </div>
+                      <Link href={`/dashboard/schedule/${(a as any).id}`} className="text-xs text-primary hover:underline">Detalhes</Link>
                     </div>
-                    <Link href={`/dashboard/schedule/${(a as any).id}`} className="text-xs text-primary hover:underline">Detalhes</Link>
-                  </div>
-                ))}
+                  )
+                })}
               </div>
             ) : (
               <p className="text-sm text-muted-foreground">Nenhum agendamento futuro.</p>
@@ -356,6 +378,7 @@ export default async function DashboardPage() {
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-medium">{new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(Number((b as any).total_amount || 0))}</p>
+                      <p className="text-xs text-muted-foreground">{new Date((b as any).created_at).toLocaleDateString("pt-BR")}</p>
                       <Link href={`/dashboard/budgets/${(b as any).id}`} className="text-xs text-primary hover:underline">Detalhes</Link>
                     </div>
                   </div>

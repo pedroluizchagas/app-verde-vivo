@@ -52,7 +52,17 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url)
     }
   } catch (error) {
-    console.error("[v0] Error in middleware:", error)
+    const code = (error as any)?.code
+    if (code === "refresh_token_not_found") {
+      const toClear = request.cookies.getAll().filter((c) => c.name.startsWith("sb-"))
+      if (toClear.length) {
+        toClear.forEach(({ name }) => request.cookies.delete(name))
+        supabaseResponse = NextResponse.next({ request })
+        toClear.forEach(({ name }) => supabaseResponse.cookies.set(name, "", { maxAge: 0, path: "/" }))
+      }
+    } else {
+      console.error("[v0] Error in middleware:", error)
+    }
   }
 
   return supabaseResponse

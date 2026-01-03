@@ -186,9 +186,6 @@ export function StockScreen({ navigation }: any) {
           <TouchableOpacity onPress={() => navigation.navigate("ProductForm")} style={styles.headerIcon}>
             <Ionicons name="add" size={22} color={colors.textPrimary} />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon}>
-            <Ionicons name="ellipsis-vertical" size={20} color={colors.textPrimary} />
-          </TouchableOpacity>
         </View>
       </View>
       <View style={styles.divider} />

@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react"
-import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated } from "react-native"
-import { Audio } from "expo-av"
+import { View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity, ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Animated, NativeModules } from "react-native"
+import { useAudioRecorder, useAudioRecorderState, RecordingPresets, AudioModule } from "expo-audio"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
@@ -32,15 +32,72 @@ export function AssistantScreen() {
   const insets = useSafeAreaInsets()
   const navigation = useNavigation<any>()
   const [isRecording, setIsRecording] = useState(false)
-  const [recording, setRecording] = useState<Audio.Recording | null>(null)
+  const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
+  const recorderState = useAudioRecorderState(recorder)
   const [pendingAudioUri, setPendingAudioUri] = useState<string | null>(null)
   const [pendingAudioSeconds, setPendingAudioSeconds] = useState<number>(0)
   const { user } = useAuth()
   const { colors } = useTheme()
   const styles = createStyles(colors)
   const [flow, setFlow] = useState<{ mode: "idle" | "create_client"; step: number; data: { name?: string; phone?: string; email?: string; address?: string } }>({ mode: "idle", step: 0, data: {} })
-  const defaultBase = Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://localhost:3000"
-  const apiBase = (process.env.EXPO_PUBLIC_API_URL || process.env.NEXT_PUBLIC_SITE_URL || defaultBase) as string
+  const devHost = (() => {
+    try {
+      const url = String((NativeModules as any)?.SourceCode?.scriptURL || "")
+      const m = url.match(/^https?:\/\/([^:\/]+)(?::\d+)?\//)
+      const host = m ? m[1] : null
+      if (host && !/^(localhost|127\.0\.0\.1)$/.test(host)) return host
+    } catch {}
+    return null
+  })()
+  const defaultBase = devHost ? `http://${devHost}:3000` : (Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://localhost:3000")
+  const normalizeEnvValue = (value: unknown): string | undefined => {
+    const raw = String(value ?? "").trim()
+    if (!raw) return undefined
+    const unwrapped = raw.replace(/^["'`]+/, "").replace(/["'`]+$/, "").trim()
+    return unwrapped || undefined
+  }
+  const envBase = (() => {
+    const raw =
+      (process.env.EXPO_PUBLIC_ASSISTANT_API_BASE_URL as string | undefined) ||
+      (process.env.EXPO_PUBLIC_APP_URL as string | undefined) ||
+      (process.env.EXPO_PUBLIC_API_URL as string | undefined) ||
+      ""
+    const normalized = normalizeEnvValue(raw)
+    if (!normalized) return undefined
+    if (/supabase\.co/i.test(normalized)) return undefined
+    if (/^https?:\/\//i.test(normalized)) return normalized
+    return `https://${normalized}`
+  })()
+  const resolvedBase = (envBase || defaultBase).trim()
+  const apiBase =
+    Platform.OS === "android" && /localhost|127\.0\.0\.1/.test(resolvedBase)
+      ? resolvedBase.replace(/localhost|127\.0\.0\.1/, "10.0.2.2")
+      : resolvedBase
+  const fetchWithTimeout = async (input: RequestInfo, init: RequestInit, timeoutMs: number) => {
+    const controller = new AbortController()
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
+    try {
+      return await fetch(input, { ...init, signal: (init as any)?.signal ?? controller.signal })
+    } finally {
+      clearTimeout(timeoutId)
+    }
+  }
+  const readJsonSafe = async (res: Response): Promise<any> => {
+    const txt = await res.text()
+    if (!txt) return {}
+    try {
+      return JSON.parse(txt)
+    } catch {
+      return { raw: txt }
+    }
+  }
+  const toFriendlyError = (err: any): string => {
+    const msg = String(err?.message || "")
+    const name = String(err?.name || "")
+    const isTimeout = name === "AbortError" || /aborted|abort/i.test(msg)
+    if (isTimeout) return "Tempo limite ao conectar. Verifique sua internet e o endereço do painel."
+    return msg || "Falha ao conectar"
+  }
 
   const quickActions: QuickAction[] = [
     { id: "1", title: "Receitas", icon: "trending-up-outline", color: "#10b981", prompt: "Analise minhas receitas deste mês" },
@@ -103,13 +160,18 @@ export function AssistantScreen() {
         setMessages(prev => [...prev, aiResponse])
       } else {
         try {
-          const res = await fetch(`${apiBase}/api/assistant`, {
+          const endpoint = `${String(apiBase).replace(/\/+$/, '')}/api/assistant`
+          const res = await fetchWithTimeout(endpoint, {
             method: "POST",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
             body: JSON.stringify({ text, mode: "execute" }),
-          })
-          if (!res.ok) throw new Error(`HTTP ${res.status}`)
-          const data = await res.json()
+          }, 25000)
+          if (!res.ok) {
+            const errBody = await readJsonSafe(res)
+            const reason = String(errBody?.error || errBody?.message || "")
+            throw new Error(reason ? `HTTP ${res.status}: ${reason}` : `HTTP ${res.status}`)
+          }
+          const data = await readJsonSafe(res)
           const msg: Message = {
             id: (Date.now() + 1).toString(),
             role: "assistant",
@@ -118,7 +180,11 @@ export function AssistantScreen() {
           }
           setMessages(prev => [...prev, msg])
         } catch (err: any) {
-          const aiResponse: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: `Erro: ${err?.message ?? "Falha ao conectar"}`.trim(), timestamp: new Date() }
+          const raw = String(err?.message || "")
+          const friendly = raw.includes("404") || (!envBase && /localhost|127\.0\.0\.1|10\.0\.2\.2/.test(String(apiBase)))
+            ? "Servidor não encontrado (/api/assistant). Defina EXPO_PUBLIC_APP_URL (ou EXPO_PUBLIC_ASSISTANT_API_BASE_URL) para o endereço do painel."
+            : toFriendlyError(err)
+          const aiResponse: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: `Erro: ${friendly}`.trim(), timestamp: new Date() }
           setMessages(prev => [...prev, aiResponse])
         }
       }
@@ -227,18 +293,27 @@ export function AssistantScreen() {
             type: "audio/m4a",
           } as any)
           form.append("mode", "execute")
-          const res = await fetch(`${apiBase}/api/assistant`, {
+          const endpoint = `${String(apiBase).replace(/\/+$/, '')}/api/assistant`
+          const res = await fetchWithTimeout(endpoint, {
             method: "POST",
             headers: { Authorization: `Bearer ${session.access_token}` },
             body: form,
-          })
-          if (!res.ok) throw new Error(`HTTP ${res.status}`)
-          const data = await res.json()
+          }, 60000)
+          if (!res.ok) {
+            const errBody = await readJsonSafe(res)
+            const reason = String(errBody?.error || errBody?.message || "")
+            throw new Error(reason ? `HTTP ${res.status}: ${reason}` : `HTTP ${res.status}`)
+          }
+          const data = await readJsonSafe(res)
           const msg: Message = { id: (Date.now() + 2).toString(), role: "assistant", content: String(data.reply || "Ok"), timestamp: new Date() }
           setMessages(prev => [...prev, msg])
         }
       } catch (err: any) {
-        const aiResponse: Message = { id: (Date.now() + 3).toString(), role: "assistant", content: `Erro: ${err?.message ?? "Falha ao conectar"}`.trim(), timestamp: new Date() }
+        const raw = String(err?.message || "")
+        const friendly = raw.includes("404") || (!envBase && /localhost|127\.0\.0\.1|10\.0\.2\.2/.test(String(apiBase)))
+          ? "Servidor não encontrado (/api/assistant). Defina EXPO_PUBLIC_APP_URL (ou EXPO_PUBLIC_ASSISTANT_API_BASE_URL) para o endereço do painel."
+          : toFriendlyError(err)
+        const aiResponse: Message = { id: (Date.now() + 3).toString(), role: "assistant", content: `Erro: ${friendly}`.trim(), timestamp: new Date() }
         setMessages(prev => [...prev, aiResponse])
       } finally {
         setPendingAudioUri(null)
@@ -251,16 +326,13 @@ export function AssistantScreen() {
 
   const startRecording = async () => {
     try {
-      const perm = await Audio.requestPermissionsAsync()
-      if (!perm.granted) {
+      const status = await AudioModule.requestRecordingPermissionsAsync()
+      if (!status.granted) {
         Alert.alert("Permissão", "Habilite o acesso ao microfone para enviar áudio.")
         return
       }
-      await Audio.setAudioModeAsync({ allowsRecordingIOS: true, playsInSilentModeIOS: true })
-      const rec = new Audio.Recording()
-      await rec.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY)
-      await rec.startAsync()
-      setRecording(rec)
+      await recorder.prepareToRecordAsync()
+      recorder.record()
       setIsRecording(true)
     } catch (e) {
       Alert.alert("Erro", "Não foi possível iniciar a gravação.")
@@ -269,20 +341,17 @@ export function AssistantScreen() {
 
   const stopRecording = async () => {
     try {
-      if (!recording) return
-      await recording.stopAndUnloadAsync()
-      const status = await recording.getStatusAsync()
-      const uri = recording.getURI()
+      if (!isRecording) return
+      await recorder.stop()
+      const uri = (recorder as any).uri as string | undefined
       setIsRecording(false)
-      setRecording(null)
 
-      const seconds = Math.max(1, Math.round((status.durationMillis || 0) / 1000))
+      const seconds = Math.max(1, Math.round(((recorderState as any)?.durationMillis || 0) / 1000))
       setPendingAudioUri(uri || null)
       setPendingAudioSeconds(seconds)
     } catch (e) {
       Alert.alert("Erro", "Não foi possível finalizar a gravação.")
       setIsRecording(false)
-      setRecording(null)
     }
   }
 
