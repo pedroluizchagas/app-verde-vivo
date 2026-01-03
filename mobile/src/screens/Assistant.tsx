@@ -51,9 +51,9 @@ export function AssistantScreen() {
   })()
   const defaultBase = devHost ? `http://${devHost}:3000` : (Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://localhost:3000")
   const normalizeEnvValue = (value: unknown): string | undefined => {
-    const raw = String(value ?? "").trim()
+    const raw = String(value ?? "")
     if (!raw) return undefined
-    const unwrapped = raw.replace(/^["'`]+/, "").replace(/["'`]+$/, "").trim()
+    const unwrapped = raw.replace(/^[\s"'`]+/, "").replace(/[\s"'`]+$/, "")
     return unwrapped || undefined
   }
   const envBase = (() => {
@@ -166,6 +166,8 @@ export function AssistantScreen() {
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
             body: JSON.stringify({ text, mode: "execute" }),
           }, 25000)
+          const contentType = res.headers.get("content-type") || ""
+          if (contentType.includes("text/html")) throw new Error("Recebi HTML ao invés de JSON. Verifique se /api/assistant não está redirecionando para /auth/login.")
           if (!res.ok) {
             const errBody = await readJsonSafe(res)
             const reason = String(errBody?.error || errBody?.message || "")
@@ -299,6 +301,8 @@ export function AssistantScreen() {
             headers: { Authorization: `Bearer ${session.access_token}` },
             body: form,
           }, 60000)
+          const contentType = res.headers.get("content-type") || ""
+          if (contentType.includes("text/html")) throw new Error("Recebi HTML ao invés de JSON. Verifique se /api/assistant não está redirecionando para /auth/login.")
           if (!res.ok) {
             const errBody = await readJsonSafe(res)
             const reason = String(errBody?.error || errBody?.message || "")

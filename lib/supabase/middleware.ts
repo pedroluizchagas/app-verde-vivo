@@ -1,13 +1,24 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
+function normalizeEnvValue(value: unknown): string | undefined {
+  const raw = String(value ?? "")
+  if (!raw) return undefined
+  const unwrapped = raw.replace(/^[\s"'`]+/, "").replace(/[\s"'`]+$/, "")
+  return unwrapped || undefined
+}
+
 export async function updateSession(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/api")) {
+    return NextResponse.next({ request })
+  }
+
   let supabaseResponse = NextResponse.next({
     request,
   })
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  const supabaseUrl = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL)
+  const supabaseAnonKey = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("[v0] Missing Supabase environment variables in middleware")
@@ -37,6 +48,7 @@ export async function updateSession(request: NextRequest) {
     const isPublicRoute =
       request.nextUrl.pathname === "/" ||
       request.nextUrl.pathname.startsWith("/auth") ||
+      request.nextUrl.pathname.startsWith("/api") ||
       request.nextUrl.pathname.startsWith("/_vercel") ||
       request.nextUrl.pathname.startsWith("/_next")
 

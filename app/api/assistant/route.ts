@@ -5,6 +5,13 @@ import { validateIntent, executeIntent } from "@/lib/agent/registry"
 
 export const runtime = "nodejs"
 
+function normalizeEnvValue(value: unknown): string | undefined {
+  const raw = String(value ?? "")
+  if (!raw) return undefined
+  const unwrapped = raw.replace(/^[\s"'`]+/, "").replace(/[\s"'`]+$/, "")
+  return unwrapped || undefined
+}
+
 export async function POST(request: Request) {
   // Try to authenticate via Authorization header (mobile) first
   const authHeader = request.headers.get("authorization") || request.headers.get("Authorization") || ""
@@ -12,8 +19,11 @@ export async function POST(request: Request) {
 
   let user: { id: string } | null = null
   if (bearer) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
-    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    const supabaseUrl = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL)
+    const supabaseAnonKey = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    if (!supabaseUrl || !supabaseAnonKey) {
+      return NextResponse.json({ error: "missing_supabase_env" }, { status: 500 })
+    }
     try {
       const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
         headers: { Authorization: `Bearer ${bearer}`, apikey: supabaseAnonKey },

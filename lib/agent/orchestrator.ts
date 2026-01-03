@@ -200,7 +200,10 @@ export async function runAssistant(userId: string, input: string, mode: "dry" | 
 }
 
 export async function transcribeAudio(file: File): Promise<string> {
-  const apiKey = process.env.GROQ_API_KEY!
+  const apiKey = String(process.env.GROQ_API_KEY ?? "")
+    .replace(/^[\s"'`]+/, "")
+    .replace(/[\s"'`]+$/, "")
+  if (!apiKey) throw new Error("Missing GROQ_API_KEY env var")
   const model = process.env.GROQ_TRANSCRIBE_MODEL || "whisper-large-v3"
   const responseFormat = process.env.GROQ_TRANSCRIBE_FORMAT || "text"
   const form = new FormData()

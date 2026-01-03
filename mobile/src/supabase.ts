@@ -2,9 +2,9 @@ import { createClient } from "@supabase/supabase-js"
 import AsyncStorage from "@react-native-async-storage/async-storage"
 
 function normalizeEnvValue(value: unknown): string | undefined {
-  const raw = String(value ?? "").trim()
+  const raw = String(value ?? "")
   if (!raw) return undefined
-  const unwrapped = raw.replace(/^["'`]+/, "").replace(/["'`]+$/, "").trim()
+  const unwrapped = raw.replace(/^[\s"'`]+/, "").replace(/[\s"'`]+$/, "")
   return unwrapped || undefined
 }
 
