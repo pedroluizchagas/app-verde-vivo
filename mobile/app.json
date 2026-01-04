@@ -15,10 +15,13 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.iris.jardinagem",
-      "buildNumber": "1.0.0"
+      "buildNumber": "1"
     },
     "android": {
-      "permissions": [],
+      "permissions": [
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
       "package": "com.iris.jardinagem",
       "useNextNotificationsApi": true
     },
@@ -28,6 +31,11 @@
     "plugins": [
       "expo-notifications",
       "expo-audio"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "81e720c5-5008-4893-88e1-d0affd0fead7"
+      }
+    }
   }
 }

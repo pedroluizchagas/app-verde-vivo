@@ -7,6 +7,9 @@ mobile/node_modules
 mobile/.expo
 mobile/android
 mobile/ios
+mobile/credentials.json
+mobile/credentials/
+mobile/*.jks
 
 # next.js
 /.next/
