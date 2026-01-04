@@ -5,19 +5,16 @@
   },
   "build": {
     "development": {
-      "ios": {
-        "distribution": "internal",
-        "developmentClient": true
+      "distribution": "internal",
+      "developmentClient": true,
+      "android": {
+        "buildType": "apk"
       }
     },
     "preview": {
-      "ios": {
-        "distribution": "internal"
-      },
+      "distribution": "internal",
       "android": {
-        "distribution": "internal",
-        "buildType": "apk",
-        "credentialsSource": "local"
+        "buildType": "apk"
       }
     },
     "production": {
@@ -27,13 +24,16 @@
       },
       "android": {
         "distribution": "store",
-        "buildType": "app-bundle",
-        "credentialsSource": "local"
+        "buildType": "app-bundle"
       }
     }
   },
   "submit": {
-    "ios": {},
-    "android": {}
+    "production": {
+      "ios": {},
+      "android": {
+        "track": "production"
+      }
+    }
   }
 }
