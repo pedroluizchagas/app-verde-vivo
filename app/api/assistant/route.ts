@@ -9,13 +9,36 @@ function normalizeEnvValue(value: unknown): string | undefined {
   const raw = String(value ?? "")
   if (!raw) return undefined
   const unwrapped = raw.replace(/^[\s"'`]+/, "").replace(/[\s"'`]+$/, "")
+  const lowered = unwrapped.toLowerCase()
+  if (lowered === "undefined" || lowered === "null") return undefined
   return unwrapped || undefined
+}
+
+function extractBearerToken(value: string): string | null {
+  const m = String(value || "").match(/^\s*bearer\s+(.+?)\s*$/i)
+  if (!m) return null
+  const token = m[1]?.trim()
+  return token ? token : null
+}
+
+function getAccessToken(request: Request): string | null {
+  const authHeader = request.headers.get("authorization") || request.headers.get("Authorization") || ""
+  const fromAuth = extractBearerToken(authHeader)
+  if (fromAuth) return fromAuth
+
+  const altHeader =
+    request.headers.get("x-supabase-access-token") ||
+    request.headers.get("x-access-token") ||
+    request.headers.get("x-authorization") ||
+    ""
+  if (!altHeader) return null
+
+  return extractBearerToken(altHeader) || altHeader.trim() || null
 }
 
 export async function POST(request: Request) {
   // Try to authenticate via Authorization header (mobile) first
-  const authHeader = request.headers.get("authorization") || request.headers.get("Authorization") || ""
-  const bearer = authHeader.toLowerCase().startsWith("bearer ") ? authHeader.slice(7).trim() : null
+  const bearer = getAccessToken(request)
 
   let user: { id: string } | null = null
   if (bearer) {

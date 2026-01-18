@@ -4,6 +4,7 @@ import { createBottomTabNavigator } from "@react-navigation/bottom-tabs"
 import { createNativeStackNavigator } from "@react-navigation/native-stack"
 import { Modal, Pressable, Text, View, Platform, ScrollView, Image, ActivityIndicator } from "react-native"
 import * as Notifications from "expo-notifications"
+import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext"
 import { ThemeProvider, useTheme } from "./src/contexts/ThemeContext"
 import { NotificationService } from "./src/services/notificationService"
@@ -147,6 +148,7 @@ export default function App() {
 function MyTabBar({ state, navigation }: any) {
   const [moreOpen, setMoreOpen] = React.useState(false)
   const { colors } = useTheme()
+  const insets = useSafeAreaInsets()
   const go = (name: string) => {
     setMoreOpen(false)
     navigation.navigate(name)
@@ -163,8 +165,9 @@ function MyTabBar({ state, navigation }: any) {
     { label: "Ordens de serviço", icon: "receipt-outline", route: "Ordens de serviço" },
     { label: "Manutenções", icon: "build-outline", route: "Manutenções" },
   ]
+  const bottomInset = Platform.OS === "android" ? insets.bottom : 0
   return (
-    <View style={{ borderTopWidth: 1, borderColor: colors.divider, backgroundColor: colors.bg }}>
+    <View style={{ borderTopWidth: 1, borderColor: colors.divider, backgroundColor: colors.bg, paddingBottom: bottomInset }}>
       <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-around", paddingVertical: 8 }}>
         <Pressable style={{ flex: 1, alignItems: "center", paddingVertical: 10 }} onPress={() => go("Início")}> 
           <Ionicons name="home" color={isActive("Início") ? activeColor : inactiveColor} size={22} />
@@ -190,7 +193,7 @@ function MyTabBar({ state, navigation }: any) {
 
       <Modal visible={moreOpen} transparent animationType="fade" onRequestClose={() => setMoreOpen(false)}>
         <Pressable style={{ flex: 1, backgroundColor: colors.overlay }} onPress={() => setMoreOpen(false)} />
-        <View style={{ position: "absolute", left: 0, right: 0, bottom: 72 }}>
+        <View style={{ position: "absolute", left: 0, right: 0, bottom: 72 + bottomInset }}>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}

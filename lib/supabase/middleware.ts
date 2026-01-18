@@ -1,6 +1,9 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
 
+let lastSupabaseUnreachableAt = 0
+const SUPABASE_UNREACHABLE_TTL_MS = 30_000
+
 function normalizeEnvValue(value: unknown): string | undefined {
   const raw = String(value ?? "")
   if (!raw) return undefined
@@ -22,6 +25,10 @@ export async function updateSession(request: NextRequest) {
 
   if (!supabaseUrl || !supabaseAnonKey) {
     console.error("[v0] Missing Supabase environment variables in middleware")
+    return supabaseResponse
+  }
+
+  if (Date.now() - lastSupabaseUnreachableAt < SUPABASE_UNREACHABLE_TTL_MS) {
     return supabaseResponse
   }
 
@@ -65,12 +72,20 @@ export async function updateSession(request: NextRequest) {
     }
   } catch (error) {
     const code = (error as any)?.code
+    const causeCode = (error as any)?.cause?.code
     if (code === "refresh_token_not_found") {
       const toClear = request.cookies.getAll().filter((c) => c.name.startsWith("sb-"))
       if (toClear.length) {
         toClear.forEach(({ name }) => request.cookies.delete(name))
         supabaseResponse = NextResponse.next({ request })
         toClear.forEach(({ name }) => supabaseResponse.cookies.set(name, "", { maxAge: 0, path: "/" }))
+      }
+    } else if (causeCode === "ENOTFOUND" || causeCode === "EAI_AGAIN" || causeCode === "ECONNREFUSED" || causeCode === "ETIMEDOUT") {
+      const now = Date.now()
+      const shouldLog = now - lastSupabaseUnreachableAt >= SUPABASE_UNREACHABLE_TTL_MS
+      lastSupabaseUnreachableAt = now
+      if (shouldLog) {
+        console.error("[v0] Supabase unreachable. Check NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl)
       }
     } else {
       console.error("[v0] Error in middleware:", error)

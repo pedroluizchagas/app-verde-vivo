@@ -31,6 +31,7 @@ export function AssistantScreen() {
   const scrollViewRef = useRef<ScrollView>(null)
   const insets = useSafeAreaInsets()
   const navigation = useNavigation<any>()
+  const isDev = typeof __DEV__ !== "undefined" && __DEV__
   const [isRecording, setIsRecording] = useState(false)
   const recorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY)
   const recorderState = useAudioRecorderState(recorder)
@@ -68,11 +69,23 @@ export function AssistantScreen() {
     if (/^https?:\/\//i.test(normalized)) return normalized
     return `https://${normalized}`
   })()
-  const resolvedBase = (envBase || defaultBase).trim()
-  const apiBase =
-    Platform.OS === "android" && /localhost|127\.0\.0\.1/.test(resolvedBase)
-      ? resolvedBase.replace(/localhost|127\.0\.0\.1/, "10.0.2.2")
+  const canonicalBase = (() => {
+    const raw = (process.env.EXPO_PUBLIC_CANONICAL_APP_URL as string | undefined) || "https://verdevivo.app"
+    const normalized = normalizeEnvValue(raw)
+    if (!normalized) return "https://verdevivo.app"
+    if (/^https?:\/\//i.test(normalized)) return normalized
+    return `https://${normalized}`
+  })()
+  const resolvedBaseRaw = (envBase || (isDev ? defaultBase : canonicalBase)).trim()
+  const resolvedBase = resolvedBaseRaw.replace(/^https?:\/\/verdevivo\.vercel\.app\b/i, canonicalBase)
+  const secureBase =
+    !isDev && /^http:\/\//i.test(resolvedBase) && !/localhost|127\.0\.0\.1|10\.0\.2\.2/i.test(resolvedBase)
+      ? resolvedBase.replace(/^http:\/\//i, "https://")
       : resolvedBase
+  const apiBase =
+    isDev && Platform.OS === "android" && /localhost|127\.0\.0\.1/i.test(secureBase)
+      ? secureBase.replace(/localhost|127\.0\.0\.1/i, "10.0.2.2")
+      : secureBase
   const fetchWithTimeout = async (input: RequestInfo, init: RequestInit, timeoutMs: number) => {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
@@ -118,6 +131,13 @@ export function AssistantScreen() {
     }
     setMessages([welcomeMessage])
   }, [])
+
+  useEffect(() => {
+    const id = setTimeout(() => {
+      scrollViewRef.current?.scrollToEnd({ animated: true })
+    }, 60)
+    return () => clearTimeout(id)
+  }, [messages.length, loading])
 
 
   const sendMessage = async (text: string) => {
@@ -389,7 +409,7 @@ export function AssistantScreen() {
   }
 
   return (
-    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={0}>
+    <KeyboardAvoidingView style={styles.keyboardAvoid} behavior={Platform.OS === 'ios' ? 'padding' : 'height'} keyboardVerticalOffset={insets.top + 72}>
     <View style={styles.container}>
       <View style={[styles.header, { paddingTop: 16 + insets.top }]}>
       <View style={styles.headerContent}>
@@ -420,7 +440,8 @@ export function AssistantScreen() {
       <ScrollView 
         ref={scrollViewRef}
         style={styles.messagesContainer}
-        contentContainerStyle={styles.messagesContent}
+        contentContainerStyle={[styles.messagesContent, { paddingBottom: 16 + 88 + insets.bottom }]}
+        keyboardShouldPersistTaps="handled"
       >
         {messages.map((message) => (
           <View 
@@ -457,7 +478,7 @@ export function AssistantScreen() {
 
       
 
-      <View style={styles.inputContainer}>
+      <View style={[styles.inputContainer, { paddingBottom: 16 + insets.bottom }]}>
         <View style={styles.inputWrapper}>
           {isRecording ? (
             <Spectrum />
