@@ -57,22 +57,25 @@ export function AssistantScreen() {
     const unwrapped = raw.replace(/^[\s"'`]+/, "").replace(/[\s"'`]+$/, "")
     return unwrapped || undefined
   }
-  const envBase = (() => {
-    const raw =
-      (process.env.EXPO_PUBLIC_ASSISTANT_API_BASE_URL as string | undefined) ||
-      (process.env.EXPO_PUBLIC_APP_URL as string | undefined) ||
-      (process.env.EXPO_PUBLIC_API_URL as string | undefined) ||
-      ""
-    const normalized = normalizeEnvValue(raw)
-    if (!normalized) return undefined
-    if (/supabase\.co/i.test(normalized)) return undefined
-    if (/^https?:\/\//i.test(normalized)) return normalized
-    return `https://${normalized}`
-  })()
   const canonicalBase = (() => {
     const raw = (process.env.EXPO_PUBLIC_CANONICAL_APP_URL as string | undefined) || "https://verdevivo.app"
     const normalized = normalizeEnvValue(raw)
     if (!normalized) return "https://verdevivo.app"
+    if (/^https?:\/\//i.test(normalized)) return normalized
+    return `https://${normalized}`
+  })()
+  const envBase = (() => {
+    const assistantRaw = normalizeEnvValue(process.env.EXPO_PUBLIC_ASSISTANT_API_BASE_URL as string | undefined)
+    const appRaw = normalizeEnvValue(process.env.EXPO_PUBLIC_APP_URL as string | undefined)
+    const apiRaw = normalizeEnvValue(process.env.EXPO_PUBLIC_API_URL as string | undefined)
+
+    const strip = (v: string) => v.replace(/^https?:\/\//i, "").replace(/\/+$/, "")
+    const preferApp = !!(assistantRaw && appRaw && strip(assistantRaw) === strip(canonicalBase) && strip(appRaw) !== strip(assistantRaw))
+
+    const raw = (preferApp ? appRaw : assistantRaw) || appRaw || apiRaw || ""
+    const normalized = normalizeEnvValue(raw)
+    if (!normalized) return undefined
+    if (/supabase\.co/i.test(normalized)) return undefined
     if (/^https?:\/\//i.test(normalized)) return normalized
     return `https://${normalized}`
   })()
@@ -110,6 +113,14 @@ export function AssistantScreen() {
     const isTimeout = name === "AbortError" || /aborted|abort/i.test(msg)
     if (isTimeout) return "Tempo limite ao conectar. Verifique sua internet e o endereço do painel."
     return msg || "Falha ao conectar"
+  }
+  const mapAssistantBackendError = (raw: string): string | null => {
+    const s = String(raw || "").toLowerCase()
+    if (s.includes("missing_groq_api_key")) return "Servidor do assistente sem GROQ_API_KEY configurada."
+    if (s.includes("missing_supabase_env")) return "Servidor do assistente sem variáveis do Supabase configuradas."
+    if (s.includes("not_authenticated") || s.includes("http 401")) return "Sessão expirada. Faça login novamente."
+    if (s.includes("missing_text")) return "Mensagem inválida (sem texto)."
+    return null
   }
 
   const quickActions: QuickAction[] = [
@@ -203,8 +214,10 @@ export function AssistantScreen() {
           setMessages(prev => [...prev, msg])
         } catch (err: any) {
           const raw = String(err?.message || "")
-          const friendly = raw.includes("404") || (!envBase && /localhost|127\.0\.0\.1|10\.0\.2\.2/.test(String(apiBase)))
-            ? "Servidor não encontrado (/api/assistant). Defina EXPO_PUBLIC_APP_URL (ou EXPO_PUBLIC_ASSISTANT_API_BASE_URL) para o endereço do painel."
+          const mapped = mapAssistantBackendError(raw)
+          const isNotFound = raw.includes("404") || (!envBase && /localhost|127\.0\.0\.1|10\.0\.2\.2/.test(String(apiBase)))
+          const friendly = mapped ? mapped : isNotFound
+            ? `Servidor não encontrado (/api/assistant). Defina EXPO_PUBLIC_APP_URL (ou EXPO_PUBLIC_ASSISTANT_API_BASE_URL). Base atual: ${String(apiBase)}`
             : toFriendlyError(err)
           const aiResponse: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: `Erro: ${friendly}`.trim(), timestamp: new Date() }
           setMessages(prev => [...prev, aiResponse])
@@ -334,8 +347,10 @@ export function AssistantScreen() {
         }
       } catch (err: any) {
         const raw = String(err?.message || "")
-        const friendly = raw.includes("404") || (!envBase && /localhost|127\.0\.0\.1|10\.0\.2\.2/.test(String(apiBase)))
-          ? "Servidor não encontrado (/api/assistant). Defina EXPO_PUBLIC_APP_URL (ou EXPO_PUBLIC_ASSISTANT_API_BASE_URL) para o endereço do painel."
+        const mapped = mapAssistantBackendError(raw)
+        const isNotFound = raw.includes("404") || (!envBase && /localhost|127\.0\.0\.1|10\.0\.2\.2/.test(String(apiBase)))
+        const friendly = mapped ? mapped : isNotFound
+          ? `Servidor não encontrado (/api/assistant). Defina EXPO_PUBLIC_APP_URL (ou EXPO_PUBLIC_ASSISTANT_API_BASE_URL). Base atual: ${String(apiBase)}`
           : toFriendlyError(err)
         const aiResponse: Message = { id: (Date.now() + 3).toString(), role: "assistant", content: `Erro: ${friendly}`.trim(), timestamp: new Date() }
         setMessages(prev => [...prev, aiResponse])
