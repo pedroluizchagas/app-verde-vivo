@@ -17,7 +17,11 @@
       "bundleIdentifier": "com.iris.jardinagem",
       "buildNumber": "1",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Permitir captura de fotos para anexos e perfil",
+        "NSPhotoLibraryUsageDescription": "Permitir acesso à galeria para anexar imagens",
+        "NSPhotoLibraryAddUsageDescription": "Permitir salvar imagens geradas pelo app",
+        "NSMicrophoneUsageDescription": "Permitir uso do microfone para gravações de áudio"
       }
     },
     "android": {
