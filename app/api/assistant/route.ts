@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { runAssistant, transcribeAudio } from "@/lib/agent/orchestrator"
 import { validateIntent, executeIntent } from "@/lib/agent/registry"
 
@@ -41,21 +42,26 @@ export async function POST(request: Request) {
   const bearer = getAccessToken(request)
 
   let user: { id: string } | null = null
+  let authError: string | null = null
   if (bearer) {
-    const supabaseUrl = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL)
-    const supabaseAnonKey = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+    const headerSupabaseUrl = normalizeEnvValue(request.headers.get("x-supabase-url"))
+    const headerSupabaseAnonKey = normalizeEnvValue(request.headers.get("x-supabase-anon-key"))
+    const supabaseUrl = headerSupabaseUrl || normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL)
+    const supabaseAnonKey = headerSupabaseAnonKey || normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
     if (!supabaseUrl || !supabaseAnonKey) {
       return NextResponse.json({ error: "missing_supabase_env" }, { status: 500 })
     }
     try {
-      const res = await fetch(`${supabaseUrl}/auth/v1/user`, {
-        headers: { Authorization: `Bearer ${bearer}`, apikey: supabaseAnonKey },
-      })
-      if (res.ok) {
-        const data = await res.json()
-        if (data?.id) user = { id: String(data.id) }
+      const supabase = createSupabaseClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false } })
+      const { data, error } = await supabase.auth.getUser(bearer)
+      if (error || !data?.user?.id) {
+        authError = "invalid_access_token"
+      } else {
+        user = { id: String(data.user.id) }
       }
-    } catch {}
+    } catch {
+      authError = "supabase_auth_failed"
+    }
   }
 
   // Fallback to cookie-based session (web)
@@ -67,7 +73,7 @@ export async function POST(request: Request) {
     }
   }
   if (!user) {
-    return NextResponse.json({ error: "not_authenticated" }, { status: 401 })
+    return NextResponse.json({ error: authError || (bearer ? "not_authenticated" : "missing_access_token") }, { status: 401 })
   }
 
   if (!process.env.GROQ_API_KEY) {
@@ -101,7 +107,7 @@ export async function POST(request: Request) {
           return NextResponse.json({ error: "invalid_params", need: validation.need }, { status: 400 })
         }
         try {
-          const exec = await executeIntent(user.id, body.intent, validation.value)
+          const exec = await executeIntent(user.id, body.intent, validation.value, bearer || undefined)
           return NextResponse.json({ reply: "Ação executada", intent: body.intent, result: exec })
         } catch (err: any) {
           return NextResponse.json({ error: err?.message ?? String(err) }, { status: 500 })
@@ -115,7 +121,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "missing_text" }, { status: 400 })
     }
 
-    const result = await runAssistant(user.id, text, mode)
+    const result = await runAssistant(user.id, text, mode, bearer || undefined)
     // Nota: o modo 'dry' pode ser usado futuramente para não executar ações.
     // Aqui, apenas retornamos a resposta; execução já ocorre no orquestrador.
     return NextResponse.json(result)

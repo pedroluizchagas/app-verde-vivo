@@ -89,6 +89,95 @@ export function AssistantScreen() {
     isDev && Platform.OS === "android" && /localhost|127\.0\.0\.1/i.test(secureBase)
       ? secureBase.replace(/localhost|127\.0\.0\.1/i, "10.0.2.2")
       : secureBase
+  const supabaseUrlHeader = normalizeEnvValue(process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || ""
+  const supabaseAnonKeyHeader = normalizeEnvValue(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || ""
+  const lastAssistantBase = useRef<string | null>(null)
+  const getApiCandidates = () => {
+    const bases = Array.from(new Set([
+      envBase || undefined,
+      isDev ? defaultBase : undefined,
+      canonicalBase || undefined,
+    ].filter(Boolean) as string[])).map((b) => {
+      const trimmed = String(b).replace(/\/+$/, "")
+      const secured =
+        !isDev && /^http:\/\//i.test(trimmed) && !/localhost|127\.0\.0\.1|10\.0\.2\.2/i.test(trimmed)
+          ? trimmed.replace(/^http:\/\//i, "https://")
+          : trimmed
+      const androidLocal =
+        isDev && Platform.OS === "android" && /localhost|127\.0\.0\.1/i.test(secured)
+          ? secured.replace(/localhost|127\.0\.0\.1/i, "10.0.2.2")
+          : secured
+      return androidLocal.replace(/^https?:\/\/verdevivo\.vercel\.app\b/i, canonicalBase)
+    })
+    const prioritized = lastAssistantBase.current ? [lastAssistantBase.current, ...bases] : bases
+    const unique = Array.from(new Set(prioritized))
+    return unique
+  }
+  const postAssistantJson = async (body: any, token: string) => {
+    let lastError: any = null
+    for (const base of getApiCandidates()) {
+      const endpoint = `${base}/api/assistant`
+      try {
+        const res = await fetchWithTimeout(endpoint, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+            "x-supabase-access-token": `Bearer ${token}`,
+            "x-supabase-url": supabaseUrlHeader,
+            "x-supabase-anon-key": supabaseAnonKeyHeader,
+          },
+          body: JSON.stringify(body),
+        }, 20000)
+        const contentType = res.headers.get("content-type") || ""
+        if (contentType.includes("text/html")) throw new Error("html_response")
+        if (!res.ok) {
+          const errBody = await readJsonSafe(res)
+          const reason = String(errBody?.error || errBody?.message || "")
+          throw new Error(reason ? `HTTP ${res.status}: ${reason}` : `HTTP ${res.status}`)
+        }
+        const data = await readJsonSafe(res)
+        lastAssistantBase.current = base
+        return { data, base }
+      } catch (e) {
+        lastError = e
+      }
+    }
+    throw lastError || new Error("Falha ao conectar")
+  }
+  const postAssistantForm = async (form: FormData, token: string) => {
+    let lastError: any = null
+    for (const base of getApiCandidates()) {
+      const endpoint = `${base}/api/assistant`
+      try {
+        const res = await fetchWithTimeout(endpoint, {
+          method: "POST",
+          headers: {
+            Accept: "application/json",
+            Authorization: `Bearer ${token}`,
+            "x-supabase-access-token": `Bearer ${token}`,
+            "x-supabase-url": supabaseUrlHeader,
+            "x-supabase-anon-key": supabaseAnonKeyHeader,
+          },
+          body: form,
+        }, 60000)
+        const contentType = res.headers.get("content-type") || ""
+        if (contentType.includes("text/html")) throw new Error("html_response")
+        if (!res.ok) {
+          const errBody = await readJsonSafe(res)
+          const reason = String(errBody?.error || errBody?.message || "")
+          throw new Error(reason ? `HTTP ${res.status}: ${reason}` : `HTTP ${res.status}`)
+        }
+        const data = await readJsonSafe(res)
+        lastAssistantBase.current = base
+        return { data, base }
+      } catch (e) {
+        lastError = e
+      }
+    }
+    throw lastError || new Error("Falha ao conectar")
+  }
   const fetchWithTimeout = async (input: RequestInfo, init: RequestInit, timeoutMs: number) => {
     const controller = new AbortController()
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs)
@@ -118,6 +207,9 @@ export function AssistantScreen() {
     const s = String(raw || "").toLowerCase()
     if (s.includes("missing_groq_api_key")) return "Servidor do assistente sem GROQ_API_KEY configurada."
     if (s.includes("missing_supabase_env")) return "Servidor do assistente sem variáveis do Supabase configuradas."
+    if (s.includes("invalid_access_token")) return "Token inválido. Verifique se o mobile e o painel usam o mesmo Supabase."
+    if (s.includes("supabase_auth_failed")) return "Falha ao validar sessão no servidor. Tente novamente em instantes."
+    if (s.includes("missing_access_token")) return "Sessão ausente. Faça login novamente."
     if (s.includes("not_authenticated") || s.includes("http 401")) return "Sessão expirada. Faça login novamente."
     if (s.includes("missing_text")) return "Mensagem inválida (sem texto)."
     return null
@@ -191,20 +283,7 @@ export function AssistantScreen() {
         setMessages(prev => [...prev, aiResponse])
       } else {
         try {
-          const endpoint = `${String(apiBase).replace(/\/+$/, '')}/api/assistant`
-          const res = await fetchWithTimeout(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${session.access_token}` },
-            body: JSON.stringify({ text, mode: "execute" }),
-          }, 25000)
-          const contentType = res.headers.get("content-type") || ""
-          if (contentType.includes("text/html")) throw new Error("Recebi HTML ao invés de JSON. Verifique se /api/assistant não está redirecionando para /auth/login.")
-          if (!res.ok) {
-            const errBody = await readJsonSafe(res)
-            const reason = String(errBody?.error || errBody?.message || "")
-            throw new Error(reason ? `HTTP ${res.status}: ${reason}` : `HTTP ${res.status}`)
-          }
-          const data = await readJsonSafe(res)
+          const { data } = await postAssistantJson({ text, mode: "execute" }, session.access_token)
           const msg: Message = {
             id: (Date.now() + 1).toString(),
             role: "assistant",
@@ -216,9 +295,11 @@ export function AssistantScreen() {
           const raw = String(err?.message || "")
           const mapped = mapAssistantBackendError(raw)
           const isNotFound = raw.includes("404") || (!envBase && /localhost|127\.0\.0\.1|10\.0\.2\.2/.test(String(apiBase)))
-          const friendly = mapped ? mapped : isNotFound
-            ? `Servidor não encontrado (/api/assistant). Defina EXPO_PUBLIC_APP_URL (ou EXPO_PUBLIC_ASSISTANT_API_BASE_URL). Base atual: ${String(apiBase)}`
-            : toFriendlyError(err)
+          const friendly = mapped
+            ? mapped
+            : isNotFound
+            ? `Servidor não encontrado (/api/assistant). Defina EXPO_PUBLIC_APP_URL (ou EXPO_PUBLIC_ASSISTANT_API_BASE_URL). Bases tentadas: ${getApiCandidates().join(", ")}`
+            : `${toFriendlyError(err)}. Bases tentadas: ${getApiCandidates().join(", ")}`
           const aiResponse: Message = { id: (Date.now() + 1).toString(), role: "assistant", content: `Erro: ${friendly}`.trim(), timestamp: new Date() }
           setMessages(prev => [...prev, aiResponse])
         }
@@ -328,20 +409,7 @@ export function AssistantScreen() {
             type: "audio/m4a",
           } as any)
           form.append("mode", "execute")
-          const endpoint = `${String(apiBase).replace(/\/+$/, '')}/api/assistant`
-          const res = await fetchWithTimeout(endpoint, {
-            method: "POST",
-            headers: { Authorization: `Bearer ${session.access_token}` },
-            body: form,
-          }, 60000)
-          const contentType = res.headers.get("content-type") || ""
-          if (contentType.includes("text/html")) throw new Error("Recebi HTML ao invés de JSON. Verifique se /api/assistant não está redirecionando para /auth/login.")
-          if (!res.ok) {
-            const errBody = await readJsonSafe(res)
-            const reason = String(errBody?.error || errBody?.message || "")
-            throw new Error(reason ? `HTTP ${res.status}: ${reason}` : `HTTP ${res.status}`)
-          }
-          const data = await readJsonSafe(res)
+          const { data } = await postAssistantForm(form, session.access_token)
           const msg: Message = { id: (Date.now() + 2).toString(), role: "assistant", content: String(data.reply || "Ok"), timestamp: new Date() }
           setMessages(prev => [...prev, msg])
         }
@@ -349,9 +417,11 @@ export function AssistantScreen() {
         const raw = String(err?.message || "")
         const mapped = mapAssistantBackendError(raw)
         const isNotFound = raw.includes("404") || (!envBase && /localhost|127\.0\.0\.1|10\.0\.2\.2/.test(String(apiBase)))
-        const friendly = mapped ? mapped : isNotFound
-          ? `Servidor não encontrado (/api/assistant). Defina EXPO_PUBLIC_APP_URL (ou EXPO_PUBLIC_ASSISTANT_API_BASE_URL). Base atual: ${String(apiBase)}`
-          : toFriendlyError(err)
+        const friendly = mapped
+          ? mapped
+          : isNotFound
+          ? `Servidor não encontrado (/api/assistant). Defina EXPO_PUBLIC_APP_URL (ou EXPO_PUBLIC_ASSISTANT_API_BASE_URL). Bases tentadas: ${getApiCandidates().join(", ")}`
+          : `${toFriendlyError(err)}. Bases tentadas: ${getApiCandidates().join(", ")}`
         const aiResponse: Message = { id: (Date.now() + 3).toString(), role: "assistant", content: `Erro: ${friendly}`.trim(), timestamp: new Date() }
         setMessages(prev => [...prev, aiResponse])
       } finally {

@@ -2,16 +2,20 @@ import { createGroqClient } from "@/lib/groq/client"
 import { agentSystemPrompt, type AgentResponse } from "./schema"
 import { validateIntent, executeIntent } from "./registry"
 import { classifyText } from "./category-map"
-import { createClient as createSupabaseServer } from "@/lib/supabase/server"
+import { createClient as createSupabaseServer, createClientWithToken } from "@/lib/supabase/server"
 
-export async function runAssistant(userId: string, input: string, mode: "dry" | "execute" = "execute"): Promise<{ reply: string; intent: string; result?: any; params?: any; critical?: boolean }> {
+const ctxCache = new Map<string, { v: string; t: number }>()
+
+export async function runAssistant(userId: string, input: string, mode: "dry" | "execute" = "execute", authToken?: string): Promise<{ reply: string; intent: string; result?: any; params?: any; critical?: boolean }> {
   const groq = createGroqClient()
-  const context = await buildContext(userId)
+  const context = await buildContext(userId, authToken)
   const model = process.env.GROQ_MODEL || process.env.NEXT_PUBLIC_ASSISTANT_MODEL || "llama-3.1-8b-instant"
 
   const completion = await groq.chat.completions.create({
     model,
     temperature: 0.2,
+    max_tokens: 512,
+    response_format: { type: "json_object" as any },
     messages: [
       { role: "system", content: agentSystemPrompt + "\n\nContexto:\n" + context },
       { role: "user", content: input },
@@ -73,7 +77,7 @@ export async function runAssistant(userId: string, input: string, mode: "dry" | 
     const creditCues = [/\bcart[aã]o\b/i, /\bcr[eé]dito\b/i]
     if (creditCues.some((r) => r.test(input))) {
       parsed.params.status = "pending"
-      const prefs = await getUserPreferences(userId)
+      const prefs = await getUserPreferences(userId, authToken)
       if (prefs?.credit_card_due_day) {
         parsed.params.due_date = computeNextDueDate(prefs.credit_card_due_day).slice(0, 10)
       } else {
@@ -192,7 +196,7 @@ export async function runAssistant(userId: string, input: string, mode: "dry" | 
   }
 
   try {
-    const exec = await executeIntent(userId, parsed.intent, validation.value)
+    const exec = await executeIntent(userId, parsed.intent, validation.value, authToken)
     return { reply: parsed.reply ?? "Ok", intent: parsed.intent, result: exec, params: validation.value, critical: validation.critical }
   } catch (err: any) {
     return { reply: `Falha ao executar ação: ${err?.message ?? String(err)}`, intent: parsed.intent, result: { ok: false }, params: validation.value, critical: validation.critical }
@@ -220,17 +224,22 @@ export async function transcribeAudio(file: File): Promise<string> {
   return responseFormat === "json" ? JSON.stringify(await res.json()) : await res.text()
 }
 
-async function buildContext(userId: string): Promise<string> {
-  const supabase = await createSupabaseServer()
-  const clients = await supabase.from("clients").select("id, name").eq("gardener_id", userId).limit(20)
-  const products = await supabase.from("products").select("id, name").eq("gardener_id", userId).limit(20)
-
+async function buildContext(userId: string, token?: string): Promise<string> {
+  const key = `${userId}:${token ? "t" : "c"}`
+  const now = Date.now()
+  const hit = ctxCache.get(key)
+  if (hit && hit.t > now) return hit.v
+  const supabase = token ? createClientWithToken(token) : await createSupabaseServer()
+  const clients = await supabase.from("clients").select("id, name").eq("gardener_id", userId).limit(10)
+  const products = await supabase.from("products").select("id, name").eq("gardener_id", userId).limit(10)
   const serialize = (label: string, arr?: any[]) => `${label}: ` + (arr || []).map((x) => `${x.name} (${x.id})`).join(", ")
-  return [serialize("Clientes", clients.data || []), serialize("Produtos", products.data || [])].join("\n")
+  const v = [serialize("Clientes", clients.data || []), serialize("Produtos", products.data || [])].join("\n")
+  ctxCache.set(key, { v, t: now + 120000 })
+  return v
 }
 
-async function getUserPreferences(userId: string): Promise<{ credit_card_due_day?: number | null; default_pending_days?: number | null } | null> {
-  const supabase = await createSupabaseServer()
+async function getUserPreferences(userId: string, token?: string): Promise<{ credit_card_due_day?: number | null; default_pending_days?: number | null } | null> {
+  const supabase = token ? createClientWithToken(token) : await createSupabaseServer()
   const { data } = await supabase
     .from("user_preferences")
     .select("credit_card_due_day, default_pending_days")

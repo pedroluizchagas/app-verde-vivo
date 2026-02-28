@@ -37,7 +37,11 @@ export function AuthProvider({ children }: AuthProviderProps) {
         if (!active) return
         if (error) throw error
         setUser(data.session?.user ?? null)
-      } catch {
+      } catch (e: any) {
+        const msg = String(e?.message || "")
+        if (msg.toLowerCase().includes("invalid refresh token")) {
+          try { await supabase.auth.signOut() } catch {}
+        }
         if (!active) return
         setUser(null)
       } finally {

@@ -144,7 +144,7 @@ export const schemas = {
 
 type Intent = keyof typeof schemas
 
-export const registry: Record<Intent, { schema: (typeof schemas)[Intent]; action: (userId: string, params: any) => Promise<any>; critical?: boolean }> = {
+export const registry: Record<Intent, { schema: (typeof schemas)[Intent]; action: (userId: string, params: any, token?: string) => Promise<any>; critical?: boolean }> = {
   create_client: { schema: schemas.create_client, action: createClient },
   schedule_visit: { schema: schemas.schedule_visit, action: scheduleVisit },
   create_budget: { schema: schemas.create_budget, action: createBudget },
@@ -174,8 +174,8 @@ export function validateIntent(intent: string, params: any) {
   return { ok: true, value: parsed.data, critical: !!entry.critical }
 }
 
-export async function executeIntent(userId: string, intent: string, params: any) {
+export async function executeIntent(userId: string, intent: string, params: any, token?: string) {
   const entry = registry[intent as Intent]
   if (!entry) throw new Error("Intent desconhecida")
-  return await entry.action(userId, params)
+  return await entry.action(userId, params, token)
 }
