@@ -1,5 +1,7 @@
 import * as Notifications from "expo-notifications"
 import { Platform } from "react-native"
+import { supabase } from "../supabase"
+import { Alert } from "react-native"
 
 export interface NotificationSchedule {
   id?: string
@@ -156,5 +158,79 @@ export class NotificationService {
         console.log("Navigate to transaction:", data.transactionId)
       }
     })
+  }
+
+  static async registerExpoPushToken(): Promise<string | null> {
+    try {
+      const hasPermission = await this.requestPermissions()
+      if (!hasPermission) return null
+      const tokenInfo = await Notifications.getExpoPushTokenAsync()
+      const token = String(tokenInfo?.data || "")
+      if (!token) return null
+      const { data: { user } } = await supabase.auth.getUser()
+      if (user) {
+        try {
+          await supabase
+            .from("profiles")
+            .update({ push_token: token, push_provider: "expo" })
+            .eq("id", user.id)
+          await supabase
+            .from("device_tokens")
+            .upsert({ gardener_id: user.id, token, provider: "expo", platform: Platform.OS, last_seen: new Date().toISOString(), is_active: true }, { onConflict: "token" })
+        } catch (e) {
+          console.error("Error saving push token:", e)
+        }
+      }
+      return token
+    } catch (e) {
+      console.error("Error registering Expo push token:", e)
+      return null
+    }
+  }
+
+  static normalizeEnvValue(value: unknown): string | undefined {
+    const raw = String(value ?? "")
+    if (!raw) return undefined
+    const unwrapped = raw.replace(/^[\s\"'`]+/, "").replace(/[\s\"'`]+$/, "")
+    return unwrapped || undefined
+  }
+
+  static resolveApiBase(): string | null {
+    const isDev = __DEV__ === true
+    const canonical = "https://verdevivo.app"
+    const assistantRaw = this.normalizeEnvValue((process as any).env?.EXPO_PUBLIC_ASSISTANT_API_BASE_URL || (process as any).env?.NEXT_PUBLIC_ASSISTANT_API_BASE_URL)
+    const appRaw = this.normalizeEnvValue((process as any).env?.EXPO_PUBLIC_APP_URL || (process as any).env?.NEXT_PUBLIC_APP_URL)
+    const apiRaw = this.normalizeEnvValue((process as any).env?.EXPO_PUBLIC_API_URL)
+    const strip = (v: string) => v.replace(/^https?:\/\//i, "").replace(/\/+$/, "")
+    const preferApp = !!(assistantRaw && appRaw && strip(assistantRaw) === strip(canonical) && strip(appRaw) !== strip(assistantRaw))
+    const raw = (preferApp ? appRaw : assistantRaw) || appRaw || apiRaw || ""
+    const norm = this.normalizeEnvValue(raw)
+    const baseRaw = (norm || (isDev ? "http://localhost:3000" : canonical)).trim()
+    const secured =
+      !isDev && /^http:\/\//i.test(baseRaw) && !/localhost|127\.0\.0\.1|10\.0\.2\.2/i.test(baseRaw)
+        ? baseRaw.replace(/^http:\/\//i, "https://")
+        : baseRaw
+    const androidLocal =
+      isDev && Platform.OS === "android" && /localhost|127\.0\.0\.1/i.test(secured)
+        ? secured.replace(/localhost|127\.0\.0\.1/i, "10.0.2.2")
+        : secured
+    return androidLocal.replace(/^https?:\/\/verdevivo\.vercel\.app\b/i, canonical)
+  }
+
+  static async sendPushToUserIds(userIds: string[], title: string, body: string, data?: any): Promise<boolean> {
+    try {
+      const base = this.resolveApiBase()
+      if (!base) return false
+      const res = await fetch(`${base.replace(/\/+$/,"")}/api/push/send`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title, body, data, userIds }),
+      })
+      if (!res.ok) return false
+      const json = await res.json()
+      return Boolean(json?.ok)
+    } catch (e) {
+      return false
+    }
   }
 }

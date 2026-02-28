@@ -138,6 +138,23 @@ export function MovementForm({ navigation, route }: any) {
       Alert.alert("Sucesso", "Movimentação registrada com sucesso!", [
         { text: "OK", onPress: () => navigation.goBack() }
       ])
+      try {
+        const p = products.find((x) => x.id === formData.product_id)
+        if (p) {
+          const { data: allMovements } = await supabase
+            .from("product_movements")
+            .select("type, quantity")
+            .eq("gardener_id", user.id)
+            .eq("product_id", p.id)
+          let stock = 0
+          ;(allMovements || []).forEach((m: any) => { stock += String(m.type) === "in" ? Number(m.quantity) : -Number(m.quantity) })
+          if (stock <= 0) {
+            await NotificationService.sendPushToUserIds([user.id], "Sem estoque", String(p.name), { type: "stock", product_id: p.id, stock })
+          } else if (stock < Number(p.min_stock)) {
+            await NotificationService.sendPushToUserIds([user.id], "Estoque baixo", `${String(p.name)} • ${stock}`, { type: "stock", product_id: p.id, stock })
+          }
+        }
+      } catch {}
     } catch (error: any) {
       Alert.alert("Erro", "Erro ao registrar movimentação: " + error.message)
     } finally {

@@ -175,6 +175,11 @@ export function TransactionForm({ navigation, route, transaction: transactionPro
             due_date: formData.due_date,
           }
           await NotificationService.schedulePendingPaymentReminder(trxData, 3)
+          try {
+            const titlePush = "Pagamento pendente"
+            const bodyPush = `${formData.description || "Transação"} • ${toNumber(formData.amount).toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}`
+            await NotificationService.sendPushToUserIds([user.id], titlePush, bodyPush, { type: "transaction", id: newId })
+          } catch {}
         }
       }
 

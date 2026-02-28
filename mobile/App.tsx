@@ -132,6 +132,9 @@ export default function App() {
           importance: Notifications.AndroidImportance.MAX,
         })
       }
+
+      // Register Expo push token and save in profile
+      await NotificationService.registerExpoPushToken()
     }
     setup()
   }, [])

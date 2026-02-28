@@ -269,6 +269,12 @@ export function AppointmentForm({ navigation, appointment, onSave, route }: Appo
         }
       }
 
+      try {
+        const titlePush = appointment ? "Agendamento atualizado" : "Novo agendamento"
+        const bodyPush = `${formData.title} • ${clientName}`
+        await NotificationService.sendPushToUserIds([user.id], titlePush, bodyPush, { type: "appointment", id: (appointment?.id || created?.id) })
+      } catch {}
+
       if (onSave) {
         onSave()
       } else {
