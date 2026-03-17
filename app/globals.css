@@ -37,39 +37,39 @@
   --sidebar-ring: hsl(95 80% 45%);
 }
 
-/* Dark theme variables */
+/* Dark theme variables - 3-layer depth: sidebar (darkest) > content panel > cards */
 .dark {
-  --background: hsl(240 10% 10%);
-  --foreground: hsl(0 0% 98%);
-  --card: hsl(240 10% 12%);
-  --card-foreground: hsl(0 0% 98%);
-  --popover: hsl(240 10% 12%);
-  --popover-foreground: hsl(0 0% 98%);
+  --background: hsl(0 0% 9%);
+  --foreground: hsl(0 0% 96%);
+  --card: hsl(0 0% 12%);
+  --card-foreground: hsl(0 0% 96%);
+  --popover: hsl(0 0% 12%);
+  --popover-foreground: hsl(0 0% 96%);
   --primary: hsl(142 70% 45%);
   --primary-foreground: hsl(0 0% 0%);
-  --secondary: hsl(240 4% 20%);
-  --secondary-foreground: hsl(0 0% 98%);
-  --muted: hsl(240 4% 20%);
-  --muted-foreground: hsl(240 5% 70%);
-  --accent: hsl(240 4% 22%);
-  --accent-foreground: hsl(0 0% 98%);
+  --secondary: hsl(0 0% 15%);
+  --secondary-foreground: hsl(0 0% 96%);
+  --muted: hsl(0 0% 15%);
+  --muted-foreground: hsl(0 0% 50%);
+  --accent: hsl(0 0% 16%);
+  --accent-foreground: hsl(0 0% 96%);
   --destructive: hsl(0 70% 45%);
   --destructive-foreground: hsl(0 0% 98%);
-  --border: hsl(240 4% 25%);
-  --input: hsl(240 4% 25%);
+  --border: hsl(0 0% 18%);
+  --input: hsl(0 0% 18%);
   --ring: hsl(142 70% 45%);
   --chart-1: hsl(142 70% 45%);
-  --chart-2: hsl(159 60% 55%);
+  --chart-2: hsl(142 70% 60%);
   --chart-3: hsl(134 50% 50%);
   --chart-4: hsl(120 60% 40%);
   --chart-5: hsl(103 50% 55%);
-  --sidebar: hsl(240 10% 12%);
-  --sidebar-foreground: hsl(0 0% 98%);
+  --sidebar: hsl(0 0% 4%);
+  --sidebar-foreground: hsl(0 0% 96%);
   --sidebar-primary: hsl(142 70% 45%);
   --sidebar-primary-foreground: hsl(0 0% 0%);
-  --sidebar-accent: hsl(240 4% 20%);
-  --sidebar-accent-foreground: hsl(0 0% 98%);
-  --sidebar-border: hsl(240 4% 25%);
+  --sidebar-accent: hsl(0 0% 9%);
+  --sidebar-accent-foreground: hsl(0 0% 96%);
+  --sidebar-border: hsl(0 0% 12%);
   --sidebar-ring: hsl(142 70% 45%);
 }
 
@@ -182,13 +182,8 @@ body {
   }
 }
 
-/* Subtle neon glow for active sidebar indicator without affecting position */
 .sidebar-active-indicator {
-  /* brilho suave sem alterar posição */
-  box-shadow: 0 0 8px 2px var(--color-primary);
-  /* projeção para frente (direita), em direção ao ícone */
-  filter: saturate(1.1) drop-shadow(14px 0 10px var(--color-primary));
-  will-change: filter;
+  box-shadow: 0 0 6px 1px var(--color-primary);
 }
 
 .iris-gradient-text {

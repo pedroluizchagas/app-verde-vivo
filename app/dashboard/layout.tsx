@@ -26,19 +26,22 @@ export default async function DashboardLayout({
     .maybeSingle()
 
   return (
-    <div className="flex min-h-svh bg-muted/30">
-      <Sidebar profile={{ full_name: profile?.full_name ?? null, avatar_url: profile?.avatar_url ?? null }} />
-      <div className="flex flex-1 flex-col">
-        <main className="flex-1 pb-20 md:pb-0">
+    <div className="dark flex h-svh bg-sidebar overflow-hidden">
+      <Sidebar
+        profile={{
+          full_name: profile?.full_name ?? null,
+          avatar_url: profile?.avatar_url ?? null,
+        }}
+      />
+      <div className="flex flex-1 flex-col overflow-hidden md:py-3 md:pr-3">
+        <main className="flex-1 md:rounded-3xl bg-background overflow-y-auto pb-20 md:pb-0">
           <PageTransition>
-            <div className="container mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-8">
-              <div className="rounded-3xl border bg-card shadow-sm p-4 md:p-8">
-                {children}
-              </div>
+            <div className="mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-8">
+              {children}
             </div>
           </PageTransition>
         </main>
-        <div className="md:hidden">
+        <div className="md:hidden shrink-0">
           <MobileNav />
         </div>
       </div>
