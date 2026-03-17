@@ -26,13 +26,15 @@ export default async function DashboardLayout({
     .maybeSingle()
 
   return (
-    <div className="flex min-h-svh bg-background">
+    <div className="flex min-h-svh bg-muted/30">
       <Sidebar profile={{ full_name: profile?.full_name ?? null, avatar_url: profile?.avatar_url ?? null }} />
       <div className="flex flex-1 flex-col">
         <main className="flex-1 pb-20 md:pb-0">
           <PageTransition>
             <div className="container mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-8">
-              {children}
+              <div className="rounded-3xl border bg-card shadow-sm p-4 md:p-8">
+                {children}
+              </div>
             </div>
           </PageTransition>
         </main>

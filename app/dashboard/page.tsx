@@ -7,8 +7,10 @@ import { Button } from "@/components/ui/button"
 import { SimpleBarChart } from "@/components/reports/bar-chart"
 import { SimplePieChart } from "@/components/reports/pie-chart"
 import { ExportDashboardPDFButton } from "@/components/reports/export-button"
+import { DashboardFilters } from "@/components/dashboard/filters"
 
-export default async function DashboardPage() {
+export default async function DashboardPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
+  const sp = await searchParams
   const supabase = await createClient()
   const {
     data: { user },
@@ -93,8 +95,12 @@ export default async function DashboardPage() {
 
   // Financeiro mensal/anual
   const now = new Date()
-  const startMonth = new Date(now.getFullYear(), now.getMonth(), 1)
-  const endMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0)
+  const mParam = typeof sp?.m === "string" ? sp.m : null
+  const [yStr, mStr] = (mParam || "").split("-")
+  const mYear = Number(yStr) || now.getFullYear()
+  const mMonth = Number(mStr) || (now.getMonth() + 1)
+  const startMonth = new Date(mYear, mMonth - 1, 1)
+  const endMonth = new Date(mYear, mMonth, 0)
   const startYear = new Date(now.getFullYear(), 0, 1)
   const endYear = new Date(now.getFullYear(), 11, 31)
   const iso = (d: Date) => d.toISOString().slice(0, 10)
@@ -172,8 +178,13 @@ export default async function DashboardPage() {
   return (
     <div id="dashboard-root" className="flex flex-col gap-8">
       <div className="relative flex flex-col gap-2">
-        <h1 className="text-3xl font-bold tracking-tight">Olá, {profile?.full_name || "Jardineiro"}</h1>
-        <p className="text-sm text-muted-foreground">Bem-vindo à Íris</p>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Olá, {profile?.full_name || "Jardineiro"}</h1>
+            <p className="text-sm text-muted-foreground">Bem-vindo à Íris</p>
+          </div>
+          <DashboardFilters />
+        </div>
       </div>
 
       {/* Cards de topo removidos: a visão agora concentra-se no Resumo geral e nas listas abaixo */}
@@ -218,7 +229,7 @@ export default async function DashboardPage() {
       {/* Relatórios financeiros */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
         <SimpleBarChart
-          title="Financeiro mensal (receitas vs despesas)"
+          title="Financeiro do mês (receitas vs despesas)"
           data={[
             { label: "Receitas", value: monthIncome },
             { label: "Despesas", value: monthExpense },

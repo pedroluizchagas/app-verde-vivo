@@ -56,10 +56,10 @@ export function Sidebar({ profile }: { profile?: { full_name: string | null; ava
   return (
     <aside data-collapsed={collapsed}
       className={cn(
-      "hidden md:flex md:flex-col border-r bg-gradient-to-b from-background to-muted/40 backdrop-blur-sm shadow-sm transition-all md:sticky md:top-0 md:h-svh",
+      "hidden md:flex md:flex-col border-r bg-sidebar text-sidebar-foreground shadow-sm transition-all md:sticky md:top-0 md:h-svh",
       collapsed ? "md:w-16" : "md:w-64"
     )}>
-      <div className={cn("flex items-center px-3 py-3 border-b transition-all", collapsed ? "justify-center" : "gap-3")}
+      <div className={cn("flex items-center px-3 py-3 border-b border-sidebar-border transition-all", collapsed ? "justify-center" : "gap-3")}
            aria-label="Barra lateral">
         {!collapsed && (
           <div>
@@ -68,12 +68,12 @@ export function Sidebar({ profile }: { profile?: { full_name: string | null; ava
           </div>
         )}
         <div className={cn("ml-auto", collapsed ? "hidden" : "block")}> 
-          <Button variant="ghost" size="icon" onClick={toggle} aria-label="Minimizar sidebar">
+          <Button variant="ghost" size="icon" onClick={toggle} aria-label="Minimizar sidebar" className="text-sidebar-foreground">
             <ChevronLeft className="h-4 w-4" />
           </Button>
         </div>
         {collapsed && (
-          <Button variant="ghost" size="icon" onClick={toggle} aria-label="Expandir sidebar">
+          <Button variant="ghost" size="icon" onClick={toggle} aria-label="Expandir sidebar" className="text-sidebar-foreground">
             <ChevronRight className="h-4 w-4" />
           </Button>
         )}
@@ -84,7 +84,7 @@ export function Sidebar({ profile }: { profile?: { full_name: string | null; ava
           {sections.map((section) => (
             <div key={section.title}>
               {!collapsed && (
-                <div className="px-3 py-2 text-xs uppercase tracking-wider text-muted-foreground/80">
+                <div className="px-3 py-2 text-xs uppercase tracking-wider text-sidebar-foreground/60">
                   {section.title}
                 </div>
               )}
@@ -98,9 +98,9 @@ export function Sidebar({ profile }: { profile?: { full_name: string | null; ava
                       href={item.href}
                       title={item.label}
                       className={cn(
-                        "relative group flex items-center rounded-md py-2 text-sm transition-colors",
+                        "relative group flex items-center rounded-xl py-2 text-sm transition-colors",
                         collapsed ? "justify-center px-2" : "gap-3 px-3",
-                        isActive ? "bg-muted/70 text-foreground ring-1 ring-border" : "text-muted-foreground hover:text-foreground hover:bg-muted/60",
+                        isActive ? "bg-primary/20 text-sidebar-foreground ring-1 ring-primary" : "text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent",
                       )}
                     >
                       {/* Active indicator */}
@@ -121,7 +121,7 @@ export function Sidebar({ profile }: { profile?: { full_name: string | null; ava
         </div>
       </nav>
 
-      <div className={cn("border-t transition-all", collapsed ? "px-2 py-2" : "px-4 py-3")}> 
+      <div className={cn("border-t border-sidebar-border transition-all", collapsed ? "px-2 py-2" : "px-4 py-3")}> 
         <div className={cn("flex items-center", collapsed ? "justify-center" : "gap-3")}> 
           <div className="w-7 h-7 rounded-full overflow-hidden border">
             {/* eslint-disable-next-line @next/next/no-img-element */}

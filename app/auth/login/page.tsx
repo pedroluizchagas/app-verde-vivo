@@ -24,7 +24,20 @@ export default function LoginPage() {
       if (signErr) throw signErr
       window.location.href = "/dashboard"
     } catch (err: any) {
-      setError(err?.message || "Erro ao fazer login")
+      const msg = String(err?.message || "")
+      const isNetwork = /Failed to fetch|NetworkError|TypeError/i.test(msg)
+      const rawEnvUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ""
+      const looksLocal = /localhost|127\.0\.0\.1/i.test(String(rawEnvUrl))
+      const looksInsecure = /^http:\/\//i.test(String(rawEnvUrl)) && !looksLocal
+      const friendly =
+        looksLocal
+          ? "Configuração inválida do Supabase (URL local). Defina NEXT_PUBLIC_SUPABASE_URL com a URL pública do seu projeto."
+          : looksInsecure
+          ? "Configuração do Supabase usa HTTP. Em produção, utilize HTTPS na NEXT_PUBLIC_SUPABASE_URL."
+          : isNetwork
+          ? "Falha ao conectar ao servidor de autenticação. Verifique sua conexão e tente novamente."
+          : msg || "Erro ao fazer login"
+      setError(friendly)
     } finally {
       setLoading(false)
     }
@@ -70,4 +83,3 @@ export default function LoginPage() {
     </div>
   )
 }
-
