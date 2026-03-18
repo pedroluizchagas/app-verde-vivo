@@ -172,7 +172,7 @@ export function Sidebar({
                       "relative flex items-center rounded-xl py-2.5 text-sm transition-colors",
                       collapsed ? "justify-center px-2" : "gap-3 px-3",
                       isActive
-                        ? "bg-primary/15 text-primary font-medium"
+                        ? "text-primary font-medium"
                         : "text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent"
                     )}
                   >
