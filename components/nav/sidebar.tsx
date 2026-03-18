@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   Home,
   Users,
@@ -63,14 +63,15 @@ export function Sidebar({
   profile?: { full_name: string | null; avatar_url: string | null }
 }) {
   const pathname = usePathname()
-  const [collapsed, setCollapsed] = useState(() => {
-    if (typeof window === "undefined") return false
+  const [collapsed, setCollapsed] = useState(false)
+
+  useEffect(() => {
     try {
-      return localStorage.getItem("sidebar.collapsed") === "true"
-    } catch {
-      return false
-    }
-  })
+      if (localStorage.getItem("sidebar.collapsed") === "true") {
+        setCollapsed(true)
+      }
+    } catch {}
+  }, [])
   const userName = profile?.full_name ?? null
   const avatarUrl = profile?.avatar_url ?? null
 
