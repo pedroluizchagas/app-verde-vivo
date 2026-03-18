@@ -26,7 +26,7 @@ export default async function EditBudgetPage({
   const { data: clients } = await supabase.from("clients").select("id, name").eq("gardener_id", user!.id).order("name")
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon">
           <Link href={`/dashboard/budgets/${id}`}>
@@ -34,7 +34,7 @@ export default async function EditBudgetPage({
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Editar orçamento</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Editar orçamento</h1>
       </div>
 
       <BudgetForm clients={clients || []} budget={budget} />

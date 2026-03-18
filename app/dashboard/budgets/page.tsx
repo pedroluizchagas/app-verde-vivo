@@ -47,11 +47,11 @@ export default async function BudgetsPage() {
   const allBudgets = [...(pendingBudgets || []), ...(approvedBudgets || []), ...(rejectedBudgets || [])]
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Orçamentos</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight">Orçamentos</h1>
+          <p className="text-[13px] text-muted-foreground">
             {allBudgets.length} orçamento{allBudgets.length !== 1 ? "s" : ""}
           </p>
         </div>

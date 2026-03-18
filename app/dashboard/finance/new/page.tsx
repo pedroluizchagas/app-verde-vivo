@@ -23,7 +23,7 @@ export default async function NewTransactionPage() {
     .order("name")
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon">
           <Link href="/dashboard/finance">
@@ -31,7 +31,7 @@ export default async function NewTransactionPage() {
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Novo lançamento</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Novo lançamento</h1>
       </div>
 
       <TransactionForm categories={categories || []} clients={clients || []} />

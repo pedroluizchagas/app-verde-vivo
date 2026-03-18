@@ -43,10 +43,10 @@ export default async function TransactionDetailPage({ params }: { params: { id: 
     .eq("gardener_id", user!.id)
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="outline" size="icon" className="rounded-full"><Link href="/dashboard/finance"><ArrowLeft className="h-5 w-5" /></Link></Button>
-        <h1 className="text-2xl font-bold">Detalhe do lançamento</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Detalhe do lançamento</h1>
       </div>
 
       <TransactionDetail transaction={trx} categories={categories || []} clients={clients || []} />

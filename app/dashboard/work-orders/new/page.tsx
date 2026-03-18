@@ -67,7 +67,7 @@ export default async function NewWorkOrderPage({ searchParams }: { searchParams:
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon">
           <Link href="/dashboard/work-orders">
@@ -75,7 +75,7 @@ export default async function NewWorkOrderPage({ searchParams }: { searchParams:
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Nova ordem de serviço</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Nova ordem de serviço</h1>
       </div>
 
       <WorkOrderForm

@@ -23,10 +23,10 @@ export default async function PlanPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="outline" size="icon" className="rounded-full"><Link href="/dashboard"><ArrowLeft className="h-5 w-5" /></Link></Button>
-        <h1 className="text-2xl font-bold flex items-center gap-2"><CreditCard className="h-6 w-6 text-primary" /> Gerenciar plano</h1>
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2"><CreditCard className="h-6 w-6 text-primary" /> Gerenciar plano</h1>
       </div>
 
       <Card>

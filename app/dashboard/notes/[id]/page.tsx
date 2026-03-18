@@ -28,10 +28,10 @@ export default async function NoteDetailPage({ params }: { params: { id: string 
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Nota</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Nota</h1>
           <p className="text-sm text-muted-foreground">{new Date(note.created_at).toLocaleString("pt-BR")}</p>
         </div>
         <div className="flex items-center gap-2">

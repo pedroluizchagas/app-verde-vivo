@@ -37,7 +37,7 @@ export default async function ClientPhotosPage({
     .order("created_at", { ascending: false })
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon">
           <Link href={`/dashboard/clients/${id}`}>
@@ -46,7 +46,7 @@ export default async function ClientPhotosPage({
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">Fotos</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Fotos</h1>
           <p className="text-sm text-muted-foreground">{client.name}</p>
         </div>
       </div>

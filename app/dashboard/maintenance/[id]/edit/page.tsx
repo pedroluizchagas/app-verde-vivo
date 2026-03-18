@@ -22,7 +22,7 @@ export default async function EditMaintenancePlanPage({ params }: { params: Prom
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon">
           <Link href={`/dashboard/maintenance/${id}`}>
@@ -30,7 +30,7 @@ export default async function EditMaintenancePlanPage({ params }: { params: Prom
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Editar plano de manutenção</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Editar plano de manutenção</h1>
       </div>
 
       <MaintenancePlanForm initialPlan={plan} />

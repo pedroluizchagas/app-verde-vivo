@@ -73,7 +73,7 @@ export default async function AppointmentDetailPage({
     .maybeSingle()
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon">
@@ -82,7 +82,7 @@ export default async function AppointmentDetailPage({
               <span className="sr-only">Voltar</span>
             </Link>
           </Button>
-          <h1 className="text-2xl font-bold">Detalhes</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Detalhes</h1>
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline" size="icon">

@@ -39,13 +39,13 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
     .maybeSingle()
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon">
             <Link href="/dashboard/work-orders">Voltar</Link>
           </Button>
-          <h1 className="text-2xl font-bold">Ordem de serviço</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Ordem de serviço</h1>
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline" size="sm">

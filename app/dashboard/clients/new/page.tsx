@@ -5,7 +5,7 @@ import Link from "next/link"
 
 export default function NewClientPage() {
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon">
           <Link href="/dashboard/clients">
@@ -13,7 +13,7 @@ export default function NewClientPage() {
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Novo cliente</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Novo cliente</h1>
       </div>
 
       <ClientForm />

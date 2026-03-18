@@ -28,11 +28,11 @@ export default async function NotesPage({ searchParams }: { searchParams?: { q?:
   const { data: notes } = await query
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Notas</h1>
-          <p className="text-sm text-muted-foreground">{notes?.length || 0} nota{notes && notes.length !== 1 ? "s" : ""}</p>
+          <h1 className="text-2xl font-bold tracking-tight">Notas</h1>
+          <p className="text-[13px] text-muted-foreground">{notes?.length || 0} nota{notes && notes.length !== 1 ? "s" : ""}</p>
         </div>
         <Button asChild>
           <Link href="/dashboard/notes/new">Nova nota</Link>

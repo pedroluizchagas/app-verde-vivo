@@ -35,11 +35,11 @@ export default async function MaintenancePage() {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Clientes Plano Mensal</h1>
-          <p className="text-sm text-muted-foreground">{plans?.length || 0} cliente{plans && plans.length !== 1 ? "s" : ""}</p>
+          <h1 className="text-2xl font-bold tracking-tight">Clientes Plano Mensal</h1>
+          <p className="text-[13px] text-muted-foreground">{plans?.length || 0} cliente{plans && plans.length !== 1 ? "s" : ""}</p>
         </div>
         <Button asChild>
           <Link href="/dashboard/maintenance/new">Novo plano</Link>

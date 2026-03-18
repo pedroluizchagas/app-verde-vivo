@@ -38,11 +38,11 @@ export default async function SchedulePage() {
     .limit(20)
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Agenda</h1>
-          <p className="text-sm text-muted-foreground">
+          <h1 className="text-2xl font-bold tracking-tight">Agenda</h1>
+          <p className="text-[13px] text-muted-foreground">
             {upcomingAppointments?.length || 0} agendamento{upcomingAppointments?.length !== 1 ? "s" : ""} próximo
             {upcomingAppointments?.length !== 1 ? "s" : ""}
           </p>

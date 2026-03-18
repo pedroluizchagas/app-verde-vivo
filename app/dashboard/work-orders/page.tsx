@@ -13,11 +13,11 @@ export default async function WorkOrdersPage() {
     .order("created_at", { ascending: false })
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold">Ordens de serviço</h1>
-          <p className="text-sm text-muted-foreground">{orders?.length || 0} ordem{orders && orders.length !== 1 ? "s" : ""}</p>
+          <h1 className="text-2xl font-bold tracking-tight">Ordens de serviço</h1>
+          <p className="text-[13px] text-muted-foreground">{orders?.length || 0} ordem{orders && orders.length !== 1 ? "s" : ""}</p>
         </div>
         <Button asChild>
           <Link href="/dashboard/work-orders/new">Nova OS</Link>

@@ -23,7 +23,7 @@ export default async function NewMovementPage({ searchParams }: { searchParams: 
     .limit(50)
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon">
           <Link href="/dashboard/stock">
@@ -31,7 +31,7 @@ export default async function NewMovementPage({ searchParams }: { searchParams: 
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Nova movimentação</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Nova movimentação</h1>
       </div>
 
       <MovementForm products={products || []} appointments={appointments || []} defaultAppointmentId={appointment || null} />

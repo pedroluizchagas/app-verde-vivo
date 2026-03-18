@@ -26,13 +26,13 @@ export default async function TasksPage({ searchParams }: { searchParams?: { q?:
   const { data: tasks } = await query
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <CheckSquare className="h-6 w-6 text-primary" />
           <div>
-            <h1 className="text-2xl font-bold">Tarefas</h1>
-            <p className="text-sm text-muted-foreground">{tasks?.length || 0} tarefa{tasks && tasks.length !== 1 ? "s" : ""}</p>
+            <h1 className="text-2xl font-bold tracking-tight">Tarefas</h1>
+            <p className="text-[13px] text-muted-foreground">{tasks?.length || 0} tarefa{tasks && tasks.length !== 1 ? "s" : ""}</p>
           </div>
         </div>
         <Button asChild>

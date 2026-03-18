@@ -38,7 +38,7 @@ export default async function EditAppointmentPage({
     .order("created_at", { ascending: false })
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon">
           <Link href={`/dashboard/schedule/${id}`}>
@@ -46,7 +46,7 @@ export default async function EditAppointmentPage({
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Editar agendamento</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Editar agendamento</h1>
       </div>
 
       <AppointmentForm clients={clients || []} orders={(orders || []).map((o: any) => ({ id: String(o.id), title: String(o.title || "OS") }))} appointment={appointment} />

@@ -27,10 +27,10 @@ export default async function EditWorkOrderPage({ params }: { params: Promise<{ 
   const { data: products } = await supabase.from("products").select("id, name, unit, cost").eq("gardener_id", user!.id).order("name")
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon"><Link href={`/dashboard/work-orders/${id}`}><ArrowLeft className="h-5 w-5" /></Link></Button>
-        <h1 className="text-2xl font-bold">Editar OS</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Editar OS</h1>
       </div>
       <WorkOrderEditForm order={order} items={items || []} clients={clients || []} appointments={appointments || []} products={products || []} />
     </div>

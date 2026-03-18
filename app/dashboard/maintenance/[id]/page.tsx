@@ -27,10 +27,10 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
 
   if (!plan) {
     return (
-      <div className="flex flex-col gap-4 p-4">
+      <div className="flex flex-col gap-4">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon"><Link href="/dashboard/maintenance"><ArrowLeft className="h-5 w-5" /></Link></Button>
-          <h1 className="text-2xl font-bold">Plano não encontrado</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Plano não encontrado</h1>
         </div>
       </div>
     )
@@ -46,11 +46,11 @@ export default async function MaintenanceDetailPage({ params }: { params: Promis
   const visibleExecutions = (executions || []).filter((e: any) => String(e.cycle) !== "template")
 
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Button asChild variant="ghost" size="icon"><Link href="/dashboard/maintenance"><ArrowLeft className="h-5 w-5" /></Link></Button>
-          <h1 className="text-2xl font-bold">Detalhes do plano</h1>
+          <h1 className="text-2xl font-bold tracking-tight">Detalhes do plano</h1>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className={plan.status === "active" ? "border-green-500 text-green-600" : "border-muted-foreground text-muted-foreground"}>{plan.status}</Badge>

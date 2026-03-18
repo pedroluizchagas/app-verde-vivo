@@ -99,7 +99,7 @@ export default function AssistantPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-6 space-y-6">
+    <div className="flex flex-col gap-4">
       <Card>
         <CardHeader>
           <CardTitle>Assistente Íris</CardTitle>

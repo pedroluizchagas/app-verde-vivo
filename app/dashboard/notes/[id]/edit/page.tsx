@@ -23,8 +23,8 @@ export default async function NoteEditPage({ params }: { params: { id: string } 
   }
 
   return (
-    <div className="p-4">
-      <h1 className="text-2xl font-bold mb-4">Editar nota</h1>
+    <div className="flex flex-col gap-4">
+      <h1 className="text-2xl font-bold tracking-tight mb-4">Editar nota</h1>
       <NoteEditForm note={note} />
     </div>
   )

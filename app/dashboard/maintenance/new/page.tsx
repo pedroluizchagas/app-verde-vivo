@@ -5,7 +5,7 @@ import { MaintenancePlanForm } from "@/components/maintenance/plan-form"
 
 export default function NewMaintenancePlanPage() {
   return (
-    <div className="flex flex-col gap-4 p-4">
+    <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
         <Button asChild variant="ghost" size="icon">
           <Link href="/dashboard/maintenance">
@@ -13,7 +13,7 @@ export default function NewMaintenancePlanPage() {
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold">Novo plano de manutenção</h1>
+        <h1 className="text-2xl font-bold tracking-tight">Novo plano de manutenção</h1>
       </div>
       <MaintenancePlanForm />
     </div>
