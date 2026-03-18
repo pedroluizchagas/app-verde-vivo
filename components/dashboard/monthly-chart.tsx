@@ -30,56 +30,63 @@ function formatAxis(v: number) {
 
 export function MonthlyChart({ data }: { data: MonthData[] }) {
   return (
-    <div className="h-[280px] w-full">
+    <div className="h-[220px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} barGap={2} barCategoryGap="20%">
           <CartesianGrid
             strokeDasharray="3 3"
-            stroke="rgba(255,255,255,0.05)"
+            stroke="rgba(255,255,255,0.06)"
             vertical={false}
           />
           <XAxis
             dataKey="month"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: "#6b7280", fontSize: 12 }}
+            tick={{ fill: "#666", fontSize: 10 }}
           />
           <YAxis
             axisLine={false}
             tickLine={false}
-            tick={{ fill: "#6b7280", fontSize: 12 }}
+            tick={{ fill: "#666", fontSize: 10 }}
             tickFormatter={formatAxis}
-            width={40}
+            width={32}
           />
           <Tooltip
             contentStyle={{
               backgroundColor: "#1a1a1a",
-              border: "1px solid rgba(255,255,255,0.1)",
-              borderRadius: "8px",
+              border: "none",
+              borderRadius: "10px",
               color: "#fff",
-              fontSize: "13px",
+              fontSize: "11px",
+              padding: "8px 14px",
+              boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
             }}
             formatter={(value: number, name: string) => [
               formatCurrency(value),
               name === "receita" ? "Receita" : "Despesa",
             ]}
-            labelStyle={{ color: "#9ca3af" }}
+            labelStyle={{
+              color: "#888",
+              fontSize: "9px",
+              textTransform: "uppercase" as const,
+              letterSpacing: "0.05em",
+              marginBottom: "4px",
+            }}
             cursor={{ fill: "rgba(255,255,255,0.03)" }}
           />
           <Bar
             dataKey="receita"
             fill="#22c55e"
             radius={[4, 4, 0, 0]}
-            maxBarSize={20}
+            maxBarSize={16}
             name="receita"
           />
           <Bar
             dataKey="despesa"
-            fill="#4ade80"
+            fill="rgba(255,255,255,0.08)"
             radius={[4, 4, 0, 0]}
-            maxBarSize={20}
+            maxBarSize={16}
             name="despesa"
-            opacity={0.45}
           />
         </BarChart>
       </ResponsiveContainer>

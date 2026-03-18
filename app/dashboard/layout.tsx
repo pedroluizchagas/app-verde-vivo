@@ -34,12 +34,14 @@ export default async function DashboardLayout({
         }}
       />
       <div className="flex flex-1 flex-col overflow-hidden md:py-3 md:pr-3">
-        <main className="flex-1 md:rounded-3xl bg-background overflow-y-auto pb-20 md:pb-0">
-          <PageTransition>
-            <div className="mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-8">
-              {children}
-            </div>
-          </PageTransition>
+        <main className="flex-1 md:rounded-3xl bg-background overflow-hidden pb-20 md:pb-0">
+          <div className="h-full overflow-y-auto">
+            <PageTransition>
+              <div className="mx-auto max-w-7xl px-4 md:px-6 py-6 md:py-8">
+                {children}
+              </div>
+            </PageTransition>
+          </div>
         </main>
         <div className="md:hidden shrink-0">
           <MobileNav />

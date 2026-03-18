@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr"
 import { NextResponse, type NextRequest } from "next/server"
+import { isSupabaseUnreachable } from "./errors"
 
 let lastSupabaseUnreachableAt = 0
 const SUPABASE_UNREACHABLE_TTL_MS = 30_000
@@ -80,15 +81,23 @@ export async function updateSession(request: NextRequest) {
         supabaseResponse = NextResponse.next({ request })
         toClear.forEach(({ name }) => supabaseResponse.cookies.set(name, "", { maxAge: 0, path: "/" }))
       }
-    } else if (causeCode === "ENOTFOUND" || causeCode === "EAI_AGAIN" || causeCode === "ECONNREFUSED" || causeCode === "ETIMEDOUT") {
-      const now = Date.now()
-      const shouldLog = now - lastSupabaseUnreachableAt >= SUPABASE_UNREACHABLE_TTL_MS
-      lastSupabaseUnreachableAt = now
-      if (shouldLog) {
-        console.error("[v0] Supabase unreachable. Check NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl)
-      }
     } else {
-      console.error("[v0] Error in middleware:", error)
+      const unreachable =
+        causeCode === "ENOTFOUND" ||
+        causeCode === "EAI_AGAIN" ||
+        causeCode === "ECONNREFUSED" ||
+        causeCode === "ETIMEDOUT" ||
+        isSupabaseUnreachable(error)
+      if (unreachable) {
+        const now = Date.now()
+        const shouldLog = now - lastSupabaseUnreachableAt >= SUPABASE_UNREACHABLE_TTL_MS
+        lastSupabaseUnreachableAt = now
+        if (shouldLog) {
+          console.error("[v0] Supabase unreachable. Check NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl)
+        }
+      } else {
+        console.error("[v0] Error in middleware:", error)
+      }
     }
   }
 
