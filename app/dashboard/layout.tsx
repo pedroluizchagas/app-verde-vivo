@@ -25,13 +25,39 @@ export default async function DashboardLayout({
     .eq("id", user!.id)
     .maybeSingle()
 
+  const now = new Date()
+  now.setHours(0, 0, 0, 0)
+
+  const { data: nextAppointment } = await supabase
+    .from("appointments")
+    .select("id, title, type, scheduled_date, all_day, client:clients(name)")
+    .eq("gardener_id", user!.id)
+    .neq("status", "cancelled")
+    .neq("status", "completed")
+    .gte("scheduled_date", now.toISOString())
+    .order("scheduled_date", { ascending: true })
+    .limit(1)
+    .maybeSingle()
+
   return (
-    <div className="dark flex h-svh bg-sidebar overflow-hidden">
+    <div className="flex h-svh bg-sidebar overflow-hidden">
       <Sidebar
         profile={{
           full_name: profile?.full_name ?? null,
           avatar_url: profile?.avatar_url ?? null,
         }}
+        nextAppointment={
+          nextAppointment
+            ? {
+                id: nextAppointment.id,
+                title: nextAppointment.title,
+                type: nextAppointment.type,
+                scheduled_date: nextAppointment.scheduled_date,
+                all_day: nextAppointment.all_day,
+                clientName: (nextAppointment.client as any)?.name ?? null,
+              }
+            : null
+        }
       />
       <div className="flex flex-1 flex-col overflow-hidden md:py-3 md:pr-3">
         <main className="flex-1 md:rounded-3xl bg-background overflow-hidden pb-20 md:pb-0">

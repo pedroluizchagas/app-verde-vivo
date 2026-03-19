@@ -15,9 +15,11 @@ export function ThemeToggle() {
 
   const isDark = (resolvedTheme || theme) === "dark"
 
+  const cls = "h-9 w-9 rounded-full border border-border bg-card text-muted-foreground hover:bg-accent"
+
   if (!mounted) {
     return (
-      <Button variant="ghost" size="icon" aria-label="Alternar tema" disabled>
+      <Button variant="ghost" size="icon" aria-label="Alternar tema" className={cls} disabled>
         <Sun className="h-4 w-4" />
       </Button>
     )
@@ -28,6 +30,7 @@ export function ThemeToggle() {
       variant="ghost"
       size="icon"
       aria-label="Alternar tema"
+      className={cls}
       onClick={() => setTheme(isDark ? "light" : "dark")}
     >
       {isDark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}

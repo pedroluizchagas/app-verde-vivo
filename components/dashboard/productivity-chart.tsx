@@ -15,7 +15,7 @@ export function ProductivityChart({
     <div className="grid grid-cols-2 gap-6">
       <div>
         <p className="text-[11px] text-muted-foreground mb-1.5">
-          Servicos Concluidos
+          Serviços Concluídos
         </p>
         <p className="text-[28px] font-bold leading-none mb-2.5">
           {completedPct}%
@@ -26,11 +26,11 @@ export function ProductivityChart({
             style={{ width: `${completedPct}%` }}
           />
         </div>
-        <p className="text-[10px] text-muted-foreground mt-1.5">do mes atual</p>
+        <p className="text-[10px] text-muted-foreground mt-1.5">do mês atual</p>
       </div>
       <div>
         <p className="text-[11px] text-muted-foreground mb-1.5">
-          Servicos Pendentes
+          Serviços Pendentes
         </p>
         <p className="text-[28px] font-bold leading-none mb-2.5">
           {remainingPct}%
@@ -41,7 +41,7 @@ export function ProductivityChart({
             style={{ width: `${remainingPct}%` }}
           />
         </div>
-        <p className="text-[10px] text-muted-foreground mt-1.5">do mes atual</p>
+        <p className="text-[10px] text-muted-foreground mt-1.5">do mês atual</p>
       </div>
     </div>
   )

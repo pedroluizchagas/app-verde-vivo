@@ -1,3 +1,4 @@
+import { Suspense } from "react"
 import { createClient } from "@/lib/supabase/server"
 import { Card, CardContent } from "@/components/ui/card"
 import {
@@ -6,7 +7,7 @@ import {
   TrendingUp,
   TrendingDown,
   DollarSign,
-  CreditCard,
+  Wallet,
   Bell,
 } from "lucide-react"
 import Link from "next/link"
@@ -14,6 +15,7 @@ import { MonthlyChart } from "@/components/dashboard/monthly-chart"
 import { MiniCalendar } from "@/components/dashboard/mini-calendar"
 import { ProductivityChart } from "@/components/dashboard/productivity-chart"
 import { DashboardFilters } from "@/components/dashboard/filters"
+import { ThemeToggle } from "@/components/ui/theme-toggle"
 
 function ChangeIndicator({ value }: { value: number }) {
   const isPositive = value >= 0
@@ -32,7 +34,7 @@ function ChangeIndicator({ value }: { value: number }) {
         {isPositive ? "+" : ""}
         {value.toFixed(1)}%
       </span>
-      <span className="text-muted-foreground font-normal">do mes passado</span>
+      <span className="text-muted-foreground font-normal">do mês passado</span>
     </div>
   )
 }
@@ -54,18 +56,9 @@ export default async function DashboardPage({
     .eq("id", user!.id)
     .single()
 
-  // --- Data fetching ---
-
-  const { count: clientsCount } = await supabase
-    .from("clients")
-    .select("*", { count: "exact", head: true })
-    .eq("gardener_id", user!.id)
-
   const now = new Date()
   const dayStart = new Date()
   dayStart.setHours(0, 0, 0, 0)
-  const dayEnd = new Date()
-  dayEnd.setHours(23, 59, 59, 999)
 
   const mParam = typeof sp?.m === "string" ? sp.m : null
   const [yStr, mStr] = (mParam || "").split("-")
@@ -78,7 +71,37 @@ export default async function DashboardPage({
   const prevStartMonth = new Date(mYear, mMonth - 2, 1)
   const prevEndMonth = new Date(mYear, mMonth - 1, 0)
 
-  // Active clients (last 30 days)
+  // --- Total de clientes ---
+  const { count: clientsCount } = await supabase
+    .from("clients")
+    .select("*", { count: "exact", head: true })
+    .eq("gardener_id", user!.id)
+
+  // Novos clientes este mes vs mes anterior (para o ChangeIndicator)
+  const { count: newClientsThisMonth } = await supabase
+    .from("clients")
+    .select("*", { count: "exact", head: true })
+    .eq("gardener_id", user!.id)
+    .gte("created_at", startMonth.toISOString())
+    .lte("created_at", endMonth.toISOString())
+
+  const { count: newClientsPrevMonth } = await supabase
+    .from("clients")
+    .select("*", { count: "exact", head: true })
+    .eq("gardener_id", user!.id)
+    .gte("created_at", prevStartMonth.toISOString())
+    .lte("created_at", prevEndMonth.toISOString())
+
+  const clientsChange =
+    (newClientsPrevMonth || 0) > 0
+      ? (((newClientsThisMonth || 0) - (newClientsPrevMonth || 0)) /
+          (newClientsPrevMonth || 0)) *
+        100
+      : (newClientsThisMonth || 0) > 0
+        ? 100
+        : 0
+
+  // --- Clientes ativos (ultimos 30 dias) ---
   const since30 = new Date()
   since30.setDate(since30.getDate() - 30)
   const { data: recentAppointments } = await supabase
@@ -93,7 +116,6 @@ export default async function DashboardPage({
       .filter(Boolean)
   ).size
 
-  // Previous 30-day active clients (30-60 days ago)
   const since60 = new Date()
   since60.setDate(since60.getDate() - 60)
   const { data: prev30Appointments } = await supabase
@@ -116,21 +138,7 @@ export default async function DashboardPage({
         ? 100
         : 0
 
-  // All paid transactions for totals
-  const { data: paidTx } = await supabase
-    .from("financial_transactions")
-    .select("amount, type, status")
-    .eq("gardener_id", user!.id)
-    .eq("status", "paid")
-
-  const totalRevenue = (paidTx || [])
-    .filter((t) => t.type === "income")
-    .reduce((s, t) => s + Number(t.amount), 0)
-  const totalExpense = (paidTx || [])
-    .filter((t) => t.type === "expense")
-    .reduce((s, t) => s + Number(t.amount), 0)
-
-  // This month financial
+  // --- Financeiro do mes selecionado ---
   const { data: monthTx } = await supabase
     .from("financial_transactions")
     .select("amount, type, status, transaction_date")
@@ -144,8 +152,9 @@ export default async function DashboardPage({
   const monthExpense = (monthTx || [])
     .filter((t) => t.type === "expense" && t.status === "paid")
     .reduce((s, t) => s + Number(t.amount), 0)
+  const monthResult = monthIncome - monthExpense
 
-  // Previous month financial
+  // --- Financeiro do mes anterior ---
   const { data: prevMonthTx } = await supabase
     .from("financial_transactions")
     .select("amount, type, status, transaction_date")
@@ -159,6 +168,7 @@ export default async function DashboardPage({
   const prevMonthExpense = (prevMonthTx || [])
     .filter((t) => t.type === "expense" && t.status === "paid")
     .reduce((s, t) => s + Number(t.amount), 0)
+  const prevMonthResult = prevMonthIncome - prevMonthExpense
 
   const revenueChange =
     prevMonthIncome > 0
@@ -166,16 +176,19 @@ export default async function DashboardPage({
       : monthIncome > 0
         ? 100
         : 0
-  const expenseChange =
-    prevMonthExpense > 0
-      ? ((monthExpense - prevMonthExpense) / prevMonthExpense) * 100
-      : monthExpense > 0
-        ? 100
-        : 0
 
-  // Year transactions for monthly chart
-  const startYear = new Date(now.getFullYear(), 0, 1)
-  const endYear = new Date(now.getFullYear(), 11, 31)
+  const resultChange =
+    prevMonthResult !== 0
+      ? ((monthResult - prevMonthResult) / Math.abs(prevMonthResult)) * 100
+      : monthResult > 0
+        ? 100
+        : monthResult < 0
+          ? -100
+          : 0
+
+  // --- Grafico anual: usa mYear do filtro ---
+  const startYear = new Date(mYear, 0, 1)
+  const endYear = new Date(mYear, 11, 31)
   const { data: yearTx } = await supabase
     .from("financial_transactions")
     .select("amount, type, status, transaction_date")
@@ -206,7 +219,7 @@ export default async function DashboardPage({
   const totalYearReceita = monthlyData.reduce((s, d) => s + d.receita, 0)
   const totalYearDespesa = monthlyData.reduce((s, d) => s + d.despesa, 0)
 
-  // Productivity
+  // --- Produtividade ---
   const { count: completedThisMonth } = await supabase
     .from("appointments")
     .select("*", { count: "exact", head: true })
@@ -222,7 +235,7 @@ export default async function DashboardPage({
     .gte("scheduled_date", startMonth.toISOString())
     .lte("scheduled_date", endMonth.toISOString())
 
-  // Upcoming appointments (today + future)
+  // --- Proximos agendamentos ---
   const { data: upcomingAppointments } = await supabase
     .from("appointments")
     .select(
@@ -234,10 +247,10 @@ export default async function DashboardPage({
     .limit(6)
 
   const typeLabels: Record<string, string> = {
-    service: "Servico",
-    technical_visit: "Visita tecnica",
+    service: "Serviço",
+    technical_visit: "Visita técnica",
     training: "Treinamento",
-    meeting: "Reuniao",
+    meeting: "Reunião",
     other: "Outro",
   }
 
@@ -264,17 +277,21 @@ export default async function DashboardPage({
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight leading-tight">
-            Ola, {profile?.full_name || "Jardineiro"}!
+            Olá, {profile?.full_name || "Jardineiro"}
           </h1>
           <p className="text-[13px] text-muted-foreground mt-1">
-            Aqui esta a visao geral do seu negocio!
+            Aqui está a visão geral do seu negócio.
           </p>
         </div>
         <div className="hidden md:flex items-center gap-2">
+          <ThemeToggle />
           <button className="h-9 w-9 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:bg-accent transition">
             <Bell className="h-4 w-4" />
           </button>
-          <div className="flex items-center gap-2.5 bg-card rounded-full py-1.5 pl-1.5 pr-4 border border-border shadow-sm">
+          <Link
+            href="/dashboard/profile"
+            className="flex items-center gap-2.5 bg-card rounded-full py-1.5 pl-1.5 pr-4 border border-border shadow-sm hover:bg-accent transition-colors"
+          >
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={profile?.avatar_url || "/placeholder-user.jpg"}
@@ -283,11 +300,11 @@ export default async function DashboardPage({
             />
             <div className="hidden lg:block">
               <p className="text-[12px] font-semibold leading-tight">
-                {profile?.full_name || "Usuario"}
+                {profile?.full_name || "Usuário"}
               </p>
               <p className="text-[10px] text-muted-foreground">{user?.email}</p>
             </div>
-          </div>
+          </Link>
         </div>
       </div>
 
@@ -296,7 +313,7 @@ export default async function DashboardPage({
         <Card className="py-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-muted-foreground font-medium">
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 Total de Clientes
               </span>
               <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -306,14 +323,14 @@ export default async function DashboardPage({
             <p className="text-[22px] font-bold leading-tight mb-0.5">
               {(clientsCount || 0).toLocaleString("pt-BR")}
             </p>
-            <ChangeIndicator value={activeClientsChange} />
+            <ChangeIndicator value={clientsChange} />
           </CardContent>
         </Card>
 
         <Card className="py-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-muted-foreground font-medium">
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
                 Clientes Ativos
               </span>
               <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -330,15 +347,15 @@ export default async function DashboardPage({
         <Card className="py-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-muted-foreground font-medium">
-                Receita Total
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                Receita do Mês
               </span>
               <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
                 <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
             <p className="text-lg font-bold leading-tight mb-0.5">
-              {fmt(totalRevenue)}
+              {fmt(monthIncome)}
             </p>
             <ChangeIndicator value={revenueChange} />
           </CardContent>
@@ -347,32 +364,32 @@ export default async function DashboardPage({
         <Card className="py-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-muted-foreground font-medium">
-                Despesa Total
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                Resultado do Mês
               </span>
               <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
-                <CreditCard className="h-3.5 w-3.5 text-muted-foreground" />
+                <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
             <p className="text-lg font-bold leading-tight mb-0.5">
-              {fmt(totalExpense)}
+              {fmt(monthResult)}
             </p>
-            <ChangeIndicator value={expenseChange} />
+            <ChangeIndicator value={resultChange} />
           </CardContent>
         </Card>
       </div>
 
-      {/* Content Grid: Left (chart + productivity) | Right (calendar + agenda) */}
+      {/* Content Grid: Left (grafico + produtividade) | Right (calendario + agenda) */}
       <div className="grid grid-cols-1 lg:grid-cols-[1fr_280px] gap-3">
-        {/* Left Column */}
+        {/* Coluna esquerda */}
         <div className="flex flex-col gap-3">
-          {/* Sales Overview Chart */}
+          {/* Grafico de vendas */}
           <Card className="py-0">
             <CardContent className="p-5">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div>
                   <h2 className="text-[14px] font-semibold">
-                    Visao Geral das Vendas
+                    Visão Geral das Vendas &mdash; {mYear}
                   </h2>
                   <div className="flex items-center gap-4 mt-1.5">
                     <div className="flex items-center gap-1.5">
@@ -389,20 +406,31 @@ export default async function DashboardPage({
                     </div>
                   </div>
                 </div>
-                <DashboardFilters />
+                <Suspense
+                  fallback={
+                    <div className="h-9 w-36 rounded-full bg-muted animate-pulse" />
+                  }
+                >
+                  <DashboardFilters />
+                </Suspense>
               </div>
               <MonthlyChart data={monthlyData} />
             </CardContent>
           </Card>
 
-          {/* Productivity */}
+          {/* Produtividade */}
           <Card className="py-0">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-[14px] font-semibold">Produtividade</h2>
-                <span className="text-muted-foreground text-lg tracking-widest cursor-pointer leading-none select-none">
-                  ...
-                </span>
+                <h2 className="text-[14px] font-semibold">
+                  Produtividade do Mês
+                </h2>
+                <Link
+                  href="/dashboard/schedule"
+                  className="text-[11px] text-muted-foreground hover:text-foreground transition-colors font-medium"
+                >
+                  Ver agenda
+                </Link>
               </div>
               <ProductivityChart
                 completed={completedThisMonth || 0}
@@ -415,20 +443,20 @@ export default async function DashboardPage({
           </Card>
         </div>
 
-        {/* Right Column */}
+        {/* Coluna direita */}
         <div className="flex flex-col gap-3">
-          {/* Mini Calendar */}
+          {/* Mini Calendario */}
           <Card className="py-0">
             <CardContent className="p-4">
               <MiniCalendar />
             </CardContent>
           </Card>
 
-          {/* Agenda */}
+          {/* Proxima Agenda */}
           <Card className="py-0 flex-1 min-h-0">
             <CardContent className="p-4 h-full flex flex-col">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-[14px] font-semibold">Proxima Agenda</h2>
+                <h2 className="text-[14px] font-semibold">Próxima Agenda</h2>
                 <Link
                   href="/dashboard/schedule"
                   className="text-[10px] text-primary hover:underline font-medium"
