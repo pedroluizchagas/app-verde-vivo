@@ -12,7 +12,7 @@ import {
 import { useTheme } from "next-themes"
 import { useSyncExternalStore } from "react"
 
-type MonthData = {
+type ChartEntry = {
   month: string
   receita: number
   despesa: number
@@ -30,7 +30,7 @@ function formatAxis(v: number) {
   return String(v)
 }
 
-export function MonthlyChart({ data }: { data: MonthData[] }) {
+export function MonthlyChart({ data }: { data: ChartEntry[] }) {
   const { resolvedTheme } = useTheme()
   const mounted = useSyncExternalStore(
     () => () => {},
@@ -39,6 +39,9 @@ export function MonthlyChart({ data }: { data: MonthData[] }) {
   )
 
   const isDark = !mounted || resolvedTheme === "dark"
+
+  // Visao diaria quando ha mais de 12 entradas (dias do mes)
+  const isDailyView = data.length > 12
 
   const gridStroke = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"
   const axisColor = isDark ? "#666" : "#9a9a9a"
@@ -63,6 +66,8 @@ export function MonthlyChart({ data }: { data: MonthData[] }) {
             axisLine={false}
             tickLine={false}
             tick={{ fill: axisColor, fontSize: 10 }}
+            // Na visao diaria exibe apenas um label a cada 5 dias para nao poluir
+            interval={isDailyView ? 4 : 0}
           />
           <YAxis
             axisLine={false}
@@ -98,14 +103,14 @@ export function MonthlyChart({ data }: { data: MonthData[] }) {
             dataKey="receita"
             fill="var(--color-primary)"
             radius={[4, 4, 0, 0]}
-            maxBarSize={16}
+            maxBarSize={isDailyView ? 8 : 16}
             name="receita"
           />
           <Bar
             dataKey="despesa"
             fill={despesaFill}
             radius={[4, 4, 0, 0]}
-            maxBarSize={16}
+            maxBarSize={isDailyView ? 8 : 16}
             name="despesa"
           />
         </BarChart>

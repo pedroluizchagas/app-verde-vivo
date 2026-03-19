@@ -8,7 +8,6 @@ import {
   TrendingDown,
   DollarSign,
   Wallet,
-  Bell,
 } from "lucide-react"
 import Link from "next/link"
 import { MonthlyChart } from "@/components/dashboard/monthly-chart"
@@ -16,6 +15,7 @@ import { MiniCalendar } from "@/components/dashboard/mini-calendar"
 import { ProductivityChart } from "@/components/dashboard/productivity-chart"
 import { DashboardFilters } from "@/components/dashboard/filters"
 import { ThemeToggle } from "@/components/ui/theme-toggle"
+import { NotificationsBell } from "@/components/dashboard/notifications-bell"
 
 function ChangeIndicator({ value }: { value: number }) {
   const isPositive = value >= 0
@@ -61,15 +61,19 @@ export default async function DashboardPage({
   dayStart.setHours(0, 0, 0, 0)
 
   const mParam = typeof sp?.m === "string" ? sp.m : null
-  const [yStr, mStr] = (mParam || "").split("-")
-  const mYear = Number(yStr) || now.getFullYear()
-  const mMonth = Number(mStr) || now.getMonth() + 1
-  const startMonth = new Date(mYear, mMonth - 1, 1)
-  const endMonth = new Date(mYear, mMonth, 0)
+  const mParts = (mParam || "").split("-")
+  const mYear = Number(mParts[0]) || now.getFullYear()
+  // null = nenhum mes selecionado (visao anual); number = mes especifico (visao diaria)
+  const mMonth: number | null = mParts[1] ? (Number(mParts[1]) || null) : null
+
+  // KPI cards sempre comparam um mes concreto: o selecionado ou o mes atual
+  const kpiMonth = mMonth ?? (now.getMonth() + 1)
+  const startMonth = new Date(mYear, kpiMonth - 1, 1)
+  const endMonth = new Date(mYear, kpiMonth, 0)
   const iso = (d: Date) => d.toISOString().slice(0, 10)
 
-  const prevStartMonth = new Date(mYear, mMonth - 2, 1)
-  const prevEndMonth = new Date(mYear, mMonth - 1, 0)
+  const prevStartMonth = new Date(mYear, kpiMonth - 2, 1)
+  const prevEndMonth = new Date(mYear, kpiMonth - 1, 0)
 
   // --- Total de clientes ---
   const { count: clientsCount } = await supabase
@@ -200,24 +204,47 @@ export default async function DashboardPage({
     "Jan", "Fev", "Mar", "Abr", "Mai", "Jun",
     "Jul", "Ago", "Set", "Out", "Nov", "Dez",
   ]
-  const monthlyData = mLabels.map((label, i) => {
-    const txs = (yearTx || []).filter((t) => {
-      const d = new Date(t.transaction_date)
-      return d.getMonth() === i
-    })
-    return {
-      month: label,
-      receita: txs
-        .filter((t) => t.type === "income" && t.status === "paid")
-        .reduce((s, t) => s + Number(t.amount), 0),
-      despesa: txs
-        .filter((t) => t.type === "expense" && t.status === "paid")
-        .reduce((s, t) => s + Number(t.amount), 0),
-    }
-  })
 
-  const totalYearReceita = monthlyData.reduce((s, d) => s + d.receita, 0)
-  const totalYearDespesa = monthlyData.reduce((s, d) => s + d.despesa, 0)
+  // Parseamos datas com horario local (T12:00:00) para evitar erros de fuso
+  // quando o banco retorna strings de data sem horario (ex: "2026-03-01")
+  const parseLocalDate = (dateStr: string) => new Date(`${dateStr}T12:00:00`)
+
+  type ChartEntry = { month: string; receita: number; despesa: number }
+
+  const sumTx = (txs: typeof yearTx, type: string) =>
+    (txs || [])
+      .filter((t) => t.type === type && t.status === "paid")
+      .reduce((s, t) => s + Number(t.amount), 0)
+
+  const chartData: ChartEntry[] = mMonth != null
+    ? // Visao diaria: uma barra por dia do mes selecionado
+      Array.from({ length: endMonth.getDate() }, (_, dayIdx) => {
+        const day = dayIdx + 1
+        const txs = (yearTx || []).filter((t) => {
+          const d = parseLocalDate(t.transaction_date)
+          return d.getMonth() + 1 === mMonth && d.getDate() === day
+        })
+        return {
+          month: String(day),
+          receita: sumTx(txs, "income"),
+          despesa: sumTx(txs, "expense"),
+        }
+      })
+    : // Visao anual: uma barra por mes
+      mLabels.map((label, i) => {
+        const txs = (yearTx || []).filter((t) => {
+          const d = parseLocalDate(t.transaction_date)
+          return d.getMonth() === i
+        })
+        return {
+          month: label,
+          receita: sumTx(txs, "income"),
+          despesa: sumTx(txs, "expense"),
+        }
+      })
+
+  const totalChartReceita = chartData.reduce((s, d) => s + d.receita, 0)
+  const totalChartDespesa = chartData.reduce((s, d) => s + d.despesa, 0)
 
   // --- Produtividade ---
   const { count: completedThisMonth } = await supabase
@@ -285,9 +312,7 @@ export default async function DashboardPage({
         </div>
         <div className="hidden md:flex items-center gap-2">
           <ThemeToggle />
-          <button className="h-9 w-9 rounded-full border border-border bg-card flex items-center justify-center text-muted-foreground hover:bg-accent transition">
-            <Bell className="h-4 w-4" />
-          </button>
+          <NotificationsBell />
           <Link
             href="/dashboard/profile"
             className="flex items-center gap-2.5 bg-card rounded-full py-1.5 pl-1.5 pr-4 border border-border shadow-sm hover:bg-accent transition-colors"
@@ -389,19 +414,22 @@ export default async function DashboardPage({
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-4">
                 <div>
                   <h2 className="text-[14px] font-semibold">
-                    Visão Geral das Vendas &mdash; {mYear}
+                    Desempenho Financeiro &mdash;{" "}
+                    {mMonth != null
+                      ? `${mLabels[mMonth - 1]} / ${mYear}`
+                      : mYear}
                   </h2>
                   <div className="flex items-center gap-4 mt-1.5">
                     <div className="flex items-center gap-1.5">
                       <span className="h-2.5 w-2.5 rounded-sm bg-primary" />
                       <span className="text-[11px] text-muted-foreground">
-                        Receita {fmtK(totalYearReceita)}
+                        Receita {fmtK(totalChartReceita)}
                       </span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <span className="h-2.5 w-2.5 rounded-sm bg-muted-foreground/20" />
                       <span className="text-[11px] text-muted-foreground">
-                        Despesa {fmtK(totalYearDespesa)}
+                        Despesa {fmtK(totalChartDespesa)}
                       </span>
                     </div>
                   </div>
@@ -414,7 +442,7 @@ export default async function DashboardPage({
                   <DashboardFilters />
                 </Suspense>
               </div>
-              <MonthlyChart data={monthlyData} />
+              <MonthlyChart data={chartData} />
             </CardContent>
           </Card>
 
