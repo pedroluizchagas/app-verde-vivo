@@ -24,14 +24,17 @@ export default async function EditClientPage({
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <Button asChild variant="ghost" size="icon">
+      <div className="flex items-center gap-2">
+        <Button asChild variant="ghost" size="icon" className="shrink-0">
           <Link href={`/dashboard/clients/${id}`}>
             <ArrowLeft className="h-5 w-5" />
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold tracking-tight">Editar cliente</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight leading-tight">Editar cliente</h1>
+          <p className="text-[13px] text-muted-foreground">Atualize os dados do cliente</p>
+        </div>
       </div>
 
       <ClientForm client={client} />

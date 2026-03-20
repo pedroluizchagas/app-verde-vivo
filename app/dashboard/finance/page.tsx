@@ -3,14 +3,15 @@ import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Badge } from "@/components/ui/badge"
 import {
   Plus,
-  BarChart3,
   AlertCircle,
   DollarSign,
   TrendingUp,
   TrendingDown,
+  Banknote,
+  ArrowUpRight,
+  ArrowDownRight,
 } from "lucide-react"
 import { TransactionCard } from "@/components/finance/transaction-card"
 import { ExportButtons } from "@/components/finance/export-buttons"
@@ -34,9 +35,7 @@ export default async function FinancePage() {
 
   const { data: monthTransactions } = await supabase
     .from("financial_transactions")
-    .select(
-      `*, category:financial_categories(name, parent_id), client:clients(name)`
-    )
+    .select("*, category:financial_categories(name, parent_id), client:clients(name)")
     .eq("gardener_id", user!.id)
     .gte("transaction_date", toISODate(startOfMonth))
     .lte("transaction_date", toISODate(endOfMonth))
@@ -76,6 +75,7 @@ export default async function FinancePage() {
   const monthExpense = (monthTransactions || [])
     .filter((t) => t.type === "expense")
     .reduce((sum, t) => sum + Number(t.amount), 0)
+  const monthResult = monthIncome - monthExpense
 
   const currentBalance = (paidTransactions || []).reduce(
     (sum, t) =>
@@ -95,20 +95,17 @@ export default async function FinancePage() {
       currency: "BRL",
     }).format(value)
 
-  const { data: partnerCredits } = await supabase
-    .from("partner_credits")
-    .select(
-      "id, partner_name, credit_amount, credit_type, status, created_at"
-    )
-    .eq("gardener_id", user!.id)
-    .eq("status", "available")
-    .order("created_at", { ascending: false })
-    .limit(5)
+  const monthLabel = today.toLocaleDateString("pt-BR", {
+    month: "long",
+    year: "numeric",
+  })
 
-  const totalPartnerCredits = (partnerCredits || []).reduce(
-    (sum, c) => sum + Number(c.credit_amount),
-    0
-  )
+  const incomeCount = (monthTransactions || []).filter(
+    (t) => t.type === "income"
+  ).length
+  const expenseCount = (monthTransactions || []).filter(
+    (t) => t.type === "expense"
+  ).length
 
   return (
     <div className="flex flex-col gap-4">
@@ -116,40 +113,51 @@ export default async function FinancePage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Financeiro</h1>
-          <p className="text-[13px] text-muted-foreground mt-1">
-            Visao geral das suas financas
+          <p className="text-[13px] text-muted-foreground mt-1 capitalize">
+            {monthLabel}
           </p>
         </div>
         <div className="flex gap-2">
-          <Button asChild size="icon" className="h-10 w-10 rounded-full">
-            <Link href="/dashboard/finance/new">
-              <Plus className="h-5 w-5" />
-              <span className="sr-only">Novo lancamento</span>
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
+          <Button
+            asChild
+            variant="outline"
+            size="sm"
+            className="h-9 rounded-lg text-[13px]"
+          >
             <Link href="/dashboard/finance/categories">Categorias</Link>
+          </Button>
+          <Button asChild size="icon" className="h-9 w-9 rounded-full">
+            <Link href="/dashboard/finance/new">
+              <Plus className="h-4 w-4" />
+              <span className="sr-only">Novo lançamento</span>
+            </Link>
           </Button>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <Card className="py-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-muted-foreground font-medium">
-                Saldo Atual
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                Saldo atual
               </span>
               <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
                 <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight mb-0.5">
+            <p
+              className={`text-[18px] font-bold leading-tight mb-0.5 tabular-nums ${
+                currentBalance >= 0
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-red-500 dark:text-red-400"
+              }`}
+            >
               {currency(currentBalance)}
             </p>
             <p className="text-[10px] text-muted-foreground">
-              Receitas - despesas pagas
+              receitas − despesas pagas
             </p>
           </CardContent>
         </Card>
@@ -157,128 +165,130 @@ export default async function FinancePage() {
         <Card className="py-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-muted-foreground font-medium">
-                Receitas no Mes
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                Receitas
               </span>
               <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
                 <TrendingUp className="h-3.5 w-3.5 text-emerald-500" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight text-emerald-500 mb-0.5">
+            <p className="text-[18px] font-bold leading-tight text-emerald-600 dark:text-emerald-400 mb-0.5 tabular-nums">
               {currency(monthIncome)}
             </p>
-            <p className="text-[10px] text-muted-foreground">Mes atual</p>
+            <p className="text-[10px] text-muted-foreground">
+              {incomeCount} lançamento{incomeCount !== 1 ? "s" : ""} no mês
+            </p>
           </CardContent>
         </Card>
 
         <Card className="py-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-muted-foreground font-medium">
-                Despesas no Mes
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                Despesas
               </span>
               <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
                 <TrendingDown className="h-3.5 w-3.5 text-red-400" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight text-red-400 mb-0.5">
+            <p className="text-[18px] font-bold leading-tight text-red-500 dark:text-red-400 mb-0.5 tabular-nums">
               {currency(monthExpense)}
             </p>
-            <p className="text-[10px] text-muted-foreground">Mes atual</p>
+            <p className="text-[10px] text-muted-foreground">
+              {expenseCount} lançamento{expenseCount !== 1 ? "s" : ""} no mês
+            </p>
           </CardContent>
         </Card>
 
         <Card className="py-0">
           <CardContent className="p-4">
             <div className="flex items-center justify-between mb-1.5">
-              <span className="text-[11px] text-muted-foreground font-medium">
-                Creditos Parceiros
+              <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground">
+                Resultado
               </span>
               <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
-                <BarChart3 className="h-3.5 w-3.5 text-muted-foreground" />
+                <Banknote className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight text-emerald-500 mb-0.5">
-              {currency(totalPartnerCredits)}
+            <p
+              className={`text-[18px] font-bold leading-tight mb-0.5 tabular-nums ${
+                monthResult >= 0
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-red-500 dark:text-red-400"
+              }`}
+            >
+              {currency(monthResult)}
             </p>
-            {partnerCredits && partnerCredits.length > 0 ? (
-              <div className="mt-1 space-y-0.5">
-                {partnerCredits.map((c) => (
-                  <div
-                    key={c.id}
-                    className="flex items-center justify-between text-[10px]"
-                  >
-                    <span className="text-muted-foreground truncate mr-2">
-                      {c.partner_name}
-                    </span>
-                    <span className="text-muted-foreground shrink-0">
-                      {currency(Number(c.credit_amount))}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <p className="text-[10px] text-muted-foreground">
-                Nenhum credito disponivel
-              </p>
-            )}
+            <p className="text-[10px] text-muted-foreground">
+              receitas − despesas do mês
+            </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Forecast + Alerts */}
+      {/* Previsão + Alertas */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
+        {/* Previsão de fluxo */}
         <Card className="py-0">
           <CardContent className="p-4">
             <h2 className="text-[14px] font-semibold mb-3">
-              Previsao de fluxo (30 dias)
+              Previsão de fluxo (30 dias)
             </h2>
-            <div className="flex items-baseline gap-2">
+            <div className="flex items-baseline gap-2 mb-3">
               <p
-                className={`text-xl font-bold ${forecastNext30 >= 0 ? "text-emerald-500" : "text-red-400"}`}
+                className={`text-xl font-bold tabular-nums ${
+                  forecastNext30 >= 0
+                    ? "text-emerald-600 dark:text-emerald-400"
+                    : "text-red-500 dark:text-red-400"
+                }`}
               >
                 {currency(forecastNext30)}
               </p>
-              <span className="text-[10px] text-muted-foreground">
-                pendentes com vencimento ate 30 dias
+              <span className="text-[11px] text-muted-foreground">
+                em lançamentos pendentes
               </span>
             </div>
-          </CardContent>
-        </Card>
-
-        <Card className="py-0">
-          <CardContent className="p-4">
-            <h2 className="text-[14px] font-semibold mb-3 flex items-center gap-2">
-              <AlertCircle className="h-4 w-4 text-yellow-500" /> Alertas (7
-              dias)
-            </h2>
-            {alerts && alerts.length > 0 ? (
-              <div className="space-y-2">
-                {alerts.map((a) => (
+            {pending30 && pending30.length > 0 ? (
+              <div className="flex flex-col divide-y divide-border/40">
+                {pending30.slice(0, 4).map((t: any, i: number) => (
                   <div
-                    key={a.id}
-                    className="flex items-center justify-between rounded-lg border border-border/50 p-2.5"
+                    key={i}
+                    className="flex items-center justify-between py-2"
                   >
-                    <div className="flex items-center gap-2">
-                      <Badge
-                        className={
-                          a.type === "income"
-                            ? "bg-emerald-500/10 text-emerald-500 border-0"
-                            : "bg-red-500/10 text-red-400 border-0"
-                        }
+                    <div className="flex items-center gap-2 min-w-0">
+                      <div
+                        className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${
+                          t.type === "income"
+                            ? "bg-emerald-500/10"
+                            : "bg-red-500/10"
+                        }`}
                       >
-                        {a.type === "income" ? "Receita" : "Despesa"}
-                      </Badge>
-                      <span className="text-[12px] text-muted-foreground truncate max-w-[140px]">
-                        {a.description || "(sem descricao)"}
+                        {t.type === "income" ? (
+                          <ArrowUpRight className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                        ) : (
+                          <ArrowDownRight className="h-3 w-3 text-red-500 dark:text-red-400" />
+                        )}
+                      </div>
+                      <span className="text-[12px] text-muted-foreground truncate">
+                        {t.description || "(sem descrição)"}
                       </span>
                     </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-[12px] font-medium">
-                        {currency(Number(a.amount))}
+                    <div className="text-right shrink-0 ml-3">
+                      <p
+                        className={`text-[12px] font-semibold tabular-nums ${
+                          t.type === "income"
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-red-500 dark:text-red-400"
+                        }`}
+                      >
+                        {t.type === "income" ? "+" : "-"}
+                        {currency(Number(t.amount))}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        {new Date(a.due_date).toLocaleDateString("pt-BR")}
+                        {new Date(`${t.due_date}T12:00:00`).toLocaleDateString(
+                          "pt-BR",
+                          { day: "2-digit", month: "short" }
+                        )}
                       </p>
                     </div>
                   </div>
@@ -286,17 +296,72 @@ export default async function FinancePage() {
               </div>
             ) : (
               <p className="text-[12px] text-muted-foreground">
-                Sem pendencias proximas.
+                Nenhum lançamento pendente nos próximos 30 dias.
+              </p>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Alertas 7 dias */}
+        <Card className="py-0">
+          <CardContent className="p-4">
+            <h2 className="text-[14px] font-semibold mb-3 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-amber-500" />
+              Vencimentos próximos (7 dias)
+            </h2>
+            {alerts && alerts.length > 0 ? (
+              <div className="flex flex-col gap-2">
+                {alerts.map((a: any) => (
+                  <Link
+                    key={a.id}
+                    href={`/dashboard/finance/transactions/${a.id}`}
+                    className="flex items-center justify-between rounded-lg border border-border/60 p-2.5 hover:bg-accent/50 transition-colors"
+                  >
+                    <div className="flex items-center gap-2 min-w-0">
+                      <span
+                        className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${
+                          a.type === "income"
+                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            : "bg-red-500/10 text-red-500 dark:text-red-400"
+                        }`}
+                      >
+                        {a.type === "income" ? "Receita" : "Despesa"}
+                      </span>
+                      <span className="text-[12px] text-muted-foreground truncate">
+                        {a.description || "(sem descrição)"}
+                      </span>
+                    </div>
+                    <div className="text-right shrink-0 ml-3">
+                      <p className="text-[12px] font-semibold tabular-nums">
+                        {currency(Number(a.amount))}
+                      </p>
+                      <p className="text-[10px] text-muted-foreground">
+                        {new Date(
+                          `${a.due_date}T12:00:00`
+                        ).toLocaleDateString("pt-BR", {
+                          day: "2-digit",
+                          month: "short",
+                        })}
+                      </p>
+                    </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <p className="text-[12px] text-muted-foreground">
+                Nenhum vencimento nos próximos 7 dias.
               </p>
             )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Transactions */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-[14px] font-semibold">Lancamentos do mes</h2>
+      {/* Lançamentos do mês */}
+      <div className="flex flex-col gap-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[14px] font-semibold">
+            Lançamentos do mês
+          </h2>
           <ExportButtons
             transactions={(monthTransactions || []).map((t) => ({
               id: t.id,
@@ -311,29 +376,52 @@ export default async function FinancePage() {
           />
         </div>
 
-        <Tabs defaultValue="all">
-          <TabsList>
-            <TabsTrigger value="all">Todos</TabsTrigger>
-            <TabsTrigger value="income">Receitas</TabsTrigger>
-            <TabsTrigger value="expense">Despesas</TabsTrigger>
+        <Tabs defaultValue="all" className="w-full">
+          <TabsList className="h-9">
+            <TabsTrigger value="all" className="text-[13px] gap-1.5">
+              Todos
+              {(monthTransactions || []).length > 0 && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-primary/10 text-primary leading-none">
+                  {(monthTransactions || []).length}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="income" className="text-[13px] gap-1.5">
+              Receitas
+              {incomeCount > 0 && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 leading-none">
+                  {incomeCount}
+                </span>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="expense" className="text-[13px] gap-1.5">
+              Despesas
+              {expenseCount > 0 && (
+                <span className="text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-red-500/10 text-red-500 dark:text-red-400 leading-none">
+                  {expenseCount}
+                </span>
+              )}
+            </TabsTrigger>
           </TabsList>
+
           <TabsContent value="all" className="mt-3">
             {monthTransactions && monthTransactions.length > 0 ? (
-              <div className="grid gap-2">
+              <div className="flex flex-col gap-2">
                 {monthTransactions.map((t) => (
                   <TransactionCard key={t.id} transaction={t} />
                 ))}
               </div>
             ) : (
-              <p className="text-[12px] text-muted-foreground py-6 text-center">
-                Nenhum lancamento no mes.
+              <p className="text-[12px] text-muted-foreground py-8 text-center">
+                Nenhum lançamento no mês.
               </p>
             )}
           </TabsContent>
+
           <TabsContent value="income" className="mt-3">
             {monthTransactions &&
             monthTransactions.filter((t) => t.type === "income").length > 0 ? (
-              <div className="grid gap-2">
+              <div className="flex flex-col gap-2">
                 {monthTransactions
                   .filter((t) => t.type === "income")
                   .map((t) => (
@@ -341,16 +429,16 @@ export default async function FinancePage() {
                   ))}
               </div>
             ) : (
-              <p className="text-[12px] text-muted-foreground py-6 text-center">
-                Nenhuma receita no mes.
+              <p className="text-[12px] text-muted-foreground py-8 text-center">
+                Nenhuma receita no mês.
               </p>
             )}
           </TabsContent>
+
           <TabsContent value="expense" className="mt-3">
             {monthTransactions &&
-            monthTransactions.filter((t) => t.type === "expense").length >
-              0 ? (
-              <div className="grid gap-2">
+            monthTransactions.filter((t) => t.type === "expense").length > 0 ? (
+              <div className="flex flex-col gap-2">
                 {monthTransactions
                   .filter((t) => t.type === "expense")
                   .map((t) => (
@@ -358,8 +446,8 @@ export default async function FinancePage() {
                   ))}
               </div>
             ) : (
-              <p className="text-[12px] text-muted-foreground py-6 text-center">
-                Nenhuma despesa no mes.
+              <p className="text-[12px] text-muted-foreground py-8 text-center">
+                Nenhuma despesa no mês.
               </p>
             )}
           </TabsContent>

@@ -22,14 +22,21 @@ export default async function NewAppointmentPage() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <Button asChild variant="ghost" size="icon">
+      <div className="flex items-center gap-2">
+        <Button asChild variant="ghost" size="icon" className="shrink-0">
           <Link href="/dashboard/schedule">
             <ArrowLeft className="h-5 w-5" />
             <span className="sr-only">Voltar</span>
           </Link>
         </Button>
-        <h1 className="text-2xl font-bold tracking-tight">Novo agendamento</h1>
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight leading-tight">
+            Novo agendamento
+          </h1>
+          <p className="text-[13px] text-muted-foreground">
+            Preencha os dados do agendamento
+          </p>
+        </div>
       </div>
 
       <AppointmentForm clients={clients || []} orders={(orders || []).map((o: any) => ({ id: String(o.id), title: String(o.title || "OS") }))} />

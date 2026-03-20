@@ -8,6 +8,7 @@ import { createClient } from "@/lib/supabase/client"
 export function LogoutButton() {
   const router = useRouter()
   const supabase = createClient()
+
   const handleLogout = async () => {
     try {
       await supabase.auth.signOut()
@@ -17,9 +18,16 @@ export function LogoutButton() {
       console.error("Erro ao sair:", e)
     }
   }
+
   return (
-    <Button variant="outline" onClick={handleLogout}>
-      <LogOut className="h-4 w-4 mr-2" /> Sair
+    <Button
+      variant="outline"
+      size="sm"
+      onClick={handleLogout}
+      className="h-9 rounded-lg gap-2 text-[13px] text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive hover:border-destructive/50 transition-colors"
+    >
+      <LogOut className="h-4 w-4 shrink-0" />
+      Sair da conta
     </Button>
   )
 }

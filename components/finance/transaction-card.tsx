@@ -1,8 +1,6 @@
 import Link from "next/link"
 import { Card, CardContent } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Calendar, ArrowDownCircle, ArrowUpCircle } from "lucide-react"
-import { Button } from "@/components/ui/button"
+import { ArrowUpRight, ArrowDownRight } from "lucide-react"
 import { DeleteTransactionButton } from "@/components/finance/delete-transaction-button"
 
 interface TransactionCardProps {
@@ -18,37 +16,99 @@ interface TransactionCardProps {
   }
 }
 
-const currency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
+const currency = (value: number) =>
+  new Intl.NumberFormat("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  }).format(value)
 
 export function TransactionCard({ transaction }: TransactionCardProps) {
   const isIncome = transaction.type === "income"
-  const TypeIcon = isIncome ? ArrowUpCircle : ArrowDownCircle
-  const typeLabel = isIncome ? "Receita" : "Despesa"
+
+  const dateStr = new Date(
+    `${transaction.transaction_date}T12:00:00`
+  ).toLocaleDateString("pt-BR", {
+    day: "2-digit",
+    month: "short",
+    year: "numeric",
+  })
+
+  const statusColor =
+    transaction.status === "paid"
+      ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+      : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+  const statusLabel = transaction.status === "paid" ? "Pago" : "Pendente"
+
+  const amountColor = isIncome
+    ? "text-emerald-600 dark:text-emerald-400"
+    : "text-red-500 dark:text-red-400"
+
+  const borderColor = isIncome ? "border-l-emerald-500" : "border-l-red-400"
+
+  const meta = [
+    transaction.category?.name,
+    transaction.client?.name,
+  ]
+    .filter(Boolean)
+    .join(" · ")
 
   return (
-    <Card>
-      <CardContent className="flex items-center justify-between gap-3 p-4">
-        <div className="flex items-center gap-3">
-          <TypeIcon className={isIncome ? "h-5 w-5 text-emerald-600" : "h-5 w-5 text-red-600"} />
-          <div>
-            <div className="flex items-center gap-2">
-              <Badge className={isIncome ? "bg-emerald-100 text-emerald-700" : "bg-red-100 text-red-700"}>{typeLabel}</Badge>
-              <span className="text-sm text-muted-foreground">{transaction.category?.name || "Sem categoria"}</span>
-              <span className="text-xs text-muted-foreground">•</span>
-              <span className="text-sm text-muted-foreground">{transaction.client?.name || "Sem cliente"}</span>
+    <Link href={`/dashboard/finance/transactions/${transaction.id}`}>
+      <Card
+        className={`py-0 border-l-4 ${borderColor} transition-all hover:shadow-md hover:-translate-y-px active:scale-[0.99]`}
+      >
+        <CardContent className="p-4">
+          <div className="flex items-center gap-3">
+            {/* Ícone de tipo */}
+            <div
+              className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
+                isIncome
+                  ? "bg-emerald-500/10"
+                  : "bg-red-500/10"
+              }`}
+            >
+              {isIncome ? (
+                <ArrowUpRight className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+              ) : (
+                <ArrowDownRight className="h-4 w-4 text-red-500 dark:text-red-400" />
+              )}
             </div>
-            <p className="text-sm text-muted-foreground mt-1">{transaction.description || "(sem descrição)"}</p>
-            <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
-              <Calendar className="h-4 w-4" /> {new Date(transaction.transaction_date).toLocaleDateString("pt-BR")}
-              <span className="ml-2 px-2 py-0.5 rounded-full bg-muted">{transaction.status === "paid" ? "Pago" : "Pendente"}</span>
+
+            {/* Descrição + meta */}
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-[14px] leading-tight truncate">
+                {transaction.description || "(sem descrição)"}
+              </p>
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
+                {meta && (
+                  <span className="text-[11px] text-muted-foreground truncate">
+                    {meta}
+                  </span>
+                )}
+                <span className="text-[11px] text-muted-foreground">
+                  {dateStr}
+                </span>
+                <span
+                  className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${statusColor}`}
+                >
+                  {statusLabel}
+                </span>
+              </div>
+            </div>
+
+            {/* Valor + ações */}
+            <div className="flex items-center gap-2 shrink-0">
+              <p className={`text-[15px] font-bold tabular-nums ${amountColor}`}>
+                {isIncome ? "+" : "-"}
+                {currency(Number(transaction.amount))}
+              </p>
+              <div onClick={(e) => e.preventDefault()}>
+                <DeleteTransactionButton transactionId={transaction.id} />
+              </div>
             </div>
           </div>
-        </div>
-        <div className="flex items-center gap-2">
-          <p className={isIncome ? "text-lg font-bold text-emerald-700" : "text-lg font-bold text-red-700"}>{currency(Number(transaction.amount))}</p>
-          <DeleteTransactionButton transactionId={transaction.id} />
-        </div>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+    </Link>
   )
 }

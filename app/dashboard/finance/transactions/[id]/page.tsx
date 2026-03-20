@@ -1,14 +1,21 @@
 import { createClient } from "@/lib/supabase/server"
+import { notFound } from "next/navigation"
 import Link from "next/link"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowLeft } from "lucide-react"
 import { TransactionDetail } from "@/components/finance/transaction-detail"
 
-export default async function TransactionDetailPage({ params }: { params: { id: string } }) {
+export default async function TransactionDetailPage({
+  params,
+}: {
+  params: Promise<{ id: string }>
+}) {
+  const { id } = await params
+
   const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  const id = params.id
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
 
   const { data: trx } = await supabase
     .from("financial_transactions")
@@ -18,18 +25,7 @@ export default async function TransactionDetailPage({ params }: { params: { id: 
     .maybeSingle()
 
   if (!trx) {
-    return (
-      <div className="p-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>Lançamento não encontrado</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Button asChild variant="outline"><Link href="/dashboard/finance">Voltar ao Financeiro</Link></Button>
-          </CardContent>
-        </Card>
-      </div>
-    )
+    notFound()
   }
 
   const { data: categories } = await supabase
@@ -42,14 +38,32 @@ export default async function TransactionDetailPage({ params }: { params: { id: 
     .select("id, name")
     .eq("gardener_id", user!.id)
 
+  const typeLabel = trx.type === "income" ? "Receita" : "Despesa"
+
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-3">
-        <Button asChild variant="outline" size="icon" className="rounded-full"><Link href="/dashboard/finance"><ArrowLeft className="h-5 w-5" /></Link></Button>
-        <h1 className="text-2xl font-bold tracking-tight">Detalhe do lançamento</h1>
+      <div className="flex items-center gap-2 min-w-0">
+        <Button asChild variant="ghost" size="icon" className="shrink-0">
+          <Link href="/dashboard/finance">
+            <ArrowLeft className="h-5 w-5" />
+            <span className="sr-only">Voltar</span>
+          </Link>
+        </Button>
+        <div className="min-w-0">
+          <h1 className="text-2xl font-bold tracking-tight leading-tight truncate">
+            {trx.description || typeLabel}
+          </h1>
+          <p className="text-[13px] text-muted-foreground">
+            Detalhe do lançamento
+          </p>
+        </div>
       </div>
 
-      <TransactionDetail transaction={trx} categories={categories || []} clients={clients || []} />
+      <TransactionDetail
+        transaction={trx}
+        categories={categories || []}
+        clients={clients || []}
+      />
     </div>
   )
 }

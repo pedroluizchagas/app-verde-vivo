@@ -1,20 +1,20 @@
 "use client"
 
-import { useState } from "react"
+import { useRef, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent } from "@/components/ui/card"
-import { Label } from "@/components/ui/label"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
-import { Upload, X } from "lucide-react"
+import { Upload, X, ImagePlus } from "lucide-react"
+import { cn } from "@/lib/utils"
 
 export function AvatarUpload() {
   const router = useRouter()
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [success, setSuccess] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [previewUrl, setPreviewUrl] = useState<string | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0] || null
@@ -26,6 +26,22 @@ export function AvatarUpload() {
       setSelectedFile(file)
       setPreviewUrl(URL.createObjectURL(file))
       setError(null)
+      setSuccess(false)
+    }
+  }
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    const file = e.dataTransfer.files?.[0]
+    if (file && file.type.startsWith("image/")) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError("Arquivo muito grande. Máximo 5MB.")
+        return
+      }
+      setSelectedFile(file)
+      setPreviewUrl(URL.createObjectURL(file))
+      setError(null)
+      setSuccess(false)
     }
   }
 
@@ -35,12 +51,14 @@ export function AvatarUpload() {
       setError("Selecione uma foto")
       return
     }
-
     setIsLoading(true)
     setError(null)
+    setSuccess(false)
 
     const supabase = createClient()
-    const { data: { user } } = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
     if (!user) {
       setError("Usuário não autenticado")
       setIsLoading(false)
@@ -57,50 +75,100 @@ export function AvatarUpload() {
           .update({ avatar_url: base64 })
           .eq("id", user.id)
         if (upErr) throw upErr
-        router.refresh()
+        setSuccess(true)
         setSelectedFile(null)
         setPreviewUrl(null)
+        router.refresh()
+        setIsLoading(false)
       }
       reader.onerror = () => {
         throw new Error("Erro ao processar imagem")
       }
     } catch (err: any) {
-      setError(err?.message || "Erro ao enviar avatar")
-    } finally {
+      setError(err?.message || "Erro ao enviar foto")
       setIsLoading(false)
     }
   }
 
   return (
-    <Card>
-      <CardContent className="p-4">
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-          <div className="grid gap-2">
-            <Label htmlFor="avatar">Foto de perfil</Label>
-            <div className="flex flex-col gap-3">
-              <Input id="avatar" type="file" accept="image/*" onChange={handleFileChange} className="h-11" />
-              {previewUrl && (
-                <div className="relative">
-                  <img src={previewUrl || "/placeholder.svg"} alt="Preview"
-                       className="w-32 h-32 object-cover rounded-full border" />
-                  <Button type="button" variant="destructive" size="icon"
-                          className="absolute top-2 right-2"
-                          onClick={() => { setSelectedFile(null); setPreviewUrl(null) }}>
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
+    <form onSubmit={handleSubmit} className="flex flex-col gap-3">
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        className="hidden"
+        onChange={handleFileChange}
+      />
+
+      {/* Zona de upload */}
+      <div
+        className={cn(
+          "relative rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-2 cursor-pointer transition-all select-none",
+          previewUrl
+            ? "h-44 border-primary/30 bg-primary/5"
+            : "h-32 border-border hover:border-primary/40 hover:bg-accent/30"
+        )}
+        onClick={() => fileInputRef.current?.click()}
+        onDrop={handleDrop}
+        onDragOver={(e) => e.preventDefault()}
+      >
+        {previewUrl ? (
+          <>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={previewUrl}
+              alt="Prévia"
+              className="w-24 h-24 rounded-full object-cover border-2 border-primary/20 shadow-sm"
+            />
+            <p className="text-[11px] text-primary font-medium">
+              Clique para trocar
+            </p>
+            <button
+              type="button"
+              className="absolute top-2 right-2 h-6 w-6 rounded-full bg-destructive/90 flex items-center justify-center hover:bg-destructive transition-colors"
+              onClick={(e) => {
+                e.stopPropagation()
+                setSelectedFile(null)
+                setPreviewUrl(null)
+              }}
+            >
+              <X className="h-3 w-3 text-white" />
+            </button>
+          </>
+        ) : (
+          <>
+            <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+              <ImagePlus className="h-5 w-5 text-muted-foreground" />
             </div>
-          </div>
+            <div className="text-center">
+              <p className="text-[12px] font-medium text-muted-foreground">
+                Clique ou arraste uma imagem
+              </p>
+              <p className="text-[11px] text-muted-foreground/70">
+                JPG, PNG até 5MB
+              </p>
+            </div>
+          </>
+        )}
+      </div>
 
-          {error && <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>}
+      {error && (
+        <p className="text-[12px] text-destructive">{error}</p>
+      )}
+      {success && (
+        <p className="text-[12px] text-emerald-600 dark:text-emerald-400 font-medium">
+          Foto atualizada com sucesso.
+        </p>
+      )}
 
-          <Button type="submit" disabled={isLoading || !selectedFile}>
-            <Upload className="mr-2 h-4 w-4" />
-            {isLoading ? "Enviando..." : "Salvar avatar"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+      <Button
+        type="submit"
+        disabled={isLoading || !selectedFile}
+        className="gap-2"
+      >
+        <Upload className="h-4 w-4" />
+        {isLoading ? "Enviando..." : "Salvar foto"}
+      </Button>
+    </form>
   )
 }

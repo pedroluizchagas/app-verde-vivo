@@ -80,7 +80,14 @@ export function Sidebar({
   profile,
   nextAppointment,
 }: {
-  profile?: { full_name: string | null; avatar_url: string | null }
+  profile?: {
+    full_name: string | null
+    avatar_url: string | null
+    company_name: string | null
+    company_subtitle: string | null
+    watermark_base64: string | null
+    watermark_fit: string | null
+  }
   nextAppointment?: NextAppointment | null
 }) {
   const pathname = usePathname()
@@ -156,15 +163,35 @@ export function Sidebar({
       >
         {!collapsed ? (
           <>
-            <div className="flex items-center gap-2.5 flex-1">
-              <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0">
-                <span className="text-primary font-bold text-sm">I</span>
+            <div className="flex items-center gap-2.5 flex-1 min-w-0">
+              <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
+                {profile?.watermark_base64 ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={profile.watermark_base64}
+                    alt="Logo"
+                    className={cn(
+                      "h-full w-full",
+                      profile.watermark_fit === "cover"
+                        ? "object-cover"
+                        : "object-contain p-0.5"
+                    )}
+                  />
+                ) : (
+                  <span className="text-primary font-bold text-sm">
+                    {profile?.company_name?.charAt(0)?.toUpperCase() || 'V'}
+                  </span>
+                )}
               </div>
-              <div>
-                <p className="text-sm font-semibold leading-tight">Iris</p>
-                <p className="text-[10px] text-sidebar-foreground/50">
-                  Jardinagem
+              <div className="min-w-0">
+                <p className="text-sm font-semibold leading-tight truncate">
+                  {profile?.company_name || 'Verde Vivo'}
                 </p>
+                {(profile?.company_subtitle) && (
+                  <p className="text-[10px] text-sidebar-foreground/50 truncate">
+                    {profile.company_subtitle}
+                  </p>
+                )}
               </div>
             </div>
             <Button
