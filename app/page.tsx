@@ -1,175 +1,570 @@
 import type React from "react"
 import Link from "next/link"
-import { Button } from "@/components/ui/button"
 import { AnimateOnScroll } from "@/components/ui/animate-on-scroll"
-import { Leaf, Calendar, Users, FileText, Camera, TrendingUp, Package, Sprout, CalendarCheck, Bot, Smartphone, Bell, WifiOff } from "lucide-react"
+import {
+  Calendar,
+  Users,
+  FileText,
+  Camera,
+  TrendingUp,
+  Package,
+  Sprout,
+  CalendarCheck,
+  Bot,
+  Smartphone,
+  Bell,
+  WifiOff,
+  ArrowRight,
+  Zap,
+  CheckCircle,
+} from "lucide-react"
 
+/* ─── Main page ─── */
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-background">
-      {/* Header */}
-      <header className="container mx-auto px-4 py-6 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <img src="/img/iris.png" alt="Íris" className="h-10 w-auto" />
-        </div>
-        <div className="flex gap-3">
-          <Button asChild variant="ghost">
-            <Link href="#app-mobile">App mobile</Link>
-          </Button>
-          <Button asChild variant="ghost">
-            <Link href="/auth/login">Entrar</Link>
-          </Button>
-          <Button asChild className="iris-gradient-btn iris-cta">
-            <Link href="/auth/sign-up">Começar</Link>
-          </Button>
+    <div
+      className="min-h-screen overflow-x-hidden relative"
+      style={{ background: "#070708", color: "#f0f0f0" }}
+    >
+      {/* ── Fixed ambient background ── */}
+      <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+        {/* Dot grid */}
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage:
+              "radial-gradient(circle, rgba(255,255,255,0.055) 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+        {/* Orb 1 – top-left */}
+        <div
+          className="absolute -top-56 -left-56 w-[760px] h-[760px] rounded-full orb-float-1"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(34,197,94,0.11) 0%, transparent 68%)",
+            filter: "blur(2px)",
+          }}
+        />
+        {/* Orb 2 – mid-right */}
+        <div
+          className="absolute top-1/3 -right-72 w-[640px] h-[640px] rounded-full orb-float-2"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(15,138,65,0.09) 0%, transparent 68%)",
+            filter: "blur(2px)",
+          }}
+        />
+        {/* Orb 3 – bottom-center */}
+        <div
+          className="absolute bottom-0 left-1/4 w-[520px] h-[520px] rounded-full orb-float-1"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(74,222,128,0.07) 0%, transparent 68%)",
+            filter: "blur(2px)",
+            animationDelay: "-13s",
+          }}
+        />
+      </div>
+
+      {/* ── Navigation ── */}
+      <header
+        className="fixed top-0 left-0 right-0 z-50"
+        style={{
+          background: "rgba(7,7,8,0.78)",
+          backdropFilter: "blur(22px)",
+          WebkitBackdropFilter: "blur(22px)",
+          borderBottom: "1px solid rgba(255,255,255,0.065)",
+        }}
+      >
+        <div className="container mx-auto px-6 py-4 flex items-center justify-between max-w-7xl">
+          <img src="/img/iris.png" alt="Íris" className="h-9 w-auto" />
+
+          <nav className="hidden md:flex items-center">
+            <a href="#features" className="landing-nav-link">
+              Funcionalidades
+            </a>
+            <a href="#app-mobile" className="landing-nav-link">
+              App Mobile
+            </a>
+            <a href="#como-funciona" className="landing-nav-link">
+              Como funciona
+            </a>
+          </nav>
+
+          <div className="flex items-center gap-3">
+            <Link href="/auth/login" className="landing-nav-link hidden sm:block">
+              Entrar
+            </Link>
+            <Link
+              href="/auth/sign-up"
+              className="iris-gradient-btn iris-glow-btn inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold"
+              style={{ color: "#fff" }}
+            >
+              Começar grátis <ArrowRight className="w-4 h-4" />
+            </Link>
+          </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="relative">
-        <div className="absolute inset-0 -z-10 overflow-hidden">
-          <div className="pointer-events-none [mask-image:radial-gradient(closest-side,white,transparent)]">
-            <div className="mx-auto h-[480px] w-[480px] md:h-[720px] md:w-[720px] rounded-full blur-3xl iris-float-slow" style={{ background: "radial-gradient(closest-side, #15ABFB 0%, #655FF2 50%, transparent 70%)" }} />
+      {/* ── Hero ── */}
+      <section className="relative min-h-screen flex items-center justify-center pt-24 pb-20">
+        <div className="container mx-auto px-6 text-center max-w-5xl">
+          {/* Badge */}
+          <div className="animate-slide-up-1 flex justify-center mb-8">
+            <span className="landing-badge">
+              <Zap className="w-3.5 h-3.5" />
+              Assistente IA integrado para jardineiros
+            </span>
           </div>
-        </div>
-        <div className="container mx-auto px-4 py-20 text-center">
-          <div className="max-w-4xl mx-auto space-y-6">
-            <h1 className="text-4xl md:text-5xl font-extrabold leading-tight text-balance iris-hero-font">
-              Gestão <span className="iris-gradient-text">Profissional</span> de <span className="iris-gradient-text">Jardinagem</span>
-            </h1>
-            <p className="text-lg md:text-xl text-muted-foreground text-balance">
-              Íris é o assistente inteligente para jardineiros e equipes: clientes, agenda, orçamentos, financeiro e fotos em um só lugar.
-            </p>
-            <div className="flex gap-4 justify-center pt-4">
-              <Button asChild size="lg" className="text-lg iris-gradient-btn iris-cta">
-                <Link href="/auth/sign-up">Começar gratuitamente</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="text-lg iris-cta">
-                <Link href="#app-mobile">Conheça o app</Link>
-              </Button>
-            </div>
-            <div className="flex items-center justify-center gap-6 pt-6 text-sm text-muted-foreground">
-              <div className="flex items-center gap-2"><Users className="h-4 w-4" /><span>Clientes</span></div>
-              <div className="flex items-center gap-2"><Calendar className="h-4 w-4" /><span>Agenda</span></div>
-              <div className="flex items-center gap-2"><FileText className="h-4 w-4" /><span>Orçamentos</span></div>
-              <div className="flex items-center gap-2"><TrendingUp className="h-4 w-4" /><span>Financeiro</span></div>
-            </div>
-            <div className="flex items-center justify-center gap-2 pt-3 text-xs text-muted-foreground">
-              <Smartphone className="h-3 w-3" />
-              <span>App móvel instalável no Android e iOS</span>
-            </div>
+
+          {/* Headline */}
+          <h1 className="animate-slide-up-2 text-5xl md:text-7xl lg:text-8xl font-extrabold leading-[1.06] tracking-tight mb-6 iris-hero-font">
+            Gestão{" "}
+            <span className="iris-gradient-text">Profissional</span>
+            <br />
+            de{" "}
+            <span className="iris-gradient-text">Jardinagem</span>
+          </h1>
+
+          {/* Subheading */}
+          <p
+            className="animate-slide-up-3 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
+            style={{ color: "rgba(255,255,255,0.52)" }}
+          >
+            Íris é o assistente inteligente para jardineiros e equipes: clientes,
+            agenda, orçamentos, financeiro e fotos em um só lugar.
+          </p>
+
+          {/* CTAs */}
+          <div className="animate-slide-up-4 flex flex-wrap items-center justify-center gap-4 mb-14">
+            <Link
+              href="/auth/sign-up"
+              className="iris-gradient-btn iris-glow-btn inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-semibold"
+              style={{ color: "#fff" }}
+            >
+              Começar gratuitamente
+              <ArrowRight className="w-5 h-5" />
+            </Link>
+            <a
+              href="#app-mobile"
+              className="landing-outline-btn px-8 py-4 rounded-2xl text-base font-semibold"
+            >
+              Conheça o app
+            </a>
+          </div>
+
+          {/* Feature pills */}
+          <div className="animate-slide-up-5 flex flex-wrap items-center justify-center gap-2.5">
+            {[
+              { icon: <Users className="w-3.5 h-3.5" />, label: "Clientes" },
+              { icon: <Calendar className="w-3.5 h-3.5" />, label: "Agenda" },
+              { icon: <FileText className="w-3.5 h-3.5" />, label: "Orçamentos" },
+              { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Financeiro" },
+              { icon: <Smartphone className="w-3.5 h-3.5" />, label: "App Móvel" },
+            ].map(({ icon, label }) => (
+              <span
+                key={label}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-sm"
+                style={{
+                  background: "rgba(255,255,255,0.045)",
+                  border: "1px solid rgba(255,255,255,0.09)",
+                  color: "rgba(255,255,255,0.52)",
+                }}
+              >
+                {icon} {label}
+              </span>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="container mx-auto px-4 py-20">
-        <h2 className="text-xl md:text-2xl font-bold text-center mb-12 iris-hero-font">Tudo que <span className="iris-gradient-text">você</span> precisa para <span className="iris-gradient-text">crescer</span></h2>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <AnimateOnScroll delay={0}><FeatureCard icon={<Users className="h-8 w-8" />} title="Clientes" description="Cadastro completo, histórico e contatos sempre à mão." /></AnimateOnScroll>
-          <AnimateOnScroll delay={50}><FeatureCard icon={<Calendar className="h-8 w-8" />} title="Agenda" description="Planeje serviços e receba lembretes no dia certo." /></AnimateOnScroll>
-          <AnimateOnScroll delay={100}><FeatureCard icon={<FileText className="h-8 w-8" />} title="Orçamentos" description="Propostas profissionais com status e aprovação rápida." /></AnimateOnScroll>
-          <AnimateOnScroll delay={150}><FeatureCard icon={<TrendingUp className="h-8 w-8" />} title="Financeiro" description="Receitas, despesas e previsões para não perder prazos." /></AnimateOnScroll>
-          <AnimateOnScroll delay={200}><FeatureCard icon={<Package className="h-8 w-8" />} title="Estoque" description="Produtos, entradas e saídas com custo e margem." /></AnimateOnScroll>
-          <AnimateOnScroll delay={250}><FeatureCard icon={<Sprout className="h-8 w-8" />} title="Serviços" description="Catálogo de serviços com preços e descrição." /></AnimateOnScroll>
-          <AnimateOnScroll delay={300}><FeatureCard icon={<CalendarCheck className="h-8 w-8" />} title="Manutenções" description="Planos recorrentes e tarefas mensais automáticas." /></AnimateOnScroll>
-          <AnimateOnScroll delay={350}><FeatureCard icon={<Bot className="h-8 w-8" />} title="Assistente" description="Ajuda inteligente para textos, tarefas e organização." /></AnimateOnScroll>
-          <AnimateOnScroll delay={400}><FeatureCard icon={<Camera className="h-8 w-8" />} title="Fotos" description="Antes e depois para destacar seu trabalho." /></AnimateOnScroll>
+      {/* ── Stats strip ── */}
+      <section className="relative py-6">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div
+            className="glass-panel rounded-2xl py-8 px-10 grid grid-cols-2 md:grid-cols-4 gap-8"
+          >
+            <StatItem value="500+" label="Jardineiros ativos" />
+            <StatItem value="98%" label="Satisfação" />
+            <StatItem value="10x" label="Produtividade" />
+            <StatItem value="24/7" label="Disponível" />
+          </div>
         </div>
       </section>
 
-      <section id="app-mobile" className="container mx-auto px-4 py-20">
-        <div className="max-w-6xl mx-auto grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-4">
-            <h2 className="text-xl md:text-2xl font-bold iris-hero-font"><span className="iris-gradient-text">App móvel</span> para <span className="iris-gradient-text">trabalhar</span> em <span className="iris-gradient-text">campo</span></h2>
-            <p className="text-muted-foreground">Leve a Íris no bolso: registre fotos e notas em tempo real, consulte clientes e agenda, e mantenha tudo sincronizado com seu painel web.</p>
-            <div className="grid sm:grid-cols-2 gap-4 pt-2">
-              <FeatureCard icon={<WifiOff className="h-6 w-6" />} title="Modo offline" description="Continue trabalhando sem internet e sincronize depois." />
-              <FeatureCard icon={<Bell className="h-6 w-6" />} title="Lembretes" description="Notificações de agendamentos e pendências." />
-              <FeatureCard icon={<Camera className="h-6 w-6" />} title="Fotos em campo" description="Registre o antes e depois direto do celular." />
-              <FeatureCard icon={<Smartphone className="h-6 w-6" />} title="Instalável" description="Disponível para Android e iOS." />
-            </div>
-            <div className="flex gap-4 pt-6">
-              <Button asChild className="iris-gradient-btn iris-cta">
-                <Link href="/auth/sign-up">Criar conta e usar o app</Link>
-              </Button>
-              <Button asChild variant="outline" className="iris-cta">
-                <Link href="/auth/login">Entrar</Link>
-              </Button>
-            </div>
+      {/* ── Features grid ── */}
+      <section id="features" className="relative py-32">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <AnimateOnScroll>
+            <SectionHeader
+              badge="Funcionalidades"
+              heading={
+                <>
+                  Tudo que <span className="iris-gradient-text">você</span>{" "}
+                  precisa
+                  <br />
+                  para <span className="iris-gradient-text">crescer</span>
+                </>
+              }
+            />
+          </AnimateOnScroll>
+
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4 mt-16">
+            {[
+              { icon: <Users />, title: "Clientes", desc: "Cadastro completo, histórico e contatos sempre à mão." },
+              { icon: <Calendar />, title: "Agenda", desc: "Planeje serviços e receba lembretes no dia certo." },
+              { icon: <FileText />, title: "Orçamentos", desc: "Propostas profissionais com status e aprovação rápida." },
+              { icon: <TrendingUp />, title: "Financeiro", desc: "Receitas, despesas e previsões para não perder prazos." },
+              { icon: <Package />, title: "Estoque", desc: "Produtos, entradas e saídas com custo e margem." },
+              { icon: <Sprout />, title: "Serviços", desc: "Catálogo de serviços com preços e descrição." },
+              { icon: <CalendarCheck />, title: "Manutenções", desc: "Planos recorrentes e tarefas mensais automáticas." },
+              { icon: <Bot />, title: "Assistente IA", desc: "Ajuda inteligente para textos, tarefas e organização." },
+              { icon: <Camera />, title: "Fotos", desc: "Antes e depois para destacar seu trabalho." },
+            ].map(({ icon, title, desc }, i) => (
+              <AnimateOnScroll key={title} delay={i * 70}>
+                <GlassFeatureCard icon={icon} title={title} description={desc} />
+              </AnimateOnScroll>
+            ))}
           </div>
-          <div className="relative rounded-2xl border bg-card p-6">
-            <div className="flex items-center gap-3">
-              <Smartphone className="h-6 w-6 text-primary" />
-              <span className="text-sm text-muted-foreground">Íris no celular</span>
-            </div>
-            <div className="mt-4 grid grid-cols-2 gap-4">
-              <div className="rounded-lg border p-4">
-                <p className="font-medium">Android</p>
-                <p className="text-sm text-muted-foreground">Instalação via APK de prévia</p>
+        </div>
+      </section>
+
+      {/* ── Mobile app section ── */}
+      <section id="app-mobile" className="relative py-32">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
+            {/* Text side */}
+            <AnimateOnScroll>
+              <div>
+                <span className="landing-badge mb-6 inline-flex">App Móvel</span>
+                <h2 className="text-4xl md:text-5xl font-bold iris-hero-font mt-4 mb-6 leading-tight">
+                  <span className="iris-gradient-text">Trabalhe em campo</span>
+                  <br />
+                  com tudo na palma
+                  <br />
+                  da mão
+                </h2>
+                <p
+                  className="text-lg mb-8 leading-relaxed"
+                  style={{ color: "rgba(255,255,255,0.52)" }}
+                >
+                  Leve a Íris no bolso: registre fotos e notas em tempo real,
+                  consulte clientes e agenda, e mantenha tudo sincronizado com
+                  seu painel web.
+                </p>
+
+                <div className="grid sm:grid-cols-2 gap-3 mb-10">
+                  <MobileFeatureItem
+                    icon={<WifiOff className="w-4 h-4" />}
+                    title="Modo offline"
+                    description="Continue trabalhando sem internet e sincronize depois."
+                  />
+                  <MobileFeatureItem
+                    icon={<Bell className="w-4 h-4" />}
+                    title="Lembretes"
+                    description="Notificações de agendamentos e pendências."
+                  />
+                  <MobileFeatureItem
+                    icon={<Camera className="w-4 h-4" />}
+                    title="Fotos em campo"
+                    description="Registre o antes e depois direto do celular."
+                  />
+                  <MobileFeatureItem
+                    icon={<Smartphone className="w-4 h-4" />}
+                    title="Instalável"
+                    description="Disponível para Android e iOS."
+                  />
+                </div>
+
+                <div className="flex flex-wrap gap-4">
+                  <Link
+                    href="/auth/sign-up"
+                    className="iris-gradient-btn iris-glow-btn inline-flex items-center gap-2 px-6 py-3.5 rounded-xl font-semibold"
+                    style={{ color: "#fff" }}
+                  >
+                    Criar conta e usar o app
+                  </Link>
+                  <Link
+                    href="/auth/login"
+                    className="landing-outline-btn px-6 py-3.5 rounded-xl font-semibold"
+                  >
+                    Entrar
+                  </Link>
+                </div>
               </div>
-              <div className="rounded-lg border p-4">
-                <p className="font-medium">iOS</p>
-                <p className="text-sm text-muted-foreground">Disponível via TestFlight</p>
+            </AnimateOnScroll>
+
+            {/* Card side */}
+            <AnimateOnScroll delay={180}>
+              <div className="glass-panel rounded-3xl p-8 space-y-4">
+                {/* Header */}
+                <div className="flex items-center gap-3 mb-6">
+                  <div
+                    className="w-10 h-10 rounded-xl flex items-center justify-center text-green-400"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(15,138,65,0.32), rgba(34,197,94,0.16))",
+                      border: "1px solid rgba(34,197,94,0.22)",
+                    }}
+                  >
+                    <Smartphone className="w-5 h-5" />
+                  </div>
+                  <span className="font-semibold">Íris no celular</span>
+                </div>
+
+                {/* Platform cards */}
+                <div className="grid grid-cols-2 gap-3">
+                  {[
+                    { name: "Android", sub: "Instalação via APK de prévia" },
+                    { name: "iOS", sub: "Disponível via TestFlight" },
+                  ].map(({ name, sub }) => (
+                    <div
+                      key={name}
+                      className="rounded-xl p-4"
+                      style={{
+                        background: "rgba(255,255,255,0.032)",
+                        border: "1px solid rgba(255,255,255,0.065)",
+                      }}
+                    >
+                      <p className="font-semibold mb-1">{name}</p>
+                      <p className="text-sm" style={{ color: "rgba(255,255,255,0.42)" }}>
+                        {sub}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Feature list */}
+                <div
+                  className="rounded-xl p-5 space-y-3"
+                  style={{
+                    background: "rgba(255,255,255,0.032)",
+                    border: "1px solid rgba(255,255,255,0.065)",
+                  }}
+                >
+                  {[
+                    "Sincronização em tempo real",
+                    "Funciona sem internet",
+                    "Notificações push",
+                  ].map((f) => (
+                    <div key={f} className="flex items-center gap-2.5">
+                      <div className="w-1.5 h-1.5 rounded-full bg-green-400 shrink-0" />
+                      <span className="text-sm" style={{ color: "rgba(255,255,255,0.55)" }}>
+                        {f}
+                      </span>
+                    </div>
+                  ))}
+                </div>
               </div>
-            </div>
+            </AnimateOnScroll>
           </div>
         </div>
       </section>
 
-      {/* How It Works */}
-      <section className="container mx-auto px-4 py-20">
-        <h2 className="text-xl md:text-2xl font-bold text-center mb-12 iris-hero-font">Como a <span className="iris-gradient-text">Íris</span> funciona</h2>
-        <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
-          <AnimateOnScroll delay={0}><StepCard index={1} title="Organize" description="Importe clientes, crie serviços e defina sua agenda em minutos." /></AnimateOnScroll>
-          <AnimateOnScroll delay={100}><StepCard index={2} title="Execute" description="Use o app móvel para fotos, notas e agenda mesmo offline." /></AnimateOnScroll>
-          <AnimateOnScroll delay={200}><StepCard index={3} title="Cresça" description="Acompanhe o financeiro, produtividade e orçamentos aprovados." /></AnimateOnScroll>
+      {/* ── How it works ── */}
+      <section id="como-funciona" className="relative py-32">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <AnimateOnScroll>
+            <SectionHeader
+              badge="Processo"
+              heading={
+                <>
+                  Como a <span className="iris-gradient-text">Íris</span>{" "}
+                  funciona
+                </>
+              }
+            />
+          </AnimateOnScroll>
+
+          <div className="grid md:grid-cols-3 gap-6 mt-16 max-w-5xl mx-auto">
+            {[
+              {
+                n: 1,
+                title: "Organize",
+                desc: "Importe clientes, crie serviços e defina sua agenda em minutos.",
+              },
+              {
+                n: 2,
+                title: "Execute",
+                desc: "Use o app móvel para fotos, notas e agenda mesmo offline.",
+              },
+              {
+                n: 3,
+                title: "Cresça",
+                desc: "Acompanhe o financeiro, produtividade e orçamentos aprovados.",
+              },
+            ].map(({ n, title, desc }, i) => (
+              <AnimateOnScroll key={n} delay={i * 160}>
+                <StepCard index={n} title={title} description={desc} />
+              </AnimateOnScroll>
+            ))}
+          </div>
         </div>
       </section>
 
-      {/* Audience */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="max-w-5xl mx-auto text-center space-y-4">
-          <h2 className="text-xl md:text-2xl font-bold iris-hero-font">Feito para quem <span className="iris-gradient-text">vive</span> de <span className="iris-gradient-text">jardinagem</span></h2>
-          <p className="text-muted-foreground">Autônomos, pequenas equipes e empresas — a Íris dá estrutura para o seu dia a dia e clareza para o seu crescimento.</p>
-        </div>
-        <div className="grid md:grid-cols-3 gap-6 max-w-6xl mx-auto mt-10">
-          <AnimateOnScroll delay={0}><AudienceCard title="Autônomos" description="Simplifique sua rotina e passe a cobrar com profissionalismo." /></AnimateOnScroll>
-          <AnimateOnScroll delay={100}><AudienceCard title="Pequenas equipes" description="Centralize agenda e informações para que todos tenham o mesmo foco." /></AnimateOnScroll>
-          <AnimateOnScroll delay={200}><AudienceCard title="Empresas" description="Padronize processos, meça resultados e acelere a expansão." /></AnimateOnScroll>
+      {/* ── Audience ── */}
+      <section className="relative py-32">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <AnimateOnScroll>
+            <SectionHeader
+              badge="Para quem é"
+              heading={
+                <>
+                  Feito para quem{" "}
+                  <span className="iris-gradient-text">vive</span> de{" "}
+                  <span className="iris-gradient-text">jardinagem</span>
+                </>
+              }
+              sub="Autônomos, pequenas equipes e empresas — a Íris dá estrutura para o
+                seu dia a dia e clareza para o seu crescimento."
+            />
+          </AnimateOnScroll>
+
+          <div className="grid md:grid-cols-3 gap-5 mt-16">
+            <AnimateOnScroll delay={0}>
+              <AudienceCard
+                title="Autônomos"
+                description="Simplifique sua rotina e passe a cobrar com profissionalismo."
+                features={["Agenda pessoal", "Orçamentos rápidos", "Controle financeiro"]}
+              />
+            </AnimateOnScroll>
+            <AnimateOnScroll delay={160}>
+              <AudienceCard
+                title="Pequenas equipes"
+                description="Centralize agenda e informações para que todos tenham o mesmo foco."
+                features={["Multi-usuário", "Agenda compartilhada", "Relatórios da equipe"]}
+                featured
+              />
+            </AnimateOnScroll>
+            <AnimateOnScroll delay={320}>
+              <AudienceCard
+                title="Empresas"
+                description="Padronize processos, meça resultados e acelere a expansão."
+                features={["Múltiplas equipes", "Dashboard gerencial", "Integrações avançadas"]}
+              />
+            </AnimateOnScroll>
+          </div>
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="relative max-w-4xl mx-auto">
-          <div className="absolute inset-0 -z-10 blur-2xl" style={{ background: "radial-gradient(closest-side, #15ABFB 0%, #655FF2 60%, transparent 70%)" }} />
-          <AnimateOnScroll delay={100}>
-            <div className="rounded-2xl p-12 text-center border bg-card">
-              <h2 className="text-xl md:text-2xl font-bold mb-4 iris-hero-font">Pronto para <span className="iris-gradient-text">transformar</span> seu <span className="iris-gradient-text">negócio?</span></h2>
-              <p className="text-lg mb-8 text-muted-foreground">Crie sua conta e dê o próximo passo no seu trabalho</p>
-              <div className="flex justify-center gap-4">
-              <Button asChild size="lg" className="text-lg iris-gradient-btn iris-cta">
-                <Link href="/auth/sign-up">Criar conta gratuita</Link>
-              </Button>
-              <Button asChild size="lg" variant="outline" className="text-lg iris-cta">
-                <Link href="/auth/login">Falar com a equipe</Link>
-              </Button>
+      {/* ── CTA ── */}
+      <section className="relative py-32">
+        <div className="container mx-auto px-6">
+          <AnimateOnScroll>
+            <div className="relative max-w-4xl mx-auto text-center">
+              {/* Glow backdrop */}
+              <div
+                className="absolute inset-0 -z-10 blur-3xl"
+                style={{
+                  background:
+                    "radial-gradient(ellipse at center, rgba(34,197,94,0.28) 0%, transparent 68%)",
+                  opacity: 0.5,
+                }}
+              />
+              <div
+                className="glass-panel rounded-3xl px-8 py-16 md:px-16"
+                style={{ borderColor: "rgba(34,197,94,0.18)" }}
+              >
+                <span className="landing-badge mb-6 inline-flex">Comece agora</span>
+
+                <h2 className="text-4xl md:text-6xl font-bold iris-hero-font mb-5">
+                  Pronto para{" "}
+                  <span className="iris-gradient-text">transformar</span>
+                  <br />
+                  seu{" "}
+                  <span className="iris-gradient-text">negócio?</span>
+                </h2>
+
+                <p
+                  className="text-lg mb-10 max-w-xl mx-auto"
+                  style={{ color: "rgba(255,255,255,0.52)" }}
+                >
+                  Crie sua conta gratuita e dê o próximo passo no seu trabalho
+                </p>
+
+                <div className="flex flex-wrap justify-center gap-4">
+                  <Link
+                    href="/auth/sign-up"
+                    className="iris-gradient-btn iris-glow-btn inline-flex items-center gap-2 px-9 py-4 rounded-2xl text-base font-semibold"
+                    style={{ color: "#fff" }}
+                  >
+                    Criar conta gratuita <ArrowRight className="w-5 h-5" />
+                  </Link>
+                  <Link
+                    href="/auth/login"
+                    className="landing-outline-btn px-9 py-4 rounded-2xl text-base font-semibold"
+                  >
+                    Falar com a equipe
+                  </Link>
+                </div>
               </div>
             </div>
           </AnimateOnScroll>
         </div>
       </section>
 
-      {/* Footer */}
-      <footer className="container mx-auto px-4 py-8 text-center text-muted-foreground border-t">
-        <p>© 2025 Íris. Todos os Direitos Reservados.</p>
+      {/* ── Footer ── */}
+      <footer style={{ borderTop: "1px solid rgba(255,255,255,0.062)" }}>
+        <div className="container mx-auto px-6 py-10 max-w-7xl">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-5">
+            <img src="/img/iris.png" alt="Íris" className="h-8 w-auto opacity-50" />
+            <p className="text-sm" style={{ color: "rgba(255,255,255,0.32)" }}>
+              © 2025 Íris. Todos os Direitos Reservados.
+            </p>
+            <div className="flex gap-6 text-sm" style={{ color: "rgba(255,255,255,0.40)" }}>
+              <a href="#" className="hover:text-white transition-colors duration-200">
+                Privacidade
+              </a>
+              <a href="#" className="hover:text-white transition-colors duration-200">
+                Termos
+              </a>
+            </div>
+          </div>
+        </div>
       </footer>
     </div>
   )
 }
 
-function FeatureCard({
+/* ─── Sub-components ─── */
+
+function SectionHeader({
+  badge,
+  heading,
+  sub,
+}: {
+  badge: string
+  heading: React.ReactNode
+  sub?: string
+}) {
+  return (
+    <div className="text-center max-w-3xl mx-auto">
+      <span className="landing-badge mb-5 inline-flex">{badge}</span>
+      <h2 className="text-4xl md:text-5xl font-bold iris-hero-font mt-3 leading-tight">
+        {heading}
+      </h2>
+      {sub && (
+        <p className="mt-5 text-lg" style={{ color: "rgba(255,255,255,0.52)" }}>
+          {sub}
+        </p>
+      )}
+    </div>
+  )
+}
+
+function StatItem({ value, label }: { value: string; label: string }) {
+  return (
+    <div className="text-center">
+      <div className="stat-number text-3xl md:text-4xl font-bold mb-1.5">{value}</div>
+      <div className="text-sm" style={{ color: "rgba(255,255,255,0.42)" }}>
+        {label}
+      </div>
+    </div>
+  )
+}
+
+function GlassFeatureCard({
   icon,
   title,
   description,
@@ -179,29 +574,118 @@ function FeatureCard({
   description: string
 }) {
   return (
-    <div className="bg-card border rounded-xl p-6 space-y-3 hover:shadow-xl transition-all duration-300 iris-hover-lift">
-      <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center text-primary">{icon}</div>
+    <div className="glass-feature-card rounded-2xl p-7 space-y-5 h-full">
+      <div
+        className="w-12 h-12 rounded-xl flex items-center justify-center text-green-400 [&>svg]:w-6 [&>svg]:h-6"
+        style={{
+          background:
+            "linear-gradient(135deg, rgba(15,138,65,0.28), rgba(34,197,94,0.13))",
+          border: "1px solid rgba(34,197,94,0.22)",
+        }}
+      >
+        {icon}
+      </div>
+      <h3 className="text-lg font-semibold">{title}</h3>
+      <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.50)" }}>
+        {description}
+      </p>
+    </div>
+  )
+}
+
+function MobileFeatureItem({
+  icon,
+  title,
+  description,
+}: {
+  icon: React.ReactNode
+  title: string
+  description: string
+}) {
+  return (
+    <div
+      className="flex gap-3 p-4 rounded-xl"
+      style={{
+        background: "rgba(255,255,255,0.028)",
+        border: "1px solid rgba(255,255,255,0.065)",
+      }}
+    >
+      <div
+        className="w-9 h-9 rounded-lg shrink-0 flex items-center justify-center text-green-400"
+        style={{ background: "rgba(34,197,94,0.10)" }}
+      >
+        {icon}
+      </div>
+      <div>
+        <p className="font-semibold text-sm mb-0.5">{title}</p>
+        <p className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.44)" }}>
+          {description}
+        </p>
+      </div>
+    </div>
+  )
+}
+
+function StepCard({
+  index,
+  title,
+  description,
+}: {
+  index: number
+  title: string
+  description: string
+}) {
+  return (
+    <div
+      className="glass-panel rounded-2xl p-8 space-y-5"
+    >
+      <div
+        className="step-number w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg text-white"
+      >
+        {index}
+      </div>
       <h3 className="text-xl font-semibold">{title}</h3>
-      <p className="text-muted-foreground">{description}</p>
+      <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.50)" }}>
+        {description}
+      </p>
     </div>
   )
 }
 
-function StepCard({ index, title, description }: { index: number; title: string; description: string }) {
+function AudienceCard({
+  title,
+  description,
+  features,
+  featured,
+}: {
+  title: string
+  description: string
+  features: string[]
+  featured?: boolean
+}) {
   return (
-    <div className="bg-card border rounded-xl p-6 space-y-3">
-      <div className="h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-bold">{index}</div>
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="text-muted-foreground">{description}</p>
-    </div>
-  )
-}
-
-function AudienceCard({ title, description }: { title: string; description: string }) {
-  return (
-    <div className="bg-card border rounded-xl p-6 space-y-2">
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="text-muted-foreground">{description}</p>
+    <div
+      className={`rounded-2xl p-8 space-y-5 h-full transition-all duration-300 ${
+        featured ? "audience-card-featured" : "glass-panel"
+      }`}
+    >
+      {featured && (
+        <span className="landing-badge text-xs inline-flex mb-1">Mais popular</span>
+      )}
+      <h3 className="text-xl font-semibold">{title}</h3>
+      <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.52)" }}>
+        {description}
+      </p>
+      <ul className="space-y-3 pt-1">
+        {features.map((f) => (
+          <li key={f} className="flex items-center gap-2.5 text-sm">
+            <CheckCircle
+              className="w-4 h-4 shrink-0 text-green-400"
+            />
+            <span style={{ color: "rgba(255,255,255,0.72)" }}>{f}</span>
+          </li>
+        ))}
+      </ul>
     </div>
   )
 }
