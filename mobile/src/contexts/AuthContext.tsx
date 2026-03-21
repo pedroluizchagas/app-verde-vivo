@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react'
+import { AppState, type AppStateStatus } from 'react-native'
 import { supabase } from '../supabase'
 import type { User as SupabaseUser } from '@supabase/supabase-js'
 
@@ -55,9 +56,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(session?.user ?? null)
     })
 
+    // Supabase recommendation for React Native: start/stop auto-refresh based on AppState
+    // Without this, the internal timer can stop when the app goes to background,
+    // causing the access_token to expire without being renewed.
+    supabase.auth.startAutoRefresh()
+    const handleAppStateChange = (state: AppStateStatus) => {
+      if (state === 'active') {
+        supabase.auth.startAutoRefresh()
+      } else {
+        supabase.auth.stopAutoRefresh()
+      }
+    }
+    const appStateListener = AppState.addEventListener('change', handleAppStateChange)
+
     return () => {
       active = false
       authListener.subscription.unsubscribe()
+      appStateListener.remove()
+      supabase.auth.stopAutoRefresh()
     }
   }, [])
 

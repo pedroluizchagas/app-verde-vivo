@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server"
 import { randomUUID } from "crypto"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { getAuthUserFromApiRequest } from "@/lib/supabase/api-route-auth"
+import { getAccessTokenFromRequest, getAuthUserFromApiRequest } from "@/lib/supabase/api-route-auth"
 import {
   getOrCreateStripeCustomer,
   createStripeCheckoutSession,
@@ -20,7 +20,16 @@ type Plan = keyof typeof PLAN_CONFIG
 export async function POST(request: Request) {
   const user = await getAuthUserFromApiRequest(request)
   if (!user) {
-    return NextResponse.json({ error: "not_authenticated" }, { status: 401 })
+    const hadBearer = !!getAccessTokenFromRequest(request)
+    return NextResponse.json(
+      {
+        error: "not_authenticated",
+        message: hadBearer
+          ? "Token de acesso invalido ou expirado. Tente sair e fazer login novamente."
+          : "Requisicao sem token de autorizacao. Verifique a configuracao do app.",
+      },
+      { status: 401 }
+    )
   }
 
   if (!user.email) {

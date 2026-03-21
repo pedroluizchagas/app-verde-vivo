@@ -83,6 +83,15 @@ const STATUS_DISPLAY: Record<string, { label: string; icon: keyof typeof Ionicon
   inactive: { label: "Inativo", icon: "close-circle-outline", color: "#6b7280" },
 }
 
+async function getFreshAccessToken(): Promise<string | null> {
+  const { data: sessionData } = await supabase.auth.getSession()
+  const token = sessionData?.session?.access_token
+  if (token) return token
+  // Token ausente ou sessao expirada: tenta renovar via refresh token
+  const { data: refreshData } = await supabase.auth.refreshSession()
+  return refreshData?.session?.access_token ?? null
+}
+
 function parseJsonObject(raw: string): Record<string, unknown> {
   const t = raw.trim()
   if (!t) return {}
@@ -179,8 +188,7 @@ export function PlanScreen() {
   const fetchStatus = useCallback(async () => {
     setLoadingStatus(true)
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const token = sessionData?.session?.access_token
+      const token = await getFreshAccessToken()
       if (!token) {
         setStatus(null)
         return
@@ -194,6 +202,7 @@ export function PlanScreen() {
         },
       })
       const raw = await res.text()
+      console.log("[Plan] status response:", res.status, raw.substring(0, 200))
       if (!res.ok) {
         setStatus(null)
         return
@@ -269,14 +278,15 @@ export function PlanScreen() {
   const handleSubscribe = async (plan: Plan) => {
     setSubscribing(plan)
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const token = sessionData?.session?.access_token
+      const token = await getFreshAccessToken()
       if (!token) {
         Alert.alert("Erro", "Sessao expirada. Faca login novamente.")
         return
       }
 
       const base = getBackendApiBase()
+      console.log("[Plan] checkout request ->", base, "token length:", token.length, "plan:", plan)
+
       const res = await fetch(`${base}/api/subscription/checkout`, {
         method: "POST",
         headers: {
@@ -289,6 +299,8 @@ export function PlanScreen() {
 
       const raw = await res.text()
       const data = parseJsonObject(raw)
+
+      console.log("[Plan] checkout response <-", res.status, JSON.stringify(data).substring(0, 300))
 
       if (!res.ok) {
         if (data.error === "email_required") {
@@ -338,8 +350,7 @@ export function PlanScreen() {
     if (!status?.subscription) return
     setSubscribing(status.subscription.plan as Plan)
     try {
-      const { data: sessionData } = await supabase.auth.getSession()
-      const token = sessionData?.session?.access_token
+      const token = await getFreshAccessToken()
       if (!token) {
         Alert.alert("Erro", "Sessao expirada. Faca login novamente.")
         return

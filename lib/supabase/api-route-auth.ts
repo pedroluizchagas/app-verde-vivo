@@ -1,5 +1,5 @@
 import type { SupabaseClient, User } from "@supabase/supabase-js"
-import { createClient, createClientWithToken, createServiceRoleClient } from "@/lib/supabase/server"
+import { createClient, createClientWithToken } from "@/lib/supabase/server"
 
 function extractBearerToken(value: string): string | null {
   const m = String(value || "").match(/^\s*bearer\s+(.+?)\s*$/i)
@@ -30,24 +30,35 @@ export async function getSupabaseAndUserFromApiRequest(
 
   if (bearer) {
     try {
-      // Use the service role admin client to reliably validate any JWT
-      const admin = createServiceRoleClient()
-      const { data, error } = await admin.auth.getUser(bearer)
+      // Validate the user JWT using the token client (anon key + bearer as Authorization header).
+      // This does NOT require SUPABASE_SERVICE_ROLE_KEY — any valid user JWT is accepted by /auth/v1/user.
+      const supabase = createClientWithToken(bearer)
+      const { data, error } = await supabase.auth.getUser(bearer)
       if (!error && data?.user) {
-        return { supabase: createClientWithToken(bearer), user: data.user }
+        return { supabase, user: data.user }
       }
-    } catch {
-      // fall through to cookie session
+      console.error("[api-auth] bearer token rejected:", error?.message ?? "unknown error")
+    } catch (err) {
+      console.error("[api-auth] bearer token validation threw:", err)
+    }
+  } else {
+    const pathname = new URL(request.url).pathname
+    if (!pathname.startsWith("/api/subscription/webhook")) {
+      console.warn("[api-auth] no bearer token found in request to", pathname)
     }
   }
 
   // Fallback: cookie-based session (web requests)
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-  return { supabase, user }
+  try {
+    const supabase = await createClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) return null
+    return { supabase, user }
+  } catch {
+    return null
+  }
 }
 
 export async function getAuthUserFromApiRequest(request: Request): Promise<User | null> {
