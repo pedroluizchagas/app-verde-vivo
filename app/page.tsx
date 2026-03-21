@@ -17,6 +17,9 @@ import {
   ArrowRight,
   Zap,
   CheckCircle,
+  Check,
+  X,
+  Sparkles,
 } from "lucide-react"
 
 /* ─── Main page ─── */
@@ -84,6 +87,9 @@ export default function HomePage() {
             <a href="#features" className="landing-nav-link">
               Funcionalidades
             </a>
+            <a href="#planos" className="landing-nav-link">
+              Planos
+            </a>
             <a href="#app-mobile" className="landing-nav-link">
               App Mobile
             </a>
@@ -101,7 +107,7 @@ export default function HomePage() {
               className="iris-gradient-btn iris-glow-btn inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-semibold"
               style={{ color: "#fff" }}
             >
-              Começar grátis <ArrowRight className="w-4 h-4" />
+              Criar conta <ArrowRight className="w-4 h-4" />
             </Link>
           </div>
         </div>
@@ -114,7 +120,7 @@ export default function HomePage() {
           <div className="animate-slide-up-1 flex justify-center mb-8">
             <span className="landing-badge">
               <Zap className="w-3.5 h-3.5" />
-              Assistente IA integrado para jardineiros
+              Planos a partir de R$ 47,90/mês
             </span>
           </div>
 
@@ -132,8 +138,9 @@ export default function HomePage() {
             className="animate-slide-up-3 text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
             style={{ color: "rgba(255,255,255,0.52)" }}
           >
-            Íris é o assistente inteligente para jardineiros e equipes: clientes,
-            agenda, orçamentos, financeiro e fotos em um só lugar.
+            Clientes, agenda, financeiro, estoque e orçamentos em um só lugar.
+            No Plano Plus, conte ainda com a Íris — assistente inteligente
+            que entende comandos por texto e voz.
           </p>
 
           {/* CTAs */}
@@ -143,14 +150,14 @@ export default function HomePage() {
               className="iris-gradient-btn iris-glow-btn inline-flex items-center gap-2.5 px-8 py-4 rounded-2xl text-base font-semibold"
               style={{ color: "#fff" }}
             >
-              Começar gratuitamente
+              Criar minha conta
               <ArrowRight className="w-5 h-5" />
             </Link>
             <a
-              href="#app-mobile"
+              href="#planos"
               className="landing-outline-btn px-8 py-4 rounded-2xl text-base font-semibold"
             >
-              Conheça o app
+              Ver planos e preços
             </a>
           </div>
 
@@ -161,6 +168,7 @@ export default function HomePage() {
               { icon: <Calendar className="w-3.5 h-3.5" />, label: "Agenda" },
               { icon: <FileText className="w-3.5 h-3.5" />, label: "Orçamentos" },
               { icon: <TrendingUp className="w-3.5 h-3.5" />, label: "Financeiro" },
+              { icon: <Sparkles className="w-3.5 h-3.5" />, label: "Iris IA" },
               { icon: <Smartphone className="w-3.5 h-3.5" />, label: "App Móvel" },
             ].map(({ icon, label }) => (
               <span
@@ -227,6 +235,153 @@ export default function HomePage() {
               </AnimateOnScroll>
             ))}
           </div>
+        </div>
+      </section>
+
+      {/* ── Pricing section ── */}
+      <section id="planos" className="relative py-32">
+        <div className="container mx-auto px-6 max-w-7xl">
+          <AnimateOnScroll>
+            <SectionHeader
+              badge="Planos"
+              heading={
+                <>
+                  Simples, transparente{" "}
+                  <br />e{" "}
+                  <span className="iris-gradient-text">sem surpresas</span>
+                </>
+              }
+              sub="Escolha o plano ideal para o seu negócio. Pague via PIX, boleto ou cartão. Cancele quando quiser."
+            />
+          </AnimateOnScroll>
+
+          <div className="grid md:grid-cols-2 gap-6 mt-16 max-w-3xl mx-auto">
+            {/* Plano Basico */}
+            <AnimateOnScroll delay={0}>
+              <div
+                className="glass-panel rounded-2xl p-8 flex flex-col gap-6 h-full"
+                style={{ borderColor: "rgba(255,255,255,0.08)" }}
+              >
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-widest mb-3" style={{ color: "rgba(255,255,255,0.35)" }}>
+                    Basico
+                  </p>
+                  <div className="flex items-baseline gap-1.5 mb-3">
+                    <span className="text-4xl font-extrabold">R$ 47,90</span>
+                    <span className="text-sm" style={{ color: "rgba(255,255,255,0.42)" }}>/mês</span>
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.50)" }}>
+                    Todas as ferramentas essenciais para gerenciar seu negócio de jardinagem.
+                  </p>
+                </div>
+
+                <ul className="flex-1 space-y-3">
+                  {[
+                    "Clientes ilimitados",
+                    "Agenda e agendamentos",
+                    "Financeiro e fluxo de caixa",
+                    "Estoque e produtos",
+                    "Orçamentos e ordens de serviço",
+                    "Planos de manutenção recorrente",
+                    "Notas e tarefas",
+                    "App móvel (Android e iOS)",
+                  ].map((f) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm">
+                      <Check className="w-4 h-4 text-green-400 mt-0.5 shrink-0" />
+                      <span style={{ color: "rgba(255,255,255,0.70)" }}>{f}</span>
+                    </li>
+                  ))}
+                  <li className="flex items-start gap-2.5 text-sm opacity-35">
+                    <X className="w-4 h-4 mt-0.5 shrink-0" style={{ color: "rgba(255,255,255,0.40)" }} />
+                    <span className="line-through" style={{ color: "rgba(255,255,255,0.40)" }}>Assistente Íris com IA</span>
+                  </li>
+                </ul>
+
+                <Link
+                  href="/auth/sign-up"
+                  className="landing-outline-btn w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm"
+                >
+                  Assinar Basico
+                </Link>
+              </div>
+            </AnimateOnScroll>
+
+            {/* Plano Plus */}
+            <AnimateOnScroll delay={160}>
+              <div className="relative rounded-2xl p-8 flex flex-col gap-6 h-full" style={{
+                background: "linear-gradient(145deg, rgba(15,138,65,0.14) 0%, rgba(7,7,8,0.90) 55%)",
+                border: "1px solid rgba(34,197,94,0.28)",
+                boxShadow: "0 0 40px rgba(34,197,94,0.08)",
+              }}>
+                {/* Recommended badge */}
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2">
+                  <span
+                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider"
+                    style={{
+                      background: "linear-gradient(90deg, #16a34a, #22c55e)",
+                      color: "#fff",
+                    }}
+                  >
+                    <Sparkles className="w-3 h-3" /> Recomendado
+                  </span>
+                </div>
+
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-widest mb-3 text-green-400">
+                    Plus
+                  </p>
+                  <div className="flex items-baseline gap-1.5 mb-3">
+                    <span className="text-4xl font-extrabold">R$ 77,90</span>
+                    <span className="text-sm" style={{ color: "rgba(255,255,255,0.42)" }}>/mês</span>
+                  </div>
+                  <p className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.50)" }}>
+                    Tudo do Básico mais o poder da inteligência artificial no seu dia a dia.
+                  </p>
+                </div>
+
+                <ul className="flex-1 space-y-3">
+                  {[
+                    "Tudo do plano Básico",
+                    "Assistente Íris com IA",
+                    "Comandos por texto e por voz",
+                    "Agendamento por comando de voz",
+                    "Lançamento financeiro por voz",
+                    "Gestão de estoque por voz",
+                  ].map((f, i) => (
+                    <li key={f} className="flex items-start gap-2.5 text-sm">
+                      <Check className={`w-4 h-4 mt-0.5 shrink-0 ${i === 0 ? "text-green-400" : "text-green-400"}`} />
+                      <span style={{ color: i >= 1 ? "rgba(255,255,255,0.90)" : "rgba(255,255,255,0.70)" }}>
+                        {i >= 1 && (
+                          <Sparkles
+                            className="inline w-3 h-3 mr-1 text-green-400 opacity-70"
+                            style={{ verticalAlign: "middle" }}
+                          />
+                        )}
+                        {f}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+
+                <Link
+                  href="/auth/sign-up"
+                  className="iris-gradient-btn iris-glow-btn w-full inline-flex items-center justify-center gap-2 py-3.5 rounded-xl font-semibold text-sm"
+                  style={{ color: "#fff" }}
+                >
+                  Assinar Plus <ArrowRight className="w-4 h-4" />
+                </Link>
+              </div>
+            </AnimateOnScroll>
+          </div>
+
+          {/* Payment note */}
+          <AnimateOnScroll delay={240}>
+            <p className="text-center text-sm mt-8" style={{ color: "rgba(255,255,255,0.28)" }}>
+              Pagamento seguro via{" "}
+              <span style={{ color: "rgba(255,255,255,0.50)" }}>Asaas</span>
+              {" "}— PIX, boleto ou cartão de crédito. Cancele a qualquer momento.
+            </p>
+          </AnimateOnScroll>
         </div>
       </section>
 
@@ -480,7 +635,7 @@ export default function HomePage() {
                   className="text-lg mb-10 max-w-xl mx-auto"
                   style={{ color: "rgba(255,255,255,0.52)" }}
                 >
-                  Crie sua conta gratuita e dê o próximo passo no seu trabalho
+                  Crie sua conta, escolha seu plano e comece a transformar seu negócio de jardinagem.
                 </p>
 
                 <div className="flex flex-wrap justify-center gap-4">
@@ -489,14 +644,14 @@ export default function HomePage() {
                     className="iris-gradient-btn iris-glow-btn inline-flex items-center gap-2 px-9 py-4 rounded-2xl text-base font-semibold"
                     style={{ color: "#fff" }}
                   >
-                    Criar conta gratuita <ArrowRight className="w-5 h-5" />
+                    Criar minha conta <ArrowRight className="w-5 h-5" />
                   </Link>
-                  <Link
-                    href="/auth/login"
+                  <a
+                    href="#planos"
                     className="landing-outline-btn px-9 py-4 rounded-2xl text-base font-semibold"
                   >
-                    Falar com a equipe
-                  </Link>
+                    Ver planos
+                  </a>
                 </div>
               </div>
             </div>
@@ -510,7 +665,7 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-5">
             <img src="/img/iris.png" alt="Íris" className="h-8 w-auto opacity-50" />
             <p className="text-sm" style={{ color: "rgba(255,255,255,0.32)" }}>
-              © 2025 Íris. Todos os Direitos Reservados.
+              © 2026 Íris. Todos os Direitos Reservados.
             </p>
             <div className="flex gap-6 text-sm" style={{ color: "rgba(255,255,255,0.40)" }}>
               <a href="#" className="hover:text-white transition-colors duration-200">
