@@ -17,16 +17,27 @@ export async function GET(request: Request) {
 
       const { data: profile } = await admin
         .from("profiles")
-        .select("trial_ends_at, plan")
+        .select("trial_ends_at, plan, cpf_cnpj")
         .eq("id", sessionData.user.id)
         .maybeSingle()
+
+      const profileUpdate: Record<string, unknown> = {}
 
       if (profile && !profile.trial_ends_at) {
         const trialEndsAt = new Date()
         trialEndsAt.setDate(trialEndsAt.getDate() + TRIAL_DAYS)
+        profileUpdate.trial_ends_at = trialEndsAt.toISOString()
+      }
+
+      const cpfCnpjFromMeta = sessionData.user.user_metadata?.cpf_cnpj as string | undefined
+      if (cpfCnpjFromMeta && !profile?.cpf_cnpj) {
+        profileUpdate.cpf_cnpj = cpfCnpjFromMeta
+      }
+
+      if (Object.keys(profileUpdate).length > 0) {
         await admin
           .from("profiles")
-          .update({ trial_ends_at: trialEndsAt.toISOString() })
+          .update(profileUpdate)
           .eq("id", sessionData.user.id)
       }
 

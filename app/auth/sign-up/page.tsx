@@ -10,6 +10,7 @@ import { ArrowRight, Check, Eye, EyeOff } from "lucide-react"
 export default function SignUpPage() {
   const [fullName, setFullName] = useState("")
   const [phone, setPhone] = useState("")
+  const [cpfCnpj, setCpfCnpj] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [repeatPassword, setRepeatPassword] = useState("")
@@ -18,6 +19,21 @@ export default function SignUpPage() {
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
+
+  function formatCpfCnpj(value: string): string {
+    const digits = value.replace(/\D/g, "").slice(0, 14)
+    if (digits.length <= 11) {
+      return digits
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d)/, "$1.$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+    }
+    return digits
+      .replace(/(\d{2})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1/$2")
+      .replace(/(\d{4})(\d{1,2})$/, "$1-$2")
+  }
 
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,6 +53,13 @@ export default function SignUpPage() {
       return
     }
 
+    const cpfDigits = cpfCnpj.replace(/\D/g, "")
+    if (cpfDigits.length !== 11 && cpfDigits.length !== 14) {
+      setError("Informe um CPF (11 digitos) ou CNPJ (14 digitos) valido.")
+      setIsLoading(false)
+      return
+    }
+
     try {
       const { error } = await supabase.auth.signUp({
         email,
@@ -46,6 +69,7 @@ export default function SignUpPage() {
           data: {
             full_name: fullName,
             phone: phone,
+            cpf_cnpj: cpfDigits,
             role: "gardener",
           },
         },
@@ -164,6 +188,17 @@ export default function SignUpPage() {
                   required
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
+                />
+              </div>
+              <div className="col-span-2 sm:col-span-1">
+                <AuthLabel>CPF ou CNPJ</AuthLabel>
+                <AuthInput
+                  type="text"
+                  placeholder="000.000.000-00"
+                  required
+                  inputMode="numeric"
+                  value={cpfCnpj}
+                  onChange={(e) => setCpfCnpj(formatCpfCnpj(e.target.value))}
                 />
               </div>
               <div className="col-span-2 sm:col-span-1">

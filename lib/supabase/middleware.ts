@@ -77,8 +77,9 @@ export async function updateSession(request: NextRequest) {
 
     const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard")
     const isOnPlanPage = request.nextUrl.pathname.startsWith("/dashboard/plan")
+    const isOnProfilePage = request.nextUrl.pathname.startsWith("/dashboard/profile")
 
-    if (user && isDashboardRoute && !isOnPlanPage) {
+    if (user && isDashboardRoute && !isOnPlanPage && !isOnProfilePage) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("plan, trial_ends_at")
