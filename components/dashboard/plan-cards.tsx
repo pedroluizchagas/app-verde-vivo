@@ -91,10 +91,12 @@ interface PlanCardsProps {
 export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialEndsAt }: PlanCardsProps) {
   const [loading, setLoading] = useState<Plan | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const [cpfMissing, setCpfMissing] = useState(false)
 
   async function handleSubscribe(plan: Plan) {
     setLoading(plan)
     setError(null)
+    setCpfMissing(false)
     try {
       const res = await fetch("/api/subscription/checkout", {
         method: "POST",
@@ -103,7 +105,11 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.message ?? data.error ?? "Erro ao iniciar assinatura")
+        if (data.error === "cpf_cnpj_required") {
+          setCpfMissing(true)
+        } else {
+          setError(data.message ?? data.error ?? "Erro ao iniciar assinatura")
+        }
         return
       }
       if (data.paymentUrl) {
@@ -208,7 +214,20 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
         </div>
       )}
 
-      {/* Erro */}
+      {/* CPF/CNPJ ausente */}
+      {cpfMissing && (
+        <div className="flex items-start gap-2 px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/8 text-sm text-amber-700 dark:text-amber-400">
+          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+          <span>
+            Preencha seu CPF ou CNPJ antes de assinar.{" "}
+            <Link href="/dashboard/profile" className="underline underline-offset-2 font-medium">
+              Ir para o perfil
+            </Link>
+          </span>
+        </div>
+      )}
+
+      {/* Erro generico */}
       {error && (
         <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-destructive/30 bg-destructive/5 text-sm text-destructive">
           <AlertCircle className="h-4 w-4 shrink-0" />
