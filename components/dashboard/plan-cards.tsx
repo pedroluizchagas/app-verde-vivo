@@ -84,9 +84,11 @@ interface Subscription {
 interface PlanCardsProps {
   currentPlan: string | null
   subscription: Subscription | null
+  trialDaysLeft?: number
+  trialEndsAt?: string | null
 }
 
-export function PlanCards({ currentPlan, subscription }: PlanCardsProps) {
+export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialEndsAt }: PlanCardsProps) {
   const [loading, setLoading] = useState<Plan | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -119,8 +121,48 @@ export function PlanCards({ currentPlan, subscription }: PlanCardsProps) {
     ? new Date(subscription.current_period_end).toLocaleDateString("pt-BR")
     : null
 
+  const trialActive = !currentPlan && trialDaysLeft > 0
+  const trialExpired = !currentPlan && trialDaysLeft === 0 && !!trialEndsAt
+  const trialEndDate = trialEndsAt
+    ? new Date(trialEndsAt).toLocaleDateString("pt-BR")
+    : null
+
   return (
     <div className="flex flex-col gap-6">
+      {/* Banner de trial ativo */}
+      {trialActive && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/8 text-sm">
+          <Clock className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
+          <div>
+            <span className="font-semibold text-amber-600">
+              Periodo de teste: {trialDaysLeft} {trialDaysLeft === 1 ? "dia restante" : "dias restantes"}
+            </span>
+            {trialEndDate && (
+              <span className="text-amber-600/70 font-normal ml-1">
+                · Expira em {trialEndDate}
+              </span>
+            )}
+            <p className="text-muted-foreground mt-0.5 text-[13px]">
+              Assine um plano para continuar usando o Iris apos o periodo de teste.
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Banner de trial expirado */}
+      {trialExpired && (
+        <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-red-500/30 bg-red-500/8 text-sm">
+          <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
+          <div>
+            <span className="font-semibold text-red-600">
+              Seu periodo de teste encerrou
+            </span>
+            <p className="text-muted-foreground mt-0.5 text-[13px]">
+              Escolha um plano abaixo para reativar seu acesso ao Iris.
+            </p>
+          </div>
+        </div>
+      )}
       {/* Status da assinatura atual */}
       {subscription && statusInfo && (
         <div
@@ -268,12 +310,7 @@ export function PlanCards({ currentPlan, subscription }: PlanCardsProps) {
       <p className="text-[12px] text-muted-foreground text-center">
         Pagamento seguro via{" "}
         <span className="font-medium text-foreground/60">Asaas</span> — PIX,
-        boleto ou cartao de credito. Cancele a qualquer momento.{" "}
-        {!currentPlan && (
-          <Link href="/dashboard" className="underline underline-offset-2 hover:text-foreground transition-colors">
-            Voltar ao inicio
-          </Link>
-        )}
+        boleto ou cartao de credito. Cancele a qualquer momento.
       </p>
     </div>
   )

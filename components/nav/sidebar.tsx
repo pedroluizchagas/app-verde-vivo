@@ -90,6 +90,7 @@ export function Sidebar({
     watermark_base64: string | null
     watermark_fit: string | null
     plan: string | null
+    trial_days_left?: number
   }
   nextAppointment?: NextAppointment | null
 }) {
@@ -346,11 +347,18 @@ export function Sidebar({
                 ? 'Plano Plus'
                 : profile?.plan === 'basic'
                   ? 'Plano Basico'
-                  : 'Sem plano ativo'}
+                  : (profile?.trial_days_left ?? 0) > 0
+                    ? `Teste: ${profile!.trial_days_left}d restantes`
+                    : 'Sem plano ativo'}
             </span>
-            {!profile?.plan && (
+            {!profile?.plan && (profile?.trial_days_left ?? 0) === 0 && (
               <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">
                 Assinar
+              </span>
+            )}
+            {!profile?.plan && (profile?.trial_days_left ?? 0) > 0 && (
+              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-amber-500/15 text-amber-500 shrink-0">
+                Trial
               </span>
             )}
             {profile?.plan === 'basic' && (

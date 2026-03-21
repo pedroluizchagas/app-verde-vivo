@@ -1,9 +1,7 @@
 import { redirect } from "next/navigation"
-import Link from "next/link"
 import { createClient } from "@/lib/supabase/server"
 import { PlanCards } from "@/components/dashboard/plan-cards"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft, CreditCard } from "lucide-react"
+import { CreditCard } from "lucide-react"
 
 export default async function PlanPage() {
   const supabase = await createClient()
@@ -14,7 +12,7 @@ export default async function PlanPage() {
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan")
+    .select("plan, trial_ends_at")
     .eq("id", user.id)
     .maybeSingle()
 
@@ -26,28 +24,29 @@ export default async function PlanPage() {
     .limit(1)
     .maybeSingle()
 
+  const trialEndsAt = profile?.trial_ends_at ?? null
+  const trialDaysLeft =
+    !profile?.plan && trialEndsAt
+      ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      : 0
+
   return (
     <div className="flex flex-col gap-6">
-      <div className="flex items-center gap-3">
-        <Button asChild variant="outline" size="icon" className="rounded-full">
-          <Link href="/dashboard">
-            <ArrowLeft className="h-5 w-5" />
-          </Link>
-        </Button>
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <CreditCard className="h-6 w-6 text-primary" />
-            Gerenciar plano
-          </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            Escolha o plano ideal para o seu negocio de jardinagem.
-          </p>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
+          <CreditCard className="h-6 w-6 text-primary" />
+          Gerenciar plano
+        </h1>
+        <p className="text-sm text-muted-foreground mt-0.5">
+          Escolha o plano ideal para o seu negocio de jardinagem.
+        </p>
       </div>
 
       <PlanCards
         currentPlan={profile?.plan ?? null}
         subscription={subscription ?? null}
+        trialDaysLeft={trialDaysLeft}
+        trialEndsAt={trialEndsAt}
       />
     </div>
   )

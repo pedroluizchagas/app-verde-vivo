@@ -22,7 +22,7 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, company_name, company_subtitle, watermark_base64, watermark_fit, plan")
+    .select("full_name, avatar_url, company_name, company_subtitle, watermark_base64, watermark_fit, plan, trial_ends_at")
     .eq("id", user!.id)
     .maybeSingle()
 
@@ -30,9 +30,23 @@ export default async function DashboardLayout({
   const pathname = headersList.get("x-pathname") ?? ""
   const isOnPlanPage = pathname.startsWith("/dashboard/plan")
 
-  if (!profile?.plan && !isOnPlanPage) {
+  const hasPlan = !!profile?.plan
+  const trialActive =
+    profile?.trial_ends_at != null && new Date(profile.trial_ends_at) > new Date()
+  const hasAccess = hasPlan || trialActive
+
+  if (!hasAccess && !isOnPlanPage) {
     redirect("/dashboard/plan")
   }
+
+  const trialDaysLeft = trialActive
+    ? Math.max(
+        0,
+        Math.ceil(
+          (new Date(profile!.trial_ends_at!).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        )
+      )
+    : 0
 
   const now = new Date()
   now.setHours(0, 0, 0, 0)
@@ -59,6 +73,7 @@ export default async function DashboardLayout({
           watermark_base64: (profile as any)?.watermark_base64 ?? null,
           watermark_fit: (profile as any)?.watermark_fit ?? "contain",
           plan: (profile as any)?.plan ?? null,
+          trial_days_left: hasPlan ? 0 : trialDaysLeft,
         }}
         nextAppointment={
           nextAppointment

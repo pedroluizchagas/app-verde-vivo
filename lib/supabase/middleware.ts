@@ -74,6 +74,27 @@ export async function updateSession(request: NextRequest) {
       url.pathname = "/dashboard"
       return NextResponse.redirect(url)
     }
+
+    const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard")
+    const isOnPlanPage = request.nextUrl.pathname.startsWith("/dashboard/plan")
+
+    if (user && isDashboardRoute && !isOnPlanPage) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("plan, trial_ends_at")
+        .eq("id", user.id)
+        .maybeSingle()
+
+      const hasPlan = !!profile?.plan
+      const trialActive =
+        profile?.trial_ends_at != null && new Date(profile.trial_ends_at) > new Date()
+
+      if (!hasPlan && !trialActive) {
+        const url = request.nextUrl.clone()
+        url.pathname = "/dashboard/plan"
+        return NextResponse.redirect(url)
+      }
+    }
   } catch (error) {
     const code = (error as any)?.code
     const causeCode = (error as any)?.cause?.code
