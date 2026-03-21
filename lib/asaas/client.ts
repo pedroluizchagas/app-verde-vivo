@@ -60,7 +60,7 @@ export async function updateAsaasCustomer(
   })
 }
 
-
+export async function createAsaasSubscription(
   input: AsaasCreateSubscriptionInput
 ): Promise<AsaasSubscription> {
   return asaasFetch<AsaasSubscription>("/subscriptions", {
