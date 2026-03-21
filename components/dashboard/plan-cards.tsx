@@ -90,10 +90,12 @@ interface PlanCardsProps {
 
 export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialEndsAt }: PlanCardsProps) {
   const [loading, setLoading] = useState<Plan | null>(null)
+  const [reopenLoading, setReopenLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [cpfMissing, setCpfMissing] = useState(false)
 
   async function handleSubscribe(plan: Plan) {
+    if (loading !== null || reopenLoading) return
     setLoading(plan)
     setError(null)
     setCpfMissing(false)
@@ -114,11 +116,36 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
       }
       if (data.paymentUrl) {
         window.location.href = data.paymentUrl
+      } else {
+        setError("Link de pagamento nao disponivel. Tente novamente.")
       }
     } catch (err: any) {
       setError(err?.message ?? "Erro ao iniciar assinatura")
     } finally {
       setLoading(null)
+    }
+  }
+
+  async function handleReopenPayment() {
+    if (loading !== null || reopenLoading) return
+    setReopenLoading(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/subscription/reopen-payment", { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.message ?? data.error ?? "Erro ao recuperar link de pagamento")
+        return
+      }
+      if (data.paymentUrl) {
+        window.location.href = data.paymentUrl
+      } else {
+        setError("Link de pagamento nao disponivel. Tente iniciar uma nova assinatura.")
+      }
+    } catch (err: any) {
+      setError(err?.message ?? "Erro ao recuperar link de pagamento")
+    } finally {
+      setReopenLoading(false)
     }
   }
 
@@ -201,10 +228,11 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
           {(subscription.status === "pending" || subscription.status === "overdue") && (
             <button
               type="button"
-              onClick={() => handleSubscribe(subscription.plan as Plan)}
-              className="ml-auto text-xs underline underline-offset-2 font-medium shrink-0"
+              disabled={reopenLoading || loading !== null}
+              onClick={handleReopenPayment}
+              className="ml-auto text-xs underline underline-offset-2 font-medium shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading === subscription.plan ? (
+              {reopenLoading ? (
                 <Loader2 className="h-3.5 w-3.5 animate-spin" />
               ) : (
                 "Abrir pagamento"
@@ -239,7 +267,7 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {PLANS.map((plan) => {
           const isCurrent = currentPlan === plan.id
-          const isAnyLoading = loading !== null
+          const isAnyLoading = loading !== null || reopenLoading
 
           return (
             <Card

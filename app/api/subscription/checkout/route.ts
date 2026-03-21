@@ -127,15 +127,26 @@ export async function POST(request: Request) {
       externalReference: user.id,
     })
 
+    const paymentLink = asaasSub.paymentLink ?? null
+
     await admin.from("subscriptions").insert({
       user_id: user.id,
       plan,
       status: "pending",
       asaas_subscription_id: asaasSub.id,
       asaas_customer_id: asaasCustomerId,
+      payment_link: paymentLink,
     })
 
-    return NextResponse.json({ paymentUrl: asaasSub.paymentLink })
+    if (!paymentLink) {
+      console.error("[checkout] Asaas did not return a paymentLink for subscription", asaasSub.id)
+      return NextResponse.json(
+        { error: "payment_link_unavailable", message: "Link de pagamento nao disponivel. Tente novamente em instantes." },
+        { status: 502 }
+      )
+    }
+
+    return NextResponse.json({ paymentUrl: paymentLink })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erro ao processar assinatura"
     console.error("[checkout] Asaas error:", message)
