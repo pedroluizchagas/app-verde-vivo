@@ -26,10 +26,11 @@ export interface AsaasCreateCustomerInput {
   notificationDisabled?: boolean
 }
 
+/** Subscription response from Asaas. `paymentLink` is the payments link ID, not the public URL. */
 export interface AsaasSubscription {
   id: string
   customer: string
-  paymentLink: string
+  paymentLink?: string | null
   value: number
   nextDueDate: string
   cycle: AsaasSubscriptionCycle
@@ -38,6 +39,21 @@ export interface AsaasSubscription {
   status: AsaasSubscriptionStatus
   externalReference?: string
   dateCreated?: string
+  checkoutSession?: string | null
+}
+
+/** GET /paymentLinks/{id} */
+export interface AsaasPaymentLinkDetails {
+  id: string
+  url: string
+  name?: string
+  active?: boolean
+}
+
+/** Payment row from GET /subscriptions/{id}/payments */
+export interface AsaasSubscriptionPayment {
+  id: string
+  invoiceUrl?: string | null
 }
 
 export interface AsaasCreateSubscriptionInput {

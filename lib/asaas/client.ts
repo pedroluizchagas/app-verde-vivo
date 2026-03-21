@@ -2,7 +2,9 @@ import type {
   AsaasCreateCustomerInput,
   AsaasCreateSubscriptionInput,
   AsaasCustomer,
+  AsaasPaymentLinkDetails,
   AsaasSubscription,
+  AsaasSubscriptionPayment,
 } from "./types"
 
 function getApiUrl(): string {
@@ -75,4 +77,45 @@ export async function cancelAsaasSubscription(subscriptionId: string): Promise<v
 
 export async function getAsaasSubscription(subscriptionId: string): Promise<AsaasSubscription> {
   return asaasFetch<AsaasSubscription>(`/subscriptions/${subscriptionId}`)
+}
+
+export async function getAsaasPaymentLinkById(paymentLinkId: string): Promise<AsaasPaymentLinkDetails> {
+  return asaasFetch<AsaasPaymentLinkDetails>(`/paymentLinks/${encodeURIComponent(paymentLinkId)}`)
+}
+
+export async function listAsaasSubscriptionPayments(
+  subscriptionId: string
+): Promise<{ data: AsaasSubscriptionPayment[] }> {
+  return asaasFetch<{ data: AsaasSubscriptionPayment[] }>(
+    `/subscriptions/${encodeURIComponent(subscriptionId)}/payments?limit=20`
+  )
+}
+
+/**
+ * Asaas returns `paymentLink` on the subscription as the payments link ID.
+ * The public URL is on GET /paymentLinks/{id} -> `url`.
+ * Fallback: first subscription charge may expose `invoiceUrl`.
+ */
+export async function resolvePublicPaymentUrlFromSubscription(
+  sub: AsaasSubscription
+): Promise<string | null> {
+  const linkId = sub.paymentLink
+  if (linkId) {
+    try {
+      const pl = await getAsaasPaymentLinkById(linkId)
+      if (pl.url) return pl.url
+    } catch (e) {
+      console.error("[asaas] getAsaasPaymentLinkById failed:", e)
+    }
+  }
+
+  try {
+    const list = await listAsaasSubscriptionPayments(sub.id)
+    const withUrl = list.data?.find((p) => p.invoiceUrl)
+    if (withUrl?.invoiceUrl) return withUrl.invoiceUrl
+  } catch (e) {
+    console.error("[asaas] listAsaasSubscriptionPayments failed:", e)
+  }
+
+  return null
 }

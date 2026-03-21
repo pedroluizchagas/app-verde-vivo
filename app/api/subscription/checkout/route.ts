@@ -7,6 +7,7 @@ import {
   createAsaasSubscription,
   cancelAsaasSubscription,
   findAsaasCustomerByExternalReference,
+  resolvePublicPaymentUrlFromSubscription,
 } from "@/lib/asaas/client"
 
 export const runtime = "nodejs"
@@ -127,7 +128,7 @@ export async function POST(request: Request) {
       externalReference: user.id,
     })
 
-    const paymentLink = asaasSub.paymentLink ?? null
+    const publicPaymentUrl = await resolvePublicPaymentUrlFromSubscription(asaasSub)
 
     await admin.from("subscriptions").insert({
       user_id: user.id,
@@ -135,18 +136,21 @@ export async function POST(request: Request) {
       status: "pending",
       asaas_subscription_id: asaasSub.id,
       asaas_customer_id: asaasCustomerId,
-      payment_link: paymentLink,
+      payment_link: publicPaymentUrl,
     })
 
-    if (!paymentLink) {
-      console.error("[checkout] Asaas did not return a paymentLink for subscription", asaasSub.id)
+    if (!publicPaymentUrl) {
+      console.error("[checkout] Could not resolve public payment URL for subscription", asaasSub.id)
       return NextResponse.json(
-        { error: "payment_link_unavailable", message: "Link de pagamento nao disponivel. Tente novamente em instantes." },
+        {
+          error: "payment_link_unavailable",
+          message: "Nao foi possivel obter o link de pagamento. Verifique permissoes da API (PAYMENT_LINK:READ) e tente novamente.",
+        },
         { status: 502 }
       )
     }
 
-    return NextResponse.json({ paymentUrl: paymentLink })
+    return NextResponse.json({ paymentUrl: publicPaymentUrl })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erro ao processar assinatura"
     console.error("[checkout] Asaas error:", message)

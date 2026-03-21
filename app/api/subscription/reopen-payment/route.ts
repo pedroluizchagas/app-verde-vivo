@@ -1,7 +1,11 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { getAsaasSubscription } from "@/lib/asaas/client"
+import {
+  getAsaasPaymentLinkById,
+  getAsaasSubscription,
+  resolvePublicPaymentUrlFromSubscription,
+} from "@/lib/asaas/client"
 
 export const runtime = "nodejs"
 
@@ -32,24 +36,40 @@ export async function POST() {
     )
   }
 
-  // Return the stored link if available
-  if (sub.payment_link) {
-    return NextResponse.json({ paymentUrl: sub.payment_link })
+  // Stored full HTTPS URL (correct format)
+  const stored = sub.payment_link as string | null
+  if (stored && /^https?:\/\//i.test(stored)) {
+    return NextResponse.json({ paymentUrl: stored })
   }
 
-  // Fallback: fetch from Asaas and persist for next time
+  // Legacy: we mistakenly stored the payments link ID instead of the URL
+  if (stored && !/^https?:\/\//i.test(stored)) {
+    try {
+      const pl = await getAsaasPaymentLinkById(stored)
+      if (pl.url) {
+        await admin
+          .from("subscriptions")
+          .update({ payment_link: pl.url, updated_at: new Date().toISOString() })
+          .eq("id", sub.id)
+        return NextResponse.json({ paymentUrl: pl.url })
+      }
+    } catch (e) {
+      console.error("[reopen-payment] getAsaasPaymentLinkById (legacy id) failed:", e)
+    }
+  }
+
   if (!sub.asaas_subscription_id) {
     return NextResponse.json(
-      { error: "payment_link_unavailable", message: "Link de pagamento nao disponivel. Inicie uma nova assinatura." },
+      { error: "payment_link_unavailable", message: "Assinatura sem ID no Asaas. Inicie uma nova assinatura." },
       { status: 404 }
     )
   }
 
   try {
     const asaasSub = await getAsaasSubscription(sub.asaas_subscription_id)
-    const paymentLink = asaasSub.paymentLink ?? null
+    const publicUrl = await resolvePublicPaymentUrlFromSubscription(asaasSub)
 
-    if (!paymentLink) {
+    if (!publicUrl) {
       return NextResponse.json(
         { error: "payment_link_unavailable", message: "Link de pagamento nao disponivel. Inicie uma nova assinatura." },
         { status: 404 }
@@ -58,10 +78,10 @@ export async function POST() {
 
     await admin
       .from("subscriptions")
-      .update({ payment_link: paymentLink, updated_at: new Date().toISOString() })
+      .update({ payment_link: publicUrl, updated_at: new Date().toISOString() })
       .eq("id", sub.id)
 
-    return NextResponse.json({ paymentUrl: paymentLink })
+    return NextResponse.json({ paymentUrl: publicUrl })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erro ao recuperar link de pagamento"
     console.error("[reopen-payment] Asaas error:", message)
