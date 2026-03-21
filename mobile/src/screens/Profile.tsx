@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, StatusBar, Image } from "react-native"
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Alert, TextInput, StatusBar, Image, Modal, ActivityIndicator } from "react-native"
 import { SafeAreaView } from "react-native-safe-area-context"
 import * as ImagePicker from "expo-image-picker"
 import { Ionicons } from "@expo/vector-icons"
@@ -18,6 +18,26 @@ interface Profile {
   business_type?: string
   created_at: string
   avatar_url?: string
+  cpf_cnpj?: string | null
+}
+
+function stripCpfCnpjDigits(value: string): string {
+  return value.replace(/\D/g, "")
+}
+
+function formatCpfCnpjDisplay(value: string): string {
+  const digits = stripCpfCnpjDigits(value)
+  if (digits.length <= 11) {
+    return digits
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d)/, "$1.$2")
+      .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+  }
+  return digits
+    .replace(/(\d{2})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1.$2")
+    .replace(/(\d{3})(\d)/, "$1/$2")
+    .replace(/(\d{4})(\d{1,2})$/, "$1-$2")
 }
 
 interface SettingsSection {
@@ -49,6 +69,9 @@ export function ProfileScreen() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [newAvatarUri, setNewAvatarUri] = useState<string | null>(null)
   const [uploadingAvatar, setUploadingAvatar] = useState(false)
+  const [cpfModalOpen, setCpfModalOpen] = useState(false)
+  const [cpfDraft, setCpfDraft] = useState("")
+  const [cpfSaving, setCpfSaving] = useState(false)
   const insets = useSafeAreaInsets()
 
   useEffect(() => {
@@ -226,6 +249,32 @@ export function ProfileScreen() {
     Alert.alert("Central de privacidade", "Gerencie suas preferências de privacidade")
   }
 
+  const openCpfModal = () => {
+    const raw = profile?.cpf_cnpj ? String(profile.cpf_cnpj) : ""
+    setCpfDraft(raw ? formatCpfCnpjDisplay(raw) : "")
+    setCpfModalOpen(true)
+  }
+
+  const saveCpfCnpj = async () => {
+    if (!profile) return
+    const digits = stripCpfCnpjDigits(cpfDraft)
+    if (digits.length !== 11 && digits.length !== 14) {
+      Alert.alert("CPF ou CNPJ", "Informe um CPF (11 digitos) ou CNPJ (14 digitos) valido.")
+      return
+    }
+    setCpfSaving(true)
+    try {
+      const { error } = await supabase.from("profiles").update({ cpf_cnpj: digits }).eq("id", profile.id)
+      if (error) throw error
+      setProfile({ ...profile, cpf_cnpj: digits })
+      setCpfModalOpen(false)
+    } catch {
+      Alert.alert("Erro", "Nao foi possivel salvar o CPF/CNPJ.")
+    } finally {
+      setCpfSaving(false)
+    }
+  }
+
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
@@ -303,7 +352,7 @@ export function ProfileScreen() {
         <View style={styles.sectionBlock}>
           <Text style={styles.blockTitle}>GERENCIAR ASSINATURA</Text>
           <View style={styles.blockCard}>
-            <TouchableOpacity style={[styles.item, styles.itemLast]} onPress={() => navigation.navigate("Plan" as never)}>
+            <TouchableOpacity style={styles.item} onPress={() => navigation.navigate("Plan" as never)}>
               <View style={styles.itemLeft}>
                 <Ionicons name="card-outline" size={20} color="#C5C8CC" />
                 <View style={styles.itemContent}>
@@ -312,8 +361,59 @@ export function ProfileScreen() {
               </View>
               <Ionicons name="chevron-forward-outline" size={20} color="#C5C8CC" />
             </TouchableOpacity>
+            <TouchableOpacity style={[styles.item, styles.itemLast]} onPress={openCpfModal}>
+              <View style={styles.itemLeft}>
+                <Ionicons name="id-card-outline" size={20} color="#C5C8CC" />
+                <View style={styles.itemContent}>
+                  <Text style={styles.itemTitle}>CPF ou CNPJ</Text>
+                  <Text style={styles.itemSubtitle}>
+                    {profile?.cpf_cnpj ? formatCpfCnpjDisplay(String(profile.cpf_cnpj)) : "Obrigatorio para assinar"}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward-outline" size={20} color="#C5C8CC" />
+            </TouchableOpacity>
           </View>
         </View>
+
+        <Modal visible={cpfModalOpen} transparent animationType="fade" onRequestClose={() => setCpfModalOpen(false)}>
+          <View style={[styles.modalOverlay, { paddingBottom: insets.bottom }]}>
+            <View style={[styles.modalCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+              <Text style={[styles.modalTitle, { color: colors.textPrimary }]}>CPF ou CNPJ</Text>
+              <Text style={[styles.modalHint, { color: colors.textSecondary }]}>
+                Necessario para pagamento via Asaas (PIX, boleto ou cartao).
+              </Text>
+              <TextInput
+                style={[styles.modalInput, { color: colors.textPrimary, borderColor: colors.border }]}
+                value={cpfDraft}
+                onChangeText={(t) => {
+                  const d = stripCpfCnpjDigits(t)
+                  if (d.length > 14) return
+                  setCpfDraft(formatCpfCnpjDisplay(d))
+                }}
+                placeholder="000.000.000-00"
+                placeholderTextColor={colors.muted}
+                keyboardType="number-pad"
+              />
+              <View style={styles.modalActions}>
+                <TouchableOpacity style={styles.modalBtnGhost} onPress={() => setCpfModalOpen(false)}>
+                  <Text style={{ color: colors.textSecondary, fontWeight: "600" }}>Cancelar</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtnPrimary, { backgroundColor: colors.link }]}
+                  onPress={saveCpfCnpj}
+                  disabled={cpfSaving}
+                >
+                  {cpfSaving ? (
+                    <ActivityIndicator color="#fff" />
+                  ) : (
+                    <Text style={{ color: "#fff", fontWeight: "600" }}>Salvar</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </Modal>
 
         <View style={styles.sectionBlock}>
           <Text style={styles.blockTitle}>PRIVACIDADE E SEGURANÇA</Text>
@@ -559,5 +659,51 @@ const createStyles = (c: ThemeColors) => StyleSheet.create({
     fontSize: 14,
     color: c.textPrimary,
     fontWeight: '500',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: c.overlay,
+    justifyContent: "center",
+    paddingHorizontal: 24,
+  },
+  modalCard: {
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "700",
+    marginBottom: 8,
+  },
+  modalHint: {
+    fontSize: 13,
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    marginBottom: 16,
+  },
+  modalActions: {
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    gap: 12,
+    alignItems: "center",
+  },
+  modalBtnGhost: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+  },
+  modalBtnPrimary: {
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 10,
+    minWidth: 88,
+    alignItems: "center",
   },
 })

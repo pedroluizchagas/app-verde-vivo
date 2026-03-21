@@ -6,6 +6,7 @@ import { Modal, Pressable, Text, View, Platform, ScrollView, Image, ActivityIndi
 import * as Notifications from "expo-notifications"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
 import { AuthProvider, useAuth } from "./src/contexts/AuthContext"
+import { SubscriptionAccessProvider, useSubscriptionAccess } from "./src/contexts/SubscriptionAccessContext"
 import { ThemeProvider, useTheme } from "./src/contexts/ThemeContext"
 import { NotificationService } from "./src/services/notificationService"
 import { HomeScreen } from "./src/screens/Home"
@@ -69,10 +70,36 @@ function MainTabNavigator() {
   )
 }
 
-function AppNavigator() {
-  const { user, loading } = useAuth()
+const authenticatedStackScreens = (
+  <>
+    <Stack.Screen name="Main" component={MainTabNavigator} />
+    <Stack.Screen name="Profile" component={ProfileScreen} />
+    <Stack.Screen name="ClientForm" component={ClientForm} />
+    <Stack.Screen name="AppointmentForm" component={AppointmentForm} />
+    <Stack.Screen name="TransactionForm" component={TransactionForm} />
+    <Stack.Screen name="FinanceCategories" component={FinanceCategoriesScreen} />
+    <Stack.Screen name="ProductForm" component={ProductForm} />
+    <Stack.Screen name="MovementForm" component={MovementForm} />
+    <Stack.Screen name="BudgetForm" component={BudgetForm} />
+    <Stack.Screen name="WorkOrderForm" component={WorkOrderForm} />
+    <Stack.Screen name="WorkOrderDetail" component={WorkOrderDetailScreen} />
+    <Stack.Screen name="WorkOrderEditForm" component={WorkOrderEditForm} />
+    <Stack.Screen name="MaintenancePlanForm" component={MaintenancePlanForm} />
+    <Stack.Screen name="MaintenanceDetail" component={MaintenanceDetailScreen} />
+    <Stack.Screen name="TaskForm" component={TaskForm} />
+    <Stack.Screen name="NoteForm" component={NoteForm} />
+    <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+    <Stack.Screen name="Plan" component={PlanScreen} />
+    <Stack.Screen name="ChatGPT" component={ChatGPTScreen} />
+    <Stack.Screen name="Gemini" component={GeminiScreen} />
+  </>
+)
 
-  if (loading) {
+function AppNavigator() {
+  const { user, loading: authLoading } = useAuth()
+  const { loading: subLoading, accessAllowed } = useSubscriptionAccess()
+
+  if (authLoading || (user && subLoading)) {
     return (
       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#0b0f13' }}>
         <Image source={require('./assets/iris.png')} style={{ width: 180, aspectRatio: 662/288, resizeMode: 'contain' }} />
@@ -82,30 +109,20 @@ function AppNavigator() {
   }
 
   return (
-    <NavigationContainer>
+    <NavigationContainer
+      key={user ? (accessAllowed ? "app" : "paywall") : "auth"}
+    >
       <Stack.Navigator screenOptions={{ headerShown: false }}>
         {user ? (
-          <>
-            <Stack.Screen name="Main" component={MainTabNavigator} />
-            <Stack.Screen name="ClientForm" component={ClientForm} />
-            <Stack.Screen name="AppointmentForm" component={AppointmentForm} />
-            <Stack.Screen name="TransactionForm" component={TransactionForm} />
-            <Stack.Screen name="FinanceCategories" component={FinanceCategoriesScreen} />
-            <Stack.Screen name="ProductForm" component={ProductForm} />
-            <Stack.Screen name="MovementForm" component={MovementForm} />
-            <Stack.Screen name="BudgetForm" component={BudgetForm} />
-            <Stack.Screen name="WorkOrderForm" component={WorkOrderForm} />
-            <Stack.Screen name="WorkOrderDetail" component={WorkOrderDetailScreen} />
-            <Stack.Screen name="WorkOrderEditForm" component={WorkOrderEditForm} />
-            <Stack.Screen name="MaintenancePlanForm" component={MaintenancePlanForm} />
-            <Stack.Screen name="MaintenanceDetail" component={MaintenanceDetailScreen} />
-            <Stack.Screen name="TaskForm" component={TaskForm} />
-            <Stack.Screen name="NoteForm" component={NoteForm} />
-            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
-            <Stack.Screen name="Plan" component={PlanScreen} />
-            <Stack.Screen name="ChatGPT" component={ChatGPTScreen} />
-            <Stack.Screen name="Gemini" component={GeminiScreen} />
-          </>
+          accessAllowed ? (
+            authenticatedStackScreens
+          ) : (
+            <>
+              <Stack.Screen name="Plan" component={PlanScreen} />
+              <Stack.Screen name="Profile" component={ProfileScreen} />
+              <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+            </>
+          )
         ) : (
           <>
             <Stack.Screen name="Login" component={LoginScreen} />
@@ -144,7 +161,9 @@ export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <AppNavigator />
+        <SubscriptionAccessProvider>
+          <AppNavigator />
+        </SubscriptionAccessProvider>
       </AuthProvider>
     </ThemeProvider>
   )

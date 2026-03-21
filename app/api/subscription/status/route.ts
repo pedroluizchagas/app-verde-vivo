@@ -1,20 +1,19 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { getSupabaseAndUserFromApiRequest } from "@/lib/supabase/api-route-auth"
 
 export const runtime = "nodejs"
 
-export async function GET() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) {
+export async function GET(request: Request) {
+  const auth = await getSupabaseAndUserFromApiRequest(request)
+  if (!auth) {
     return NextResponse.json({ error: "not_authenticated" }, { status: 401 })
   }
 
+  const { supabase, user } = auth
+
   const { data: profile } = await supabase
     .from("profiles")
-    .select("plan")
+    .select("plan, trial_ends_at")
     .eq("id", user.id)
     .maybeSingle()
 
@@ -26,8 +25,16 @@ export async function GET() {
     .limit(1)
     .maybeSingle()
 
+  const trialEndsAt = profile?.trial_ends_at ?? null
+  const trialDaysLeft =
+    !profile?.plan && trialEndsAt
+      ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
+      : 0
+
   return NextResponse.json({
     plan: profile?.plan ?? null,
+    trial_ends_at: trialEndsAt,
+    trial_days_left: trialDaysLeft,
     subscription: subscription ?? null,
   })
 }

@@ -8,20 +8,27 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
+  BackHandler,
   Platform,
-  NativeModules,
+  AppState,
+  type AppStateStatus,
 } from "react-native"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
-import { useNavigation } from "@react-navigation/native"
+import { useFocusEffect, useNavigation } from "@react-navigation/native"
 import { Ionicons } from "@expo/vector-icons"
 import { supabase } from "../supabase"
+import { useAuth } from "../contexts/AuthContext"
 import { useTheme } from "../contexts/ThemeContext"
+import { useSubscriptionAccess } from "../contexts/SubscriptionAccessContext"
+import { getBackendApiBase } from "../utils/apiBase"
 import type { ThemeColors } from "../theme"
 
 type Plan = "basic" | "plus"
 
 interface SubscriptionStatus {
   plan: string | null
+  trial_ends_at?: string | null
+  trial_days_left?: number
   subscription: {
     id: string
     plan: string
@@ -76,28 +83,54 @@ const STATUS_DISPLAY: Record<string, { label: string; icon: keyof typeof Ionicon
   inactive: { label: "Inativo", icon: "close-circle-outline", color: "#6b7280" },
 }
 
-function getApiBase(): string {
-  const normalizeEnvValue = (value: unknown): string | undefined => {
-    const raw = String(value ?? "")
-    if (!raw) return undefined
-    const unwrapped = raw.replace(/^[\s"'`]+/, "").replace(/[\s"'`]+$/, "")
-    return unwrapped || undefined
+function parseJsonObject(raw: string): Record<string, unknown> {
+  const t = raw.trim()
+  if (!t) return {}
+  try {
+    const v = JSON.parse(t) as unknown
+    return v !== null && typeof v === "object" && !Array.isArray(v) ? (v as Record<string, unknown>) : {}
+  } catch {
+    return {}
   }
-  const canonical = normalizeEnvValue(process.env.EXPO_PUBLIC_CANONICAL_APP_URL as string | undefined) ?? "https://verdevivo.vercel.app"
-  const env = normalizeEnvValue(process.env.EXPO_PUBLIC_APP_URL as string | undefined)
-  const isDev = typeof __DEV__ !== "undefined" && __DEV__
-  if (isDev) {
-    try {
-      const scriptUrl = String((NativeModules as any)?.SourceCode?.scriptURL || "")
-      const m = scriptUrl.match(/^https?:\/\/([^:/]+)(?::\d+)?\//)
-      const host = m ? m[1] : null
-      if (host && !/^(localhost|127\.0\.0\.1)$/.test(host)) {
-        return `http://${host}:3000`
-      }
-    } catch {}
-    return Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://localhost:3000"
+}
+
+function describeCheckoutFailure(
+  res: Response,
+  data: Record<string, unknown>,
+  raw: string,
+  context: "checkout" | "reopen" = "checkout"
+): string {
+  const msg = typeof data.message === "string" ? data.message : ""
+  if (msg) return msg
+  const err = typeof data.error === "string" ? data.error : ""
+  if (err === "not_authenticated" || res.status === 401) {
+    return "Sessao expirada ou token invalido. Faca login novamente."
   }
-  return env ?? canonical
+  if (err === "invalid_plan") {
+    return "Plano invalido. Escolha Basico ou Plus."
+  }
+  if (err === "profile_not_found") {
+    return "Perfil nao encontrado. Tente sair e entrar de novo."
+  }
+  if (err === "email_required") {
+    return "E-mail obrigatorio para cobranca. Associe um e-mail a conta ou use login com e-mail."
+  }
+  if (err === "payment_link_unavailable") {
+    return "Nao foi possivel obter o link de pagamento. Tente novamente ou acesse pelo site."
+  }
+  if (err.length > 0) {
+    return err.length > 400 ? err.slice(0, 397) + "..." : err
+  }
+  const plain = raw.trim()
+  if (plain && !plain.startsWith("<") && plain.length < 600) {
+    return plain.length > 350 ? plain.slice(0, 347) + "..." : plain
+  }
+  if (res.status >= 500) {
+    return `Erro no servidor (${res.status}). Tente de novo em instantes.`
+  }
+  return context === "reopen"
+    ? `Nao foi possivel recuperar o link de pagamento (HTTP ${res.status}).`
+    : `Nao foi possivel iniciar a assinatura (HTTP ${res.status}).`
 }
 
 export function PlanScreen() {
@@ -105,6 +138,39 @@ export function PlanScreen() {
   const insets = useSafeAreaInsets()
   const { colors } = useTheme()
   const styles = createStyles(colors)
+  const { refreshAccess } = useSubscriptionAccess()
+  const { signOut, user: authUser } = useAuth()
+
+  const navigateToProfile = () => {
+    const names = navigation.getState()?.routeNames ?? []
+    if (names.includes("Profile")) {
+      navigation.navigate("Profile")
+    } else {
+      navigation.navigate("Main" as never, { screen: "Perfil" } as never)
+    }
+  }
+
+  const handleSignOutPress = () => {
+    Alert.alert(
+      "Sair da conta",
+      "Voce podera entrar novamente com o mesmo e-mail e senha. Use se a sessao estiver invalida ou quiser trocar de usuario.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Sair",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await signOut()
+            } catch (e: unknown) {
+              const m = e instanceof Error ? e.message : String(e ?? "")
+              Alert.alert("Erro", m || "Nao foi possivel sair. Tente de novo.")
+            }
+          },
+        },
+      ]
+    )
+  }
 
   const [status, setStatus] = useState<SubscriptionStatus | null>(null)
   const [loadingStatus, setLoadingStatus] = useState(true)
@@ -115,29 +181,90 @@ export function PlanScreen() {
     try {
       const { data: sessionData } = await supabase.auth.getSession()
       const token = sessionData?.session?.access_token
-      if (!token) return
+      if (!token) {
+        setStatus(null)
+        return
+      }
 
-      const base = getApiBase()
+      const base = getBackendApiBase()
       const res = await fetch(`${base}/api/subscription/status`, {
         headers: {
           Authorization: `Bearer ${token}`,
           "x-supabase-access-token": `Bearer ${token}`,
         },
       })
-      if (res.ok) {
-        const data: SubscriptionStatus = await res.json()
-        setStatus(data)
+      const raw = await res.text()
+      if (!res.ok) {
+        setStatus(null)
+        return
       }
+      let parsed: unknown
+      try {
+        parsed = JSON.parse(raw) as unknown
+      } catch {
+        setStatus(null)
+        return
+      }
+      if (parsed === null || typeof parsed !== "object" || Array.isArray(parsed)) {
+        setStatus(null)
+        return
+      }
+      const data = parsed as SubscriptionStatus
+      setStatus({
+        plan: data.plan ?? null,
+        trial_ends_at: data.trial_ends_at ?? null,
+        trial_days_left: data.trial_days_left ?? 0,
+        subscription: data.subscription ?? null,
+      })
     } catch {
-      // Status fetch failed silently — user can still see plan cards
+      setStatus(null)
     } finally {
       setLoadingStatus(false)
     }
-  }, [])
+  }, [authUser?.id])
 
   useEffect(() => {
     fetchStatus()
   }, [fetchStatus])
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (next: AppStateStatus) => {
+      if (next === "active") {
+        void fetchStatus()
+        void refreshAccess()
+      }
+    })
+    return () => sub.remove()
+  }, [fetchStatus, refreshAccess])
+
+  useFocusEffect(
+    useCallback(() => {
+      void refreshAccess()
+      navigation.setOptions({
+        gestureEnabled: navigation.canGoBack(),
+      })
+    }, [navigation, refreshAccess])
+  )
+
+  useFocusEffect(
+    useCallback(() => {
+      if (Platform.OS !== "android") return
+      const sub = BackHandler.addEventListener("hardwareBackPress", () => {
+        if (navigation.canGoBack()) {
+          navigation.goBack()
+          return true
+        }
+        return true
+      })
+      return () => sub.remove()
+    }, [navigation])
+  )
+
+  const handleHeaderBack = useCallback(() => {
+    if (navigation.canGoBack()) {
+      navigation.goBack()
+    }
+  }, [navigation])
 
   const handleSubscribe = async (plan: Plan) => {
     setSubscribing(plan)
@@ -149,7 +276,7 @@ export function PlanScreen() {
         return
       }
 
-      const base = getApiBase()
+      const base = getBackendApiBase()
       const res = await fetch(`${base}/api/subscription/checkout`, {
         method: "POST",
         headers: {
@@ -160,31 +287,103 @@ export function PlanScreen() {
         body: JSON.stringify({ plan }),
       })
 
-      const data = await res.json()
+      const raw = await res.text()
+      const data = parseJsonObject(raw)
 
       if (!res.ok) {
-        Alert.alert("Erro", data?.message ?? data?.error ?? "Nao foi possivel iniciar a assinatura.")
+        if (data.error === "email_required") {
+          Alert.alert(
+            "E-mail necessario",
+            (data.message as string) ??
+              "O pagamento exige um e-mail na conta. Use login com e-mail ou atualize seus dados."
+          )
+          return
+        }
+        Alert.alert("Erro", describeCheckoutFailure(res, data, raw))
         return
       }
 
-      if (data.paymentUrl) {
-        const canOpen = await Linking.canOpenURL(data.paymentUrl)
-        if (canOpen) {
-          await Linking.openURL(data.paymentUrl)
-        } else {
-          Alert.alert("Erro", "Nao foi possivel abrir a pagina de pagamento.")
-        }
+      const paymentUrlCheckout = typeof data.paymentUrl === "string" ? data.paymentUrl : ""
+      if (!paymentUrlCheckout) {
+        Alert.alert(
+          "Erro",
+          "Resposta sem link de pagamento. Tente novamente ou acesse pelo site."
+        )
+        return
+      }
+      const canOpen = await Linking.canOpenURL(paymentUrlCheckout)
+      if (canOpen) {
+        await Linking.openURL(paymentUrlCheckout)
+      } else {
+        Alert.alert("Erro", "Nao foi possivel abrir a pagina de pagamento.")
       }
     } catch (err: any) {
-      Alert.alert("Erro", err?.message ?? "Erro inesperado.")
+      const msg = String(err?.message ?? err ?? "")
+      const base = getBackendApiBase()
+      const isNet = /network request failed|failed to fetch|networkerror/i.test(msg)
+      if (typeof __DEV__ !== "undefined" && __DEV__ && isNet) {
+        Alert.alert(
+          "Sem conexao com a API",
+          `Nao foi possivel acessar ${base}. No celular, localhost nao aponta para o PC. Inicie o Next com host na rede (ex.: npx next dev -H 0.0.0.0 -p 3000) e defina EXPO_PUBLIC_APP_URL=http://SEU_IP:3000 no .env do mobile.`
+        )
+      } else {
+        Alert.alert("Erro", msg || "Erro inesperado.")
+      }
     } finally {
       setSubscribing(null)
     }
   }
 
   const handleReopenPayment = async () => {
-    if (!status?.subscription?.plan) return
-    await handleSubscribe(status.subscription.plan as Plan)
+    if (!status?.subscription) return
+    setSubscribing(status.subscription.plan as Plan)
+    try {
+      const { data: sessionData } = await supabase.auth.getSession()
+      const token = sessionData?.session?.access_token
+      if (!token) {
+        Alert.alert("Erro", "Sessao expirada. Faca login novamente.")
+        return
+      }
+
+      const base = getBackendApiBase()
+      const res = await fetch(`${base}/api/subscription/reopen-payment`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "x-supabase-access-token": `Bearer ${token}`,
+        },
+      })
+      const rawReopen = await res.text()
+      const dataReopen = parseJsonObject(rawReopen)
+      if (!res.ok) {
+        Alert.alert("Erro", describeCheckoutFailure(res, dataReopen, rawReopen, "reopen"))
+        return
+      }
+      const paymentUrlReopen = typeof dataReopen.paymentUrl === "string" ? dataReopen.paymentUrl : ""
+      if (paymentUrlReopen) {
+        const canOpen = await Linking.canOpenURL(paymentUrlReopen)
+        if (canOpen) {
+          await Linking.openURL(paymentUrlReopen)
+        } else {
+          Alert.alert("Erro", "Nao foi possivel abrir a pagina de pagamento.")
+        }
+      }
+    } catch (err: any) {
+      const msg = String(err?.message ?? err ?? "")
+      const base = getBackendApiBase()
+      const isNet = /network request failed|failed to fetch|networkerror/i.test(msg)
+      if (typeof __DEV__ !== "undefined" && __DEV__ && isNet) {
+        Alert.alert(
+          "Sem conexao com a API",
+          `Nao foi possivel acessar ${base}. Confirme o Next na porta 3000 acessivel na rede Wi-Fi e EXPO_PUBLIC_APP_URL no .env do mobile.`
+        )
+      } else {
+        Alert.alert("Erro", msg || "Erro inesperado.")
+      }
+    } finally {
+      setSubscribing(null)
+    }
   }
 
   const currentPlan = status?.plan ?? null
@@ -194,13 +393,24 @@ export function PlanScreen() {
     ? new Date(sub.current_period_end).toLocaleDateString("pt-BR")
     : null
 
+  const trialDaysLeft = status?.trial_days_left ?? 0
+  const trialEndsAt = status?.trial_ends_at ?? null
+  const trialActive = !currentPlan && trialDaysLeft > 0
+  const trialEndDate = trialEndsAt ? new Date(trialEndsAt).toLocaleDateString("pt-BR") : null
+
+  const showBack = navigation.canGoBack()
+
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
       {/* Header */}
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-          <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
+        {showBack ? (
+          <TouchableOpacity onPress={handleHeaderBack} style={styles.backButton} accessibilityRole="button" accessibilityLabel="Voltar">
+            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.backButton} />
+        )}
         <Text style={styles.headerTitle}>Plano e Pagamento</Text>
         <TouchableOpacity onPress={fetchStatus} style={styles.refreshButton} disabled={loadingStatus}>
           {loadingStatus ? (
@@ -211,11 +421,48 @@ export function PlanScreen() {
         </TouchableOpacity>
       </View>
 
+      <View style={[styles.accountBar, { borderBottomColor: colors.divider, backgroundColor: colors.headerBg }]}>
+        <TouchableOpacity
+          style={styles.accountBarBtn}
+          onPress={navigateToProfile}
+          accessibilityRole="button"
+          accessibilityLabel="CPF e perfil"
+        >
+          <Ionicons name="id-card-outline" size={18} color={colors.link} />
+          <Text style={[styles.accountBarLabel, { color: colors.link }]}>CPF e perfil</Text>
+        </TouchableOpacity>
+        <View style={[styles.accountBarDivider, { backgroundColor: colors.divider }]} />
+        <TouchableOpacity
+          style={styles.accountBarBtn}
+          onPress={handleSignOutPress}
+          accessibilityRole="button"
+          accessibilityLabel="Sair da conta"
+        >
+          <Ionicons name="log-out-outline" size={18} color={colors.danger} />
+          <Text style={[styles.accountBarLabel, { color: colors.danger }]}>Sair</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 32 }]}
         showsVerticalScrollIndicator={false}
       >
+        {trialActive && (
+          <View style={[styles.trialBanner, { borderColor: colors.warning + "50", backgroundColor: colors.warning + "12" }]}>
+            <Ionicons name="time-outline" size={18} color={colors.warning} />
+            <View style={styles.trialBannerTextWrap}>
+              <Text style={[styles.trialBannerTitle, { color: colors.warning }]}>
+                Periodo de teste: {trialDaysLeft} {trialDaysLeft === 1 ? "dia restante" : "dias restantes"}
+                {trialEndDate ? ` · Expira em ${trialEndDate}` : ""}
+              </Text>
+              <Text style={[styles.trialBannerSub, { color: colors.textSecondary }]}>
+                Assine um plano para continuar apos o periodo de teste.
+              </Text>
+            </View>
+          </View>
+        )}
+
         {/* Status da assinatura atual */}
         {sub && statusInfo && (
           <View style={[styles.statusCard, { borderColor: statusInfo.color + "40", backgroundColor: statusInfo.color + "10" }]}>
@@ -260,7 +507,7 @@ export function PlanScreen() {
         {/* Titulo */}
         <Text style={styles.sectionTitle}>Escolha seu plano</Text>
         <Text style={styles.sectionSubtitle}>
-          Pague via PIX, boleto ou cartao. Cancele quando quiser.
+          Pague com cartao de credito ou debito. Cancele quando quiser.
         </Text>
 
         {/* Cards de plano */}
@@ -351,7 +598,7 @@ export function PlanScreen() {
         })}
 
         <Text style={styles.footerNote}>
-          Pagamento seguro via Asaas. Apos o pagamento seu plano e ativado em instantes.
+          Pagamento seguro via Stripe. Apos o pagamento seu plano e ativado em instantes.
         </Text>
       </ScrollView>
     </View>
@@ -388,6 +635,32 @@ function createStyles(colors: ThemeColors) {
       width: 32,
       alignItems: "center",
     },
+    accountBar: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: 10,
+      paddingHorizontal: 12,
+      borderBottomWidth: 1,
+      gap: 8,
+    },
+    accountBarBtn: {
+      flex: 1,
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      gap: 8,
+      paddingVertical: 8,
+      paddingHorizontal: 8,
+    },
+    accountBarLabel: {
+      fontSize: 14,
+      fontWeight: "600",
+    },
+    accountBarDivider: {
+      width: 1,
+      height: 22,
+    },
     scroll: {
       flex: 1,
     },
@@ -395,6 +668,27 @@ function createStyles(colors: ThemeColors) {
       paddingHorizontal: 16,
       paddingTop: 20,
       gap: 16,
+    },
+    trialBanner: {
+      flexDirection: "row",
+      alignItems: "flex-start",
+      gap: 10,
+      padding: 14,
+      borderRadius: 12,
+      borderWidth: 1,
+    },
+    trialBannerTextWrap: {
+      flex: 1,
+      gap: 4,
+    },
+    trialBannerTitle: {
+      fontSize: 13,
+      fontWeight: "600",
+      lineHeight: 18,
+    },
+    trialBannerSub: {
+      fontSize: 12,
+      lineHeight: 16,
     },
     statusCard: {
       flexDirection: "row",

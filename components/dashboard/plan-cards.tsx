@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import Link from "next/link"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Check, X, Sparkles, Loader2, AlertCircle, Clock, CheckCircle2 } from "lucide-react"
@@ -92,13 +91,11 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
   const [loading, setLoading] = useState<Plan | null>(null)
   const [reopenLoading, setReopenLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
-  const [cpfMissing, setCpfMissing] = useState(false)
 
   async function handleSubscribe(plan: Plan) {
     if (loading !== null || reopenLoading) return
     setLoading(plan)
     setError(null)
-    setCpfMissing(false)
     try {
       const res = await fetch("/api/subscription/checkout", {
         method: "POST",
@@ -107,11 +104,7 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
       })
       const data = await res.json()
       if (!res.ok) {
-        if (data.error === "cpf_cnpj_required") {
-          setCpfMissing(true)
-        } else {
-          setError(data.message ?? data.error ?? "Erro ao iniciar assinatura")
-        }
+        setError(data.message ?? data.error ?? "Erro ao iniciar assinatura")
         return
       }
       if (data.paymentUrl) {
@@ -242,19 +235,6 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
         </div>
       )}
 
-      {/* CPF/CNPJ ausente */}
-      {cpfMissing && (
-        <div className="flex items-start gap-2 px-4 py-3 rounded-xl border border-amber-500/30 bg-amber-500/8 text-sm text-amber-700 dark:text-amber-400">
-          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-          <span>
-            Preencha seu CPF ou CNPJ antes de assinar.{" "}
-            <Link href="/dashboard/profile" className="underline underline-offset-2 font-medium">
-              Ir para o perfil
-            </Link>
-          </span>
-        </div>
-      )}
-
       {/* Erro generico */}
       {error && (
         <div className="flex items-center gap-2 px-4 py-3 rounded-xl border border-destructive/30 bg-destructive/5 text-sm text-destructive">
@@ -356,8 +336,7 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
       {/* Nota sobre pagamento */}
       <p className="text-[12px] text-muted-foreground text-center">
         Pagamento seguro via{" "}
-        <span className="font-medium text-foreground/60">Asaas</span> — PIX,
-        boleto ou cartao de credito. Cancele a qualquer momento.
+        <span className="font-medium text-foreground/60">Stripe</span> — cartao de credito ou debito. Cancele a qualquer momento.
       </p>
     </div>
   )

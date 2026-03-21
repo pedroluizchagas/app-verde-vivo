@@ -1,19 +1,22 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getAuthUserFromApiRequest } from "@/lib/supabase/api-route-auth"
 import {
-  getAsaasPaymentLinkById,
-  getAsaasSubscription,
-  resolvePublicPaymentUrlFromSubscription,
-} from "@/lib/asaas/client"
+  cancelStripeSubscription,
+  createStripeCheckoutSession,
+  createStripePortalSession,
+} from "@/lib/stripe/client"
+import { randomUUID } from "crypto"
 
 export const runtime = "nodejs"
 
-export async function POST() {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+const PLAN_PRICE_IDS: Record<string, () => string> = {
+  basic: () => process.env.STRIPE_PRICE_BASIC ?? "",
+  plus: () => process.env.STRIPE_PRICE_PLUS ?? "",
+}
+
+export async function POST(request: Request) {
+  const user = await getAuthUserFromApiRequest(request)
   if (!user) {
     return NextResponse.json({ error: "not_authenticated" }, { status: 401 })
   }
@@ -22,7 +25,7 @@ export async function POST() {
 
   const { data: sub } = await admin
     .from("subscriptions")
-    .select("id, plan, status, asaas_subscription_id, payment_link")
+    .select("id, plan, status, stripe_subscription_id")
     .eq("user_id", user.id)
     .in("status", ["pending", "overdue"])
     .order("created_at", { ascending: false })
@@ -36,55 +39,97 @@ export async function POST() {
     )
   }
 
-  // Stored full HTTPS URL (correct format)
-  const stored = sub.payment_link as string | null
-  if (stored && /^https?:\/\//i.test(stored)) {
-    return NextResponse.json({ paymentUrl: stored })
-  }
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://verdevivo.vercel.app"
 
-  // Legacy: we mistakenly stored the payments link ID instead of the URL
-  if (stored && !/^https?:\/\//i.test(stored)) {
+  // Para assinatura inadimplente (pagamento falhou no Stripe): Customer Portal
+  // O usuario pode atualizar o metodo de pagamento diretamente la.
+  if (sub.status === "overdue" && sub.stripe_subscription_id) {
     try {
-      const pl = await getAsaasPaymentLinkById(stored)
-      if (pl.url) {
-        await admin
-          .from("subscriptions")
-          .update({ payment_link: pl.url, updated_at: new Date().toISOString() })
-          .eq("id", sub.id)
-        return NextResponse.json({ paymentUrl: pl.url })
+      const { data: profile } = await admin
+        .from("profiles")
+        .select("stripe_customer_id")
+        .eq("id", user.id)
+        .maybeSingle()
+
+      const stripeCustomerId = (profile as any)?.stripe_customer_id as string | null | undefined
+
+      if (stripeCustomerId) {
+        const portalUrl = await createStripePortalSession(stripeCustomerId, `${appUrl}/`)
+        return NextResponse.json({ paymentUrl: portalUrl })
       }
-    } catch (e) {
-      console.error("[reopen-payment] getAsaasPaymentLinkById (legacy id) failed:", e)
+    } catch (err: unknown) {
+      console.error("[reopen-payment] Customer Portal error:", err)
+      // Fallback: cria nova sessao de checkout abaixo
     }
   }
 
-  if (!sub.asaas_subscription_id) {
+  // Para assinatura pendente (checkout nao foi concluido) ou fallback do overdue:
+  // Cria nova sessao de Checkout e substitui o registro pendente.
+  const priceId = PLAN_PRICE_IDS[sub.plan]?.()
+  if (!priceId) {
     return NextResponse.json(
-      { error: "payment_link_unavailable", message: "Assinatura sem ID no Asaas. Inicie uma nova assinatura." },
-      { status: 404 }
+      {
+        error: "price_not_configured",
+        message: "Preco do plano nao configurado. Verifique as variaveis de ambiente Stripe.",
+      },
+      { status: 500 }
     )
   }
 
   try {
-    const asaasSub = await getAsaasSubscription(sub.asaas_subscription_id)
-    const publicUrl = await resolvePublicPaymentUrlFromSubscription(asaasSub)
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("stripe_customer_id")
+      .eq("id", user.id)
+      .maybeSingle()
 
-    if (!publicUrl) {
+    const stripeCustomerId = (profile as any)?.stripe_customer_id as string | null | undefined
+    if (!stripeCustomerId) {
       return NextResponse.json(
-        { error: "payment_link_unavailable", message: "Link de pagamento nao disponivel. Inicie uma nova assinatura." },
+        {
+          error: "customer_not_found",
+          message: "Cliente Stripe nao encontrado. Inicie uma nova assinatura.",
+        },
         { status: 404 }
       )
     }
 
+    // Cancela assinatura pendente no Stripe se houver
+    if (sub.stripe_subscription_id) {
+      try {
+        await cancelStripeSubscription(sub.stripe_subscription_id)
+      } catch {
+        // Pode ja estar cancelada
+      }
+    }
+
+    // Atualiza registro atual como cancelado e cria novo pendente
     await admin
       .from("subscriptions")
-      .update({ payment_link: publicUrl, updated_at: new Date().toISOString() })
+      .update({ status: "cancelled", updated_at: new Date().toISOString() })
       .eq("id", sub.id)
 
-    return NextResponse.json({ paymentUrl: publicUrl })
+    const newSubscriptionDbId = randomUUID()
+    await admin.from("subscriptions").insert({
+      id: newSubscriptionDbId,
+      user_id: user.id,
+      plan: sub.plan,
+      status: "pending",
+    })
+
+    const { url: checkoutUrl } = await createStripeCheckoutSession({
+      stripeCustomerId,
+      priceId,
+      userId: user.id,
+      subscriptionDbId: newSubscriptionDbId,
+      successUrl: `${appUrl}/?checkout=success`,
+      cancelUrl: `${appUrl}/`,
+    })
+
+    return NextResponse.json({ paymentUrl: checkoutUrl })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erro ao recuperar link de pagamento"
-    console.error("[reopen-payment] Asaas error:", message)
+    console.error("[reopen-payment] Stripe error:", message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

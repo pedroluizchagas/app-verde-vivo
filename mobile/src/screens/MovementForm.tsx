@@ -10,6 +10,7 @@ import { format } from "date-fns"
 import { useTheme } from "../contexts/ThemeContext"
 import type { ThemeColors } from "../theme"
 import { useSafeAreaInsets } from "react-native-safe-area-context"
+import { NotificationService } from "../services/notificationService"
 
 interface Product {
   id: string

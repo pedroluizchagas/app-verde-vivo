@@ -1,31 +1,36 @@
 import { NextResponse } from "next/server"
-import { createClient } from "@/lib/supabase/server"
+import { randomUUID } from "crypto"
 import { createServiceRoleClient } from "@/lib/supabase/server"
+import { getAuthUserFromApiRequest } from "@/lib/supabase/api-route-auth"
 import {
-  createAsaasCustomer,
-  updateAsaasCustomer,
-  createAsaasSubscription,
-  cancelAsaasSubscription,
-  findAsaasCustomerByExternalReference,
-  resolvePublicPaymentUrlFromSubscription,
-} from "@/lib/asaas/client"
+  getOrCreateStripeCustomer,
+  createStripeCheckoutSession,
+  cancelStripeSubscription,
+} from "@/lib/stripe/client"
 
 export const runtime = "nodejs"
 
 const PLAN_CONFIG = {
-  basic: { label: "Plano Basico", value: 47.9 },
-  plus: { label: "Plano Plus", value: 77.9 },
+  basic: { label: "Plano Basico", priceId: () => process.env.STRIPE_PRICE_BASIC ?? "" },
+  plus: { label: "Plano Plus", priceId: () => process.env.STRIPE_PRICE_PLUS ?? "" },
 } as const
 
 type Plan = keyof typeof PLAN_CONFIG
 
 export async function POST(request: Request) {
-  const supabase = await createClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  const user = await getAuthUserFromApiRequest(request)
   if (!user) {
     return NextResponse.json({ error: "not_authenticated" }, { status: 401 })
+  }
+
+  if (!user.email) {
+    return NextResponse.json(
+      {
+        error: "email_required",
+        message: "E-mail obrigatorio para cobranca. Use uma conta com e-mail ou atualize no provedor de login.",
+      },
+      { status: 422 }
+    )
   }
 
   const body = await request.json().catch(() => ({}))
@@ -34,11 +39,22 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_plan" }, { status: 400 })
   }
 
+  const priceId = PLAN_CONFIG[plan].priceId()
+  if (!priceId) {
+    return NextResponse.json(
+      {
+        error: "price_not_configured",
+        message: "Preco do plano nao configurado. Verifique STRIPE_PRICE_BASIC / STRIPE_PRICE_PLUS nas variaveis de ambiente.",
+      },
+      { status: 500 }
+    )
+  }
+
   const admin = createServiceRoleClient()
 
   const { data: profile } = await admin
     .from("profiles")
-    .select("full_name, asaas_customer_id, cpf_cnpj")
+    .select("full_name, stripe_customer_id")
     .eq("id", user.id)
     .maybeSingle()
 
@@ -46,18 +62,10 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "profile_not_found" }, { status: 404 })
   }
 
-  const cpfCnpj = (profile as any).cpf_cnpj as string | null | undefined
-  if (!cpfCnpj) {
-    return NextResponse.json(
-      { error: "cpf_cnpj_required", message: "Preencha seu CPF ou CNPJ no perfil antes de assinar." },
-      { status: 422 }
-    )
-  }
-
-  // Cancel any existing pending/active/overdue subscription before creating a new one
+  // Cancela assinatura existente (pending/active/overdue) antes de criar nova
   const { data: existingSub } = await admin
     .from("subscriptions")
-    .select("id, asaas_subscription_id, plan, status")
+    .select("id, stripe_subscription_id, plan, status")
     .eq("user_id", user.id)
     .in("status", ["active", "pending", "overdue"])
     .order("created_at", { ascending: false })
@@ -65,11 +73,11 @@ export async function POST(request: Request) {
     .maybeSingle()
 
   if (existingSub) {
-    if (existingSub.asaas_subscription_id) {
+    if (existingSub.stripe_subscription_id) {
       try {
-        await cancelAsaasSubscription(existingSub.asaas_subscription_id)
+        await cancelStripeSubscription(existingSub.stripe_subscription_id)
       } catch {
-        // Subscription may already be cancelled on Asaas side
+        // Pode ja estar cancelada no Stripe
       }
     }
     await admin
@@ -83,77 +91,42 @@ export async function POST(request: Request) {
   }
 
   try {
-    // Get or create Asaas customer
-    let asaasCustomerId: string = profile.asaas_customer_id ?? ""
-    if (!asaasCustomerId) {
-      const found = await findAsaasCustomerByExternalReference(user.id)
-      if (found) {
-        asaasCustomerId = found.id
-        // Update CPF/CNPJ in case customer was created before it was required
-        if (!found.cpfCnpj) {
-          await updateAsaasCustomer(asaasCustomerId, { cpfCnpj })
-        }
-      } else {
-        const customer = await createAsaasCustomer({
-          name: profile.full_name,
-          email: user.email!,
-          cpfCnpj,
-          externalReference: user.id,
-          notificationDisabled: false,
-        })
-        asaasCustomerId = customer.id
-      }
+    // Busca ou cria cliente no Stripe
+    let stripeCustomerId = (profile as any).stripe_customer_id as string | null | undefined
+    if (!stripeCustomerId) {
+      stripeCustomerId = await getOrCreateStripeCustomer(user.id, user.email!, profile.full_name)
       await admin
         .from("profiles")
-        .update({ asaas_customer_id: asaasCustomerId })
+        .update({ stripe_customer_id: stripeCustomerId })
         .eq("id", user.id)
-    } else {
-      // Customer ID already saved — ensure CPF/CNPJ is set in Asaas
-      await updateAsaasCustomer(asaasCustomerId, { cpfCnpj })
     }
 
-    // nextDueDate = tomorrow
-    const tomorrow = new Date()
-    tomorrow.setDate(tomorrow.getDate() + 1)
-    const nextDueDate = tomorrow.toISOString().split("T")[0]
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://verdevivo.vercel.app"
 
-    const config = PLAN_CONFIG[plan]
-    const asaasSub = await createAsaasSubscription({
-      customer: asaasCustomerId,
-      billingType: "UNDEFINED",
-      value: config.value,
-      nextDueDate,
-      cycle: "MONTHLY",
-      description: `${config.label} - Verde Vivo / Iris`,
-      externalReference: user.id,
-    })
+    // Pre-gera o ID da assinatura no banco para referenciar nos metadados do Stripe
+    const subscriptionDbId = randomUUID()
 
-    const publicPaymentUrl = await resolvePublicPaymentUrlFromSubscription(asaasSub)
-
+    // Insere registro de assinatura pendente antes da sessao de checkout
     await admin.from("subscriptions").insert({
+      id: subscriptionDbId,
       user_id: user.id,
       plan,
       status: "pending",
-      asaas_subscription_id: asaasSub.id,
-      asaas_customer_id: asaasCustomerId,
-      payment_link: publicPaymentUrl,
     })
 
-    if (!publicPaymentUrl) {
-      console.error("[checkout] Could not resolve public payment URL for subscription", asaasSub.id)
-      return NextResponse.json(
-        {
-          error: "payment_link_unavailable",
-          message: "Nao foi possivel obter o link de pagamento. Verifique permissoes da API (PAYMENT_LINK:READ) e tente novamente.",
-        },
-        { status: 502 }
-      )
-    }
+    const { url: checkoutUrl } = await createStripeCheckoutSession({
+      stripeCustomerId,
+      priceId,
+      userId: user.id,
+      subscriptionDbId,
+      successUrl: `${appUrl}/?checkout=success`,
+      cancelUrl: `${appUrl}/`,
+    })
 
-    return NextResponse.json({ paymentUrl: publicPaymentUrl })
+    return NextResponse.json({ paymentUrl: checkoutUrl })
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Erro ao processar assinatura"
-    console.error("[checkout] Asaas error:", message)
+    console.error("[checkout] Stripe error:", message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }
