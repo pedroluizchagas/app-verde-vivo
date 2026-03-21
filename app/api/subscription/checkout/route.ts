@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import {
   createAsaasCustomer,
+  updateAsaasCustomer,
   createAsaasSubscription,
   cancelAsaasSubscription,
   findAsaasCustomerByExternalReference,
@@ -87,11 +88,15 @@ export async function POST(request: Request) {
       const found = await findAsaasCustomerByExternalReference(user.id)
       if (found) {
         asaasCustomerId = found.id
+        // Update CPF/CNPJ in case customer was created before it was required
+        if (!found.cpfCnpj) {
+          await updateAsaasCustomer(asaasCustomerId, { cpfCnpj })
+        }
       } else {
         const customer = await createAsaasCustomer({
           name: profile.full_name,
           email: user.email!,
-          cpfCnpj: cpfCnpj,
+          cpfCnpj,
           externalReference: user.id,
           notificationDisabled: false,
         })
@@ -101,6 +106,9 @@ export async function POST(request: Request) {
         .from("profiles")
         .update({ asaas_customer_id: asaasCustomerId })
         .eq("id", user.id)
+    } else {
+      // Customer ID already saved — ensure CPF/CNPJ is set in Asaas
+      await updateAsaasCustomer(asaasCustomerId, { cpfCnpj })
     }
 
     // nextDueDate = tomorrow

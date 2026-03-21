@@ -50,7 +50,17 @@ export async function findAsaasCustomerByExternalReference(
   return data.data?.[0] ?? null
 }
 
-export async function createAsaasSubscription(
+export async function updateAsaasCustomer(
+  customerId: string,
+  input: Partial<AsaasCreateCustomerInput>
+): Promise<AsaasCustomer> {
+  return asaasFetch<AsaasCustomer>(`/customers/${customerId}`, {
+    method: "PUT",
+    body: JSON.stringify(input),
+  })
+}
+
+
   input: AsaasCreateSubscriptionInput
 ): Promise<AsaasSubscription> {
   return asaasFetch<AsaasSubscription>("/subscriptions", {
