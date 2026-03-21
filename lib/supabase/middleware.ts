@@ -17,8 +17,11 @@ export async function updateSession(request: NextRequest) {
     return NextResponse.next({ request })
   }
 
+  const requestHeaders = new Headers(request.headers)
+  requestHeaders.set("x-pathname", request.nextUrl.pathname)
+
   let supabaseResponse = NextResponse.next({
-    request,
+    request: { headers: requestHeaders },
   })
 
   const supabaseUrl = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL)
@@ -41,7 +44,7 @@ export async function updateSession(request: NextRequest) {
       setAll(cookiesToSet) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
         supabaseResponse = NextResponse.next({
-          request,
+          request: { headers: requestHeaders },
         })
         cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
       },
@@ -78,7 +81,7 @@ export async function updateSession(request: NextRequest) {
       const toClear = request.cookies.getAll().filter((c) => c.name.startsWith("sb-"))
       if (toClear.length) {
         toClear.forEach(({ name }) => request.cookies.delete(name))
-        supabaseResponse = NextResponse.next({ request })
+        supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } })
         toClear.forEach(({ name }) => supabaseResponse.cookies.set(name, "", { maxAge: 0, path: "/" }))
       }
     } else {

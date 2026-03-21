@@ -72,50 +72,56 @@ export async function POST(request: Request) {
     }
   }
 
-  // Get or create Asaas customer
-  let asaasCustomerId: string = profile.asaas_customer_id ?? ""
-  if (!asaasCustomerId) {
-    const found = await findAsaasCustomerByExternalReference(user.id)
-    if (found) {
-      asaasCustomerId = found.id
-    } else {
-      const customer = await createAsaasCustomer({
-        name: profile.full_name,
-        email: user.email!,
-        externalReference: user.id,
-        notificationDisabled: false,
-      })
-      asaasCustomerId = customer.id
+  try {
+    // Get or create Asaas customer
+    let asaasCustomerId: string = profile.asaas_customer_id ?? ""
+    if (!asaasCustomerId) {
+      const found = await findAsaasCustomerByExternalReference(user.id)
+      if (found) {
+        asaasCustomerId = found.id
+      } else {
+        const customer = await createAsaasCustomer({
+          name: profile.full_name,
+          email: user.email!,
+          externalReference: user.id,
+          notificationDisabled: false,
+        })
+        asaasCustomerId = customer.id
+      }
+      await admin
+        .from("profiles")
+        .update({ asaas_customer_id: asaasCustomerId })
+        .eq("id", user.id)
     }
-    await admin
-      .from("profiles")
-      .update({ asaas_customer_id: asaasCustomerId })
-      .eq("id", user.id)
+
+    // nextDueDate = tomorrow
+    const tomorrow = new Date()
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    const nextDueDate = tomorrow.toISOString().split("T")[0]
+
+    const config = PLAN_CONFIG[plan]
+    const asaasSub = await createAsaasSubscription({
+      customer: asaasCustomerId,
+      billingType: "UNDEFINED",
+      value: config.value,
+      nextDueDate,
+      cycle: "MONTHLY",
+      description: `${config.label} - Verde Vivo / Iris`,
+      externalReference: user.id,
+    })
+
+    await admin.from("subscriptions").insert({
+      user_id: user.id,
+      plan,
+      status: "pending",
+      asaas_subscription_id: asaasSub.id,
+      asaas_customer_id: asaasCustomerId,
+    })
+
+    return NextResponse.json({ paymentUrl: asaasSub.paymentLink })
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Erro ao processar assinatura"
+    console.error("[checkout] Asaas error:", message)
+    return NextResponse.json({ error: message }, { status: 500 })
   }
-
-  // nextDueDate = tomorrow
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  const nextDueDate = tomorrow.toISOString().split("T")[0]
-
-  const config = PLAN_CONFIG[plan]
-  const asaasSub = await createAsaasSubscription({
-    customer: asaasCustomerId,
-    billingType: "UNDEFINED",
-    value: config.value,
-    nextDueDate,
-    cycle: "MONTHLY",
-    description: `${config.label} - Verde Vivo / Iris`,
-    externalReference: user.id,
-  })
-
-  await admin.from("subscriptions").insert({
-    user_id: user.id,
-    plan,
-    status: "pending",
-    asaas_subscription_id: asaasSub.id,
-    asaas_customer_id: asaasCustomerId,
-  })
-
-  return NextResponse.json({ paymentUrl: asaasSub.paymentLink })
 }

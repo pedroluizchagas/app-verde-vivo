@@ -1,5 +1,6 @@
 import type React from "react"
 import { redirect } from "next/navigation"
+import { headers } from "next/headers"
 import { createClient } from "@/lib/supabase/server"
 import { Sidebar } from "@/components/nav/sidebar"
 import { NotificationsProvider } from "@/components/dashboard/notifications-context"
@@ -24,6 +25,14 @@ export default async function DashboardLayout({
     .select("full_name, avatar_url, company_name, company_subtitle, watermark_base64, watermark_fit, plan")
     .eq("id", user!.id)
     .maybeSingle()
+
+  const headersList = await headers()
+  const pathname = headersList.get("x-pathname") ?? ""
+  const isOnPlanPage = pathname.startsWith("/dashboard/plan")
+
+  if (!profile?.plan && !isOnPlanPage) {
+    redirect("/dashboard/plan")
+  }
 
   const now = new Date()
   now.setHours(0, 0, 0, 0)
