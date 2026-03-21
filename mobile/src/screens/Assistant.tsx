@@ -58,9 +58,9 @@ export function AssistantScreen() {
     return unwrapped || undefined
   }
   const canonicalBase = (() => {
-    const raw = (process.env.EXPO_PUBLIC_CANONICAL_APP_URL as string | undefined) || "https://verdevivo.app"
+    const raw = (process.env.EXPO_PUBLIC_CANONICAL_APP_URL as string | undefined) || "https://verdevivo.vercel.app"
     const normalized = normalizeEnvValue(raw)
-    if (!normalized) return "https://verdevivo.app"
+    if (!normalized) return "https://verdevivo.vercel.app"
     if (/^https?:\/\//i.test(normalized)) return normalized
     return `https://${normalized}`
   })()

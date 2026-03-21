@@ -83,7 +83,7 @@ function getApiBase(): string {
     const unwrapped = raw.replace(/^[\s"'`]+/, "").replace(/[\s"'`]+$/, "")
     return unwrapped || undefined
   }
-  const canonical = normalizeEnvValue(process.env.EXPO_PUBLIC_CANONICAL_APP_URL as string | undefined) ?? "https://verdevivo.app"
+  const canonical = normalizeEnvValue(process.env.EXPO_PUBLIC_CANONICAL_APP_URL as string | undefined) ?? "https://verdevivo.vercel.app"
   const env = normalizeEnvValue(process.env.EXPO_PUBLIC_APP_URL as string | undefined)
   const isDev = typeof __DEV__ !== "undefined" && __DEV__
   if (isDev) {
