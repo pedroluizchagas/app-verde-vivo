@@ -21,7 +21,7 @@ export default async function DashboardLayout({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, company_name, company_subtitle, watermark_base64, watermark_fit")
+    .select("full_name, avatar_url, company_name, company_subtitle, watermark_base64, watermark_fit, plan")
     .eq("id", user!.id)
     .maybeSingle()
 
@@ -49,6 +49,7 @@ export default async function DashboardLayout({
           company_subtitle: (profile as any)?.company_subtitle ?? null,
           watermark_base64: (profile as any)?.watermark_base64 ?? null,
           watermark_fit: (profile as any)?.watermark_fit ?? "contain",
+          plan: (profile as any)?.plan ?? null,
         }}
         nextAppointment={
           nextAppointment

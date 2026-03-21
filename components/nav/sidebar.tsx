@@ -20,6 +20,7 @@ import {
   Search,
   X,
   ArrowRight,
+  CreditCard,
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import { Button } from '@/components/ui/button'
@@ -55,6 +56,7 @@ const sections: Array<{
         label: 'Manutenções',
       },
       { href: '/dashboard/assistant', icon: Bot, label: 'Assistente' },
+      { href: '/dashboard/plan', icon: CreditCard, label: 'Plano' },
     ],
   },
 ]
@@ -87,6 +89,7 @@ export function Sidebar({
     company_subtitle: string | null
     watermark_base64: string | null
     watermark_fit: string | null
+    plan: string | null
   }
   nextAppointment?: NextAppointment | null
 }) {
@@ -332,6 +335,35 @@ export function Sidebar({
       {/* Card Próximo Serviço */}
       {!collapsed && (
         <div className="mt-auto border-t border-sidebar-border px-3 pt-3 pb-4">
+          {/* Badge de plano */}
+          <Link
+            href="/dashboard/plan"
+            className="flex items-center gap-2 mb-3 px-2 py-1.5 rounded-lg hover:bg-sidebar-accent transition-colors group"
+          >
+            <CreditCard className="h-3.5 w-3.5 text-sidebar-foreground/40 group-hover:text-sidebar-foreground/60 shrink-0" />
+            <span className="text-[11px] text-sidebar-foreground/40 group-hover:text-sidebar-foreground/60 flex-1 leading-none">
+              {profile?.plan === 'plus'
+                ? 'Plano Plus'
+                : profile?.plan === 'basic'
+                  ? 'Plano Basico'
+                  : 'Sem plano ativo'}
+            </span>
+            {!profile?.plan && (
+              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">
+                Assinar
+              </span>
+            )}
+            {profile?.plan === 'basic' && (
+              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-sidebar-foreground/[0.07] text-sidebar-foreground/40 shrink-0">
+                Basic
+              </span>
+            )}
+            {profile?.plan === 'plus' && (
+              <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">
+                Plus
+              </span>
+            )}
+          </Link>
           {nextAppointment ? (
             <div className="rounded-xl bg-sidebar-accent px-3 py-3">
               {/* Label dentro da caixa */}

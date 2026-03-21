@@ -303,7 +303,7 @@ export function ProfileScreen() {
         <View style={styles.sectionBlock}>
           <Text style={styles.blockTitle}>GERENCIAR ASSINATURA</Text>
           <View style={styles.blockCard}>
-            <TouchableOpacity style={[styles.item, styles.itemLast]} onPress={() => Alert.alert("Plano e Pagamento", "Em breve") }>
+            <TouchableOpacity style={[styles.item, styles.itemLast]} onPress={() => navigation.navigate("Plan" as never)}>
               <View style={styles.itemLeft}>
                 <Ionicons name="card-outline" size={20} color="#C5C8CC" />
                 <View style={styles.itemContent}>

@@ -39,6 +39,7 @@ import { ChatGPTScreen } from "./src/screens/ChatGPT"
 import { GeminiScreen } from "./src/screens/Gemini"
 import { ProfileScreen } from "./src/screens/Profile"
 import { ChangePasswordScreen } from "./src/screens/ChangePassword"
+import { PlanScreen } from "./src/screens/Plan"
 import { Ionicons } from "@expo/vector-icons"
 
 const Tab = createBottomTabNavigator()
@@ -101,6 +102,7 @@ function AppNavigator() {
             <Stack.Screen name="TaskForm" component={TaskForm} />
             <Stack.Screen name="NoteForm" component={NoteForm} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} />
+            <Stack.Screen name="Plan" component={PlanScreen} />
             <Stack.Screen name="ChatGPT" component={ChatGPTScreen} />
             <Stack.Screen name="Gemini" component={GeminiScreen} />
           </>

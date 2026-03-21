@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase/server"
+import { createServiceRoleClient } from "@/lib/supabase/server"
 import { createClient as createSupabaseClient } from "@supabase/supabase-js"
 import { runAssistant, transcribeAudio } from "@/lib/agent/orchestrator"
 import { validateIntent, executeIntent } from "@/lib/agent/registry"
@@ -78,6 +79,24 @@ export async function POST(request: Request) {
 
   if (!process.env.GROQ_API_KEY) {
     return NextResponse.json({ error: "missing_groq_api_key" }, { status: 500 })
+  }
+
+  // Require Plus plan for Iris
+  try {
+    const admin = createServiceRoleClient()
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("plan")
+      .eq("id", user.id)
+      .maybeSingle()
+    if (profile?.plan !== "plus") {
+      return NextResponse.json(
+        { error: "plan_required", message: "A Iris requer o Plano Plus." },
+        { status: 403 }
+      )
+    }
+  } catch {
+    return NextResponse.json({ error: "plan_check_failed" }, { status: 500 })
   }
 
   const contentType = request.headers.get("content-type") || ""
