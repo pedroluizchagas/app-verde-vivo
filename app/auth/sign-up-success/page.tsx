@@ -101,10 +101,7 @@ export default function SignUpSuccessPage() {
         {/* Botao voltar */}
         <Link
           href="/auth/login"
-          className="inline-flex items-center gap-2 text-sm font-medium transition-colors"
-          style={{ color: "rgba(255,255,255,0.40)" }}
-          onMouseOver={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.80)")}
-          onMouseOut={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.40)")}
+          className="inline-flex items-center gap-2 text-sm font-medium transition-colors text-white/40 hover:text-white/80"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar para o login
