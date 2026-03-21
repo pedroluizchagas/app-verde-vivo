@@ -6,7 +6,7 @@ import type {
 } from "./types"
 
 function getApiUrl(): string {
-  return (process.env.ASAAS_API_URL ?? "https://sandbox.asaas.com/api/v3").replace(/\/$/, "")
+  return (process.env.ASAAS_API_URL ?? "https://www.asaas.com/api/v3").replace(/\/$/, "")
 }
 
 function getApiKey(): string {

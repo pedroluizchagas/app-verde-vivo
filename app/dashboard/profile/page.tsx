@@ -4,7 +4,8 @@ import { AvatarUpload } from "@/components/profile/avatar-upload"
 import { LogoutButton } from "@/components/profile/logout-button"
 import { PreferencesForm } from "@/components/finance/preferences-form"
 import { BrandForm } from "@/components/profile/brand-form"
-import { Phone, Mail, UserCircle, Settings, Sparkles } from "lucide-react"
+import { Phone, Mail, UserCircle, Settings, Sparkles, CreditCard } from "lucide-react"
+import { CpfCnpjForm } from "@/components/profile/cpf-cnpj-form"
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -149,6 +150,19 @@ export default async function ProfilePage() {
             </CardContent>
           </Card>
 
+          {/* CPF / CNPJ */}
+          <Card className="py-0">
+            <CardContent className="p-5">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <CreditCard className="h-3 w-3 text-muted-foreground" />
+                </div>
+                <h2 className="text-[14px] font-semibold">Dados de cobranca</h2>
+              </div>
+              <CpfCnpjForm />
+            </CardContent>
+          </Card>
+
           {/* Assinatura */}
           <Card className="py-0">
             <CardContent className="p-5">
@@ -161,7 +175,7 @@ export default async function ProfilePage() {
               <div className="rounded-xl bg-muted/60 border border-border/60 p-4 text-center">
                 <p className="text-[13px] font-medium mb-1">Plano gratuito</p>
                 <p className="text-[12px] text-muted-foreground">
-                  Gestão completa de planos pagos em breve.
+                  Gestao completa de planos pagos em breve.
                 </p>
               </div>
             </CardContent>

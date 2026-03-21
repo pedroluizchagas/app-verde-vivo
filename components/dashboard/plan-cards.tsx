@@ -103,7 +103,7 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
       })
       const data = await res.json()
       if (!res.ok) {
-        setError(data.error ?? "Erro ao iniciar assinatura")
+        setError(data.message ?? data.error ?? "Erro ao iniciar assinatura")
         return
       }
       if (data.paymentUrl) {

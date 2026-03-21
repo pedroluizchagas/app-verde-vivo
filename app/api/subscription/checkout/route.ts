@@ -36,12 +36,20 @@ export async function POST(request: Request) {
 
   const { data: profile } = await admin
     .from("profiles")
-    .select("full_name, asaas_customer_id")
+    .select("full_name, asaas_customer_id, cpf_cnpj")
     .eq("id", user.id)
     .maybeSingle()
 
   if (!profile) {
     return NextResponse.json({ error: "profile_not_found" }, { status: 404 })
+  }
+
+  const cpfCnpj = (profile as any).cpf_cnpj as string | null | undefined
+  if (!cpfCnpj) {
+    return NextResponse.json(
+      { error: "cpf_cnpj_required", message: "Preencha seu CPF ou CNPJ no perfil antes de assinar." },
+      { status: 422 }
+    )
   }
 
   // Cancel any existing pending/active/overdue subscription before creating a new one
@@ -83,6 +91,7 @@ export async function POST(request: Request) {
         const customer = await createAsaasCustomer({
           name: profile.full_name,
           email: user.email!,
+          cpfCnpj: cpfCnpj,
           externalReference: user.id,
           notificationDisabled: false,
         })
