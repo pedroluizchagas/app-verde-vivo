@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useLayoutEffect, useRef } from "react"
 import Link from "next/link"
 import {
   ArrowRight,
@@ -246,8 +246,11 @@ const globalCSS = `
   ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 3px; }
 
   /* ── Responsive ── */
+  .show-mobile { display: none; }
+
   @media (max-width: 900px) {
     .hide-mobile { display: none !important; }
+    .show-mobile { display: flex !important; }
     .col-2-mobile { grid-template-columns: 1fr !important; }
     .col-1-mobile { grid-template-columns: 1fr !important; }
   }
@@ -255,6 +258,35 @@ const globalCSS = `
     .hide-sm { display: none !important; }
     .full-sm { width: 100% !important; }
     .text-center-sm { text-align: center !important; }
+  }
+
+  /* ── Mobile menu ── */
+  .mobile-menu {
+    position: fixed;
+    top: 64px; left: 0; right: 0; bottom: 0;
+    background: rgba(12,12,12,0.96);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    z-index: 99;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    gap: 8px;
+    animation: fadeIn 0.2s ease both;
+  }
+  .mobile-menu a {
+    color: rgba(255,255,255,0.7);
+    text-decoration: none;
+    font-size: 16px;
+    font-weight: 600;
+    padding: 14px 16px;
+    border-radius: 12px;
+    transition: background 0.15s, color 0.15s;
+  }
+  .mobile-menu a:hover,
+  .mobile-menu a:active {
+    background: rgba(255,255,255,0.06);
+    color: #fff;
   }
 `
 
@@ -420,13 +452,40 @@ function Navbar() {
             style={{
               background: "none", border: `1px solid ${T.border}`,
               color: T.text, cursor: "pointer", padding: "8px 10px",
-              borderRadius: 8, display: "none",
+              borderRadius: 8, alignItems: "center", justifyContent: "center",
             }}
           >
             {open ? <X size={18} /> : <Menu size={18} />}
           </button>
         </div>
       </div>
+
+      {/* Mobile menu overlay */}
+      {open && (
+        <div className="mobile-menu">
+          {["Funcionalidades", "Preços", "Depoimentos", "Sobre"].map(l => (
+            <a key={l} href={`#${l.toLowerCase()}`} onClick={() => setOpen(false)}>{l}</a>
+          ))}
+          <div style={{ height: 1, background: T.border, margin: "8px 0" }} />
+          <Link href="/auth/login" onClick={() => setOpen(false)} style={{
+            padding: "14px 16px", borderRadius: 12,
+            fontSize: 16, fontWeight: 600, color: T.muted,
+            textDecoration: "none",
+          }}>
+            Entrar
+          </Link>
+          <Link href="#preços" onClick={() => setOpen(false)} style={{
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+            padding: "14px 16px", borderRadius: 12,
+            fontSize: 16, fontWeight: 700,
+            background: T.green, color: "#000",
+            textDecoration: "none",
+          }}>
+            Começar Grátis
+            <ArrowRight size={16} strokeWidth={2.5} />
+          </Link>
+        </div>
+      )}
     </nav>
   )
 }
@@ -2719,7 +2778,7 @@ function DashboardMockup() {
 ───────────────────────────────────────────── */
 function Hero() {
   return (
-    <section style={{ padding: "140px 0 0", minHeight: "120vh", textAlign: "center", position: "relative" }}>
+    <section style={{ padding: "clamp(100px, 15vw, 140px) 0 0", minHeight: "120vh", textAlign: "center", position: "relative" }}>
       {/* Radial glow */}
       <div style={{
         position: "absolute", top: "-10%", left: "50%",
@@ -2833,7 +2892,24 @@ function Hero() {
 function DashboardRiseWrapper() {
   const wrapRef = useRef<HTMLDivElement>(null)
   const fadeRef = useReveal("0px 0px -40px 0px")
+  const containerRef = useRef<HTMLDivElement>(null)
+  const [mockupScale, setMockupScale] = useState(1)
+  const MOCKUP_W = 880
+  const MOCKUP_H = 470
 
+  // Calcular escala para caber no mobile
+  useLayoutEffect(() => {
+    const calc = () => {
+      if (!containerRef.current) return
+      const w = containerRef.current.offsetWidth
+      setMockupScale(w < MOCKUP_W ? w / MOCKUP_W : 1)
+    }
+    calc()
+    window.addEventListener("resize", calc)
+    return () => window.removeEventListener("resize", calc)
+  }, [])
+
+  // 3D scroll-driven transform (com intensidade reduzida no mobile)
   useEffect(() => {
     const el = wrapRef.current
     if (!el) return
@@ -2841,13 +2917,15 @@ function DashboardRiseWrapper() {
     const update = () => {
       const rect = el.getBoundingClientRect()
       const vh = window.innerHeight
-      // progress: 0 = element top at viewport bottom, 1 = fully scrolled into view
+      const vw = window.innerWidth
       const raw = 1 - (rect.top / vh)
       const progress = Math.max(0, Math.min(1, raw))
 
-      const rotateX = 28 * (1 - progress)       // 28deg → 0deg (inclinação dramática estilo Clario)
-      const translateY = 280 * (1 - progress)   // 280px → 0px
-      const scale = 1.18 - 0.18 * progress      // 1.18 → 1 (começa bem maior)
+      const mobile = vw <= 768
+      const rotateX = (mobile ? 14 : 28) * (1 - progress)
+      const translateY = (mobile ? 100 : 280) * (1 - progress)
+      const scaleMax = mobile ? 1.06 : 1.18
+      const scale = scaleMax - (scaleMax - 1) * progress
 
       el.style.transform = `perspective(1200px) rotateX(${rotateX}deg) translateY(${translateY}px) scale(${scale})`
     }
@@ -2860,6 +2938,8 @@ function DashboardRiseWrapper() {
       window.removeEventListener("resize", update)
     }
   }, [])
+
+  const needsScale = mockupScale < 1
 
   return (
     <div
@@ -2898,7 +2978,19 @@ function DashboardRiseWrapper() {
         background: `linear-gradient(to top, ${T.bg}, ${T.bg}44, transparent)`,
         zIndex: 2, pointerEvents: "none",
       }} />
-      <DashboardMockup />
+
+      {/* Mockup container — escala para caber em telas menores */}
+      <div ref={containerRef} style={{ width: "100%", overflow: "hidden" }}>
+        <div style={needsScale ? {
+          width: MOCKUP_W,
+          transform: `scale(${mockupScale})`,
+          transformOrigin: "top center",
+          marginLeft: `calc(50% - ${MOCKUP_W / 2}px)`,
+          marginBottom: -(MOCKUP_H * (1 - mockupScale)),
+        } : undefined}>
+          <DashboardMockup />
+        </div>
+      </div>
     </div>
   )
 }
@@ -2937,7 +3029,7 @@ function About() {
   ]
 
   return (
-    <section id="sobre" style={{ padding: "110px 0" }}>
+    <section id="sobre" style={{ padding: "clamp(60px, 10vw, 110px) 0" }}>
       <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 64, alignItems: "center" }} className="col-2-mobile">
 
@@ -3001,7 +3093,7 @@ function About() {
               </p>
             </Reveal>
 
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 20 }} className="col-1-mobile">
               {aboutFeatures.map(({ icon, title, desc }, i) => (
                 <Reveal key={title} delay={i * 0.07}>
                   <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
@@ -3267,7 +3359,7 @@ function StockMockup() {
 
 function Features() {
   return (
-    <section id="funcionalidades" style={{ padding: "100px 0" }}>
+    <section id="funcionalidades" style={{ padding: "clamp(60px, 10vw, 100px) 0" }}>
       <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
 
         {/* Header */}
@@ -3397,7 +3489,7 @@ function Stats() {
             <Reveal key={label} delay={i * 0.08}>
               <div className="card-hover card-hover-green" style={{
                 background: T.bg2, border: `1px solid ${T.border}`,
-                borderRadius: 16, padding: "32px",
+                borderRadius: 16, padding: "clamp(20px, 4vw, 32px)",
                 background: `linear-gradient(135deg, #0e1f10 0%, ${T.bg2} 100%)`,
               }}>
                 <div style={{ fontSize: 10.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: T.subtle, marginBottom: 12 }}>
@@ -3649,7 +3741,7 @@ function Pricing() {
   const [yearly, setYearly] = useState(false)
 
   return (
-    <section id="preços" style={{ padding: "100px 0" }}>
+    <section id="preços" style={{ padding: "clamp(60px, 10vw, 100px) 0" }}>
       <div style={{ maxWidth: 1160, margin: "0 auto", padding: "0 24px" }}>
 
         <Reveal>
@@ -3814,7 +3906,7 @@ function CTASection() {
           <div style={{
             background: "linear-gradient(135deg, rgba(26,255,94,0.06) 0%, rgba(0,0,0,0) 60%)",
             border: "1px solid rgba(26,255,94,0.14)",
-            borderRadius: 28, padding: "80px 48px",
+            borderRadius: 28, padding: "clamp(40px, 8vw, 80px) clamp(20px, 5vw, 48px)",
             textAlign: "center", position: "relative", overflow: "hidden",
           }}>
             {/* Ambient */}
@@ -3934,6 +4026,7 @@ function Footer() {
           display: "flex", alignItems: "center", justifyContent: "space-between",
           paddingTop: 28, borderTop: `1px solid ${T.border}`,
           fontSize: 13, color: T.subtle,
+          flexWrap: "wrap", gap: 8,
         }}>
           <span>© 2026 GestãoGarden. Todos os direitos reservados.</span>
           <span>Feito para jardineiros brasileiros</span>
