@@ -133,6 +133,16 @@ const globalCSS = `
     from { opacity: 0; transform: scale(0.97) translateY(24px); }
     to   { opacity: 1; transform: scale(1) translateY(0); }
   }
+  @keyframes dashboardRise {
+    from {
+      opacity: 0;
+      transform: perspective(1200px) translateY(150px);
+    }
+    to {
+      opacity: 1;
+      transform: perspective(1200px) translateY(0);
+    }
+  }
 
   /* ── Scroll reveal ── */
   .reveal {
@@ -2826,8 +2836,9 @@ function Hero() {
 
         {/* Dashboard */}
         <div style={{
-          animation: "scaleIn 0.75s 0.42s cubic-bezier(0.16,1,0.3,1) both",
+          animation: "dashboardRise 1.2s 0.6s cubic-bezier(0.22,0.68,0.35,1.0) both",
           position: "relative",
+          willChange: "transform, opacity",
         }}>
           <div style={{
             position: "absolute", bottom: -1, left: 0, right: 0,
