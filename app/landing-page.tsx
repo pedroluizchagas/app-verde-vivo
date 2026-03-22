@@ -2407,8 +2407,9 @@ function DashboardMockup() {
       borderRadius: 18,
       overflow: "hidden",
       background: T.bg2,
-      boxShadow: `0 0 0 1px ${T.border}, 0 48px 100px rgba(0,0,0,0.64), 0 0 80px ${ga(0.04)}`,
+      boxShadow: `0 0 0 1px ${T.border}, 0 0 0 8px ${ca(0.03)}, 0 48px 100px rgba(0,0,0,0.64), 0 0 80px ${ga(0.06)}`,
       transition: "background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease",
+      position: "relative", zIndex: 1,
     }}>
       {/* Browser bar */}
       <div style={{
@@ -2718,7 +2719,7 @@ function DashboardMockup() {
 ───────────────────────────────────────────── */
 function Hero() {
   return (
-    <section style={{ padding: "152px 0 0", textAlign: "center", position: "relative" }}>
+    <section style={{ padding: "140px 0 0", minHeight: "120vh", textAlign: "center", position: "relative" }}>
       {/* Radial glow */}
       <div style={{
         position: "absolute", top: "-10%", left: "50%",
@@ -2738,7 +2739,7 @@ function Hero() {
             border: "1px solid rgba(26,255,94,0.22)",
             borderRadius: 100, padding: "5px 16px 5px 7px",
             fontSize: 13, fontWeight: 600, color: T.green,
-            textDecoration: "none", marginBottom: 36,
+            textDecoration: "none", marginBottom: 10,
             transition: "background 0.18s, border-color 0.18s",
           }}>
             <span className="pill-dot" style={{
@@ -2758,10 +2759,10 @@ function Hero() {
         <div style={{ animation: "fadeUp 0.6s 0.08s cubic-bezier(0.16,1,0.3,1) both" }}>
           <h1 style={{
             fontFamily: "'Manrope', sans-serif",
-            fontSize: "clamp(46px, 7.2vw, 88px)",
-            fontWeight: 800, lineHeight: 1.04,
-            letterSpacing: "-2.8px",
-            marginBottom: 24,
+            fontSize: "clamp(38px, 4.5vw, 64px)",
+            fontWeight: 500, lineHeight: "1em",
+            letterSpacing: "-0.04em",
+            marginBottom: 10,
           }}>
             Gestão Completa para<br />
             Sua Empresa de{" "}
@@ -2777,9 +2778,9 @@ function Hero() {
         {/* Subtitle */}
         <div style={{ animation: "fadeUp 0.6s 0.16s cubic-bezier(0.16,1,0.3,1) both" }}>
           <p style={{
-            fontSize: "clamp(15px, 1.8vw, 18.5px)",
-            color: T.muted, maxWidth: 540, margin: "0 auto 40px",
-            fontWeight: 400, lineHeight: 1.72,
+            fontSize: "clamp(15px, 1.6vw, 17px)",
+            color: "rgba(255,255,255,0.55)", maxWidth: 520, margin: "0 auto 36px",
+            fontWeight: 400, lineHeight: 1.65,
           }}>
             Organize clientes, agenda, finanças e ordens de serviço em um único lugar.
             Economize horas todo dia e foque no que realmente importa.
@@ -2790,7 +2791,7 @@ function Hero() {
         <div style={{
           animation: "fadeUp 0.6s 0.24s cubic-bezier(0.16,1,0.3,1) both",
           display: "flex", alignItems: "center", justifyContent: "center",
-          gap: 12, flexWrap: "wrap", marginBottom: 14,
+          gap: 12, flexWrap: "wrap", marginBottom: 12,
         }}>
           <Link href="#preços" className="btn-primary-glow" style={{
             display: "inline-flex", alignItems: "center", gap: 8,
@@ -2817,32 +2818,9 @@ function Hero() {
 
         <div style={{
           animation: "fadeUp 0.6s 0.3s cubic-bezier(0.16,1,0.3,1) both",
-          fontSize: 13, color: T.subtle, marginBottom: 52,
+          fontSize: 13, color: T.subtle, marginBottom: 40,
         }}>
           Sem cartão de crédito. Cancele quando quiser.
-        </div>
-
-        {/* Social proof */}
-        <div style={{
-          animation: "fadeUp 0.6s 0.36s cubic-bezier(0.16,1,0.3,1) both",
-          display: "flex", alignItems: "center", justifyContent: "center",
-          gap: 14, marginBottom: 60,
-        }}>
-          <div style={{ display: "flex", alignItems: "center" }}>
-            {["MR","JS","AC","PL"].map((i, idx) => (
-              <Avatar key={i} initials={i} />
-            ))}
-            <div style={{
-              width: 34, height: 34, borderRadius: "50%",
-              background: T.greenGlow, border: `2px solid ${T.bg}`,
-              marginLeft: -9,
-              display: "flex", alignItems: "center", justifyContent: "center",
-              fontSize: 11, fontWeight: 700, color: T.green,
-            }}>+</div>
-          </div>
-          <div style={{ fontSize: 13.5, color: T.muted }}>
-            <strong style={{ color: T.text, fontWeight: 700 }}>+500 profissionais</strong> já gerenciam seus negócios
-          </div>
         </div>
 
         {/* Dashboard */}
@@ -2863,13 +2841,13 @@ function DashboardRiseWrapper() {
     const update = () => {
       const rect = el.getBoundingClientRect()
       const vh = window.innerHeight
-      // progress: 0 = element bottom at viewport bottom, 1 = element top at viewport center
+      // progress: 0 = element top at viewport bottom, 1 = fully scrolled into view
       const raw = 1 - (rect.top / vh)
       const progress = Math.max(0, Math.min(1, raw))
 
-      const rotateX = 6 * (1 - progress)       // 6deg → 0deg
-      const translateY = 120 * (1 - progress)   // 120px → 0px
-      const scale = 0.96 + 0.04 * progress      // 0.96 → 1
+      const rotateX = 28 * (1 - progress)       // 28deg → 0deg (inclinação dramática estilo Clario)
+      const translateY = 280 * (1 - progress)   // 280px → 0px
+      const scale = 1.18 - 0.18 * progress      // 1.18 → 1 (começa bem maior)
 
       el.style.transform = `perspective(1200px) rotateX(${rotateX}deg) translateY(${translateY}px) scale(${scale})`
     }
@@ -2892,10 +2870,32 @@ function DashboardRiseWrapper() {
       className="dashboard-rise"
       style={{ position: "relative" }}
     >
+      {/* Green glow behind dashboard (Clario style) */}
+      <div style={{
+        position: "absolute", top: -40, left: "50%",
+        transform: "translateX(-50%)",
+        width: 320, height: 60,
+        background: "rgba(26,255,94,0.35)",
+        filter: "blur(50px)",
+        borderRadius: "50%",
+        pointerEvents: "none", zIndex: 0,
+      }} />
+
+      {/* Green line accent at top */}
+      <div style={{
+        position: "absolute", top: -2, left: "50%",
+        transform: "translateX(-50%)",
+        width: 120, height: 3,
+        background: `linear-gradient(90deg, transparent, ${T.green}, transparent)`,
+        borderRadius: 2,
+        pointerEvents: "none", zIndex: 3,
+      }} />
+
+      {/* Bottom fade mask */}
       <div style={{
         position: "absolute", bottom: -1, left: 0, right: 0,
-        height: 220,
-        background: `linear-gradient(to top, ${T.bg}, transparent)`,
+        height: 260,
+        background: `linear-gradient(to top, ${T.bg}, ${T.bg}44, transparent)`,
         zIndex: 2, pointerEvents: "none",
       }} />
       <DashboardMockup />
