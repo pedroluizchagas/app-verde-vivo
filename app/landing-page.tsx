@@ -26,7 +26,19 @@ import {
   CheckSquare,
   Wrench,
   Bot,
+  ChevronLeft,
   ChevronRight,
+  UserCheck,
+  DollarSign,
+  TrendingDown,
+  Sun,
+  Moon,
+  CheckCircle2,
+  Search,
+  StickyNote,
+  ListTodo,
+  BarChart3,
+  CalendarCheck,
   Zap,
   Globe,
   CreditCard,
@@ -383,6 +395,41 @@ function Navbar() {
 ───────────────────────────────────────────── */
 function DashboardMockup() {
   const [activeView, setActiveView] = useState("Visão Geral")
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
+  const [mockLightMode, setMockLightMode] = useState(false)
+
+  /* ── Tokens de tema do mockup (shadow do T global) ── */
+  // eslint-disable-next-line @typescript-eslint/no-shadow
+  const T = mockLightMode ? {
+    bg: "#ffffff", bg2: "#fafafa", bg3: "#f3f4f6",
+    border: "rgba(0,0,0,0.09)", borderHover: "rgba(0,0,0,0.15)",
+    text: "#1a1a1a", muted: "rgba(0,0,0,0.45)", subtle: "rgba(0,0,0,0.26)",
+    green: "#16a34a", greenDim: "#15803d",
+    greenGlow: "rgba(22,163,74,0.08)", greenGlow2: "rgba(22,163,74,0.04)",
+  } : {
+    bg: "#0c0c0c", bg2: "#111111", bg3: "#161616",
+    border: "rgba(255,255,255,0.07)", borderHover: "rgba(255,255,255,0.14)",
+    text: "#ffffff", muted: "rgba(255,255,255,0.48)", subtle: "rgba(255,255,255,0.26)",
+    green: "#1aff5e", greenDim: "#00e044",
+    greenGlow: "rgba(26,255,94,0.12)", greenGlow2: "rgba(26,255,94,0.05)",
+  }
+
+  /* Helpers de cor adaptáveis ao tema */
+  const ca = (o: number) => mockLightMode ? `rgba(0,0,0,${o})` : `rgba(255,255,255,${o})`
+  const ga = (o: number) => mockLightMode ? `rgba(22,163,74,${o})` : `rgba(26,255,94,${o})`
+  const pos = mockLightMode ? "#16a34a" : "#4ade80"
+  const onGreen = mockLightMode ? "#fff" : "#000"
+  const sidebarBg = mockLightMode ? "#e8e8e8" : "#141414"
+  const browserBarBg = mockLightMode ? "#dedede" : "#191919"
+
+  const mockNotifications = [
+    { id: 1, icon: "📋", title: "Novo orçamento aprovado", desc: "Juliana Santos aprovou o orçamento #127", time: "Há 12 min", unread: true },
+    { id: 2, icon: "📅", title: "Agendamento confirmado", desc: "Poda de arbustos — Seg, 23 Mar às 08:00", time: "Há 34 min", unread: true },
+    { id: 3, icon: "💰", title: "Pagamento recebido", desc: "R$ 850,00 de Marco Rodrigues", time: "Há 1h", unread: true },
+    { id: 4, icon: "✅", title: "Serviço concluído", desc: "Manutenção jardim — Pedro Lima", time: "Há 2h", unread: false },
+    { id: 5, icon: "👤", title: "Novo cliente cadastrado", desc: "Fernanda Oliveira foi adicionada", time: "Há 3h", unread: false },
+    { id: 6, icon: "🔔", title: "Lembrete de manutenção", desc: "Plano mensal de André Costa vence em 3 dias", time: "Há 5h", unread: false },
+  ]
 
   const sidebarItems = [
     { icon: <Home size={14} />, label: "Visão Geral", route: "" },
@@ -390,14 +437,14 @@ function DashboardMockup() {
     { icon: <Calendar size={14} />, label: "Agenda", route: "schedule" },
     { icon: <ClipboardList size={14} />, label: "Ordens de Serviço", route: "work-orders" },
     { icon: <FileText size={14} />, label: "Orçamentos", route: "budgets" },
-    { icon: <NotebookText size={14} />, label: "Notas", route: "notes" },
-    { icon: <CheckSquare size={14} />, label: "Tarefas", route: "tasks" },
+    { icon: <StickyNote size={14} />, label: "Notas", route: "notes" },
+    { icon: <ListTodo size={14} />, label: "Tarefas", route: "tasks" },
   ]
   const sidebarItems2 = [
-    { icon: <Wallet size={14} />, label: "Financeiro", route: "finance" },
+    { icon: <BarChart3 size={14} />, label: "Financeiro", route: "finance" },
     { icon: <Package size={14} />, label: "Estoque", route: "stock" },
-    { icon: <Wrench size={14} />, label: "Manutenções", route: "maintenance" },
-    { icon: <Bot size={14} />, label: "Assistente Íris", route: "assistant" },
+    { icon: <CalendarCheck size={14} />, label: "Manutenções", route: "maintenance" },
+    { icon: <Bot size={14} />, label: "Assistente", route: "assistant" },
   ]
 
   const allItems = [...sidebarItems, ...sidebarItems2]
@@ -421,12 +468,12 @@ function DashboardMockup() {
   const PageHeader = ({ title, subtitle }: { title: string; subtitle: string }) => (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
       <div>
-        <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2 }}>{title}</div>
+        <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2, color: T.text }}>{title}</div>
         <div style={{ fontSize: 11, color: T.muted }}>{subtitle}</div>
       </div>
       <div style={{
         width: 28, height: 28, borderRadius: "50%",
-        background: T.green, color: "#000",
+        background: T.green, color: onGreen,
         display: "flex", alignItems: "center", justifyContent: "center",
         fontSize: 16, fontWeight: 700, lineHeight: 1,
       }}>+</div>
@@ -436,8 +483,8 @@ function DashboardMockup() {
   const StatusBadge = ({ label, color }: { label: string; color: string }) => (
     <span style={{
       fontSize: 8, fontWeight: 600, padding: "2px 6px", borderRadius: 4,
-      background: color === "green" ? "rgba(26,255,94,0.12)" : color === "amber" ? "rgba(255,191,0,0.12)" : color === "blue" ? "rgba(59,130,246,0.12)" : color === "red" ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.06)",
-      color: color === "green" ? "#4ade80" : color === "amber" ? "#fbbf24" : color === "blue" ? "#60a5fa" : color === "red" ? "#f87171" : T.muted,
+      background: color === "green" ? ga(0.12) : color === "amber" ? "rgba(255,191,0,0.12)" : color === "blue" ? "rgba(59,130,246,0.12)" : color === "red" ? "rgba(239,68,68,0.12)" : ca(0.06),
+      color: color === "green" ? pos : color === "amber" ? "#fbbf24" : color === "blue" ? "#60a5fa" : color === "red" ? "#f87171" : T.muted,
     }}>{label}</span>
   )
 
@@ -445,7 +492,7 @@ function DashboardMockup() {
     <div style={{
       display: "flex", alignItems: "center", gap: 8,
       padding: "7px 10px", borderRadius: 7,
-      background: "rgba(255,255,255,0.02)",
+      background: ca(0.02),
       border: `1px solid ${T.border}`,
       marginBottom: 4,
     }}>{children}</div>
@@ -454,7 +501,7 @@ function DashboardMockup() {
   const AvatarCircle = ({ initials, size = 26 }: { initials: string; size?: number }) => (
     <div style={{
       width: size, height: size, borderRadius: "50%",
-      background: "rgba(26,255,94,0.1)", color: T.green,
+      background: ga(0.1), color: T.green,
       display: "flex", alignItems: "center", justifyContent: "center",
       fontSize: size * 0.38, fontWeight: 700, flexShrink: 0,
     }}>{initials}</div>
@@ -465,52 +512,317 @@ function DashboardMockup() {
     switch (activeView) {
 
       case "Visão Geral": {
-        const barHeights = [28, 52, 38, 68, 44, 82, 56, 94, 62, 78, 42, 22]
+        /* Dados mockados do gráfico — pares [receita%, despesa%] por mês */
+        const chartBars = [
+          [28,18],[52,30],[38,22],[68,40],[44,28],[82,48],
+          [56,34],[94,55],[62,38],[78,44],[42,26],[22,14],
+        ]
+        const months = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"]
+
+        /* Mini calendário de março 2026 */
+        const calDayNames = ["Dom","Seg","Ter","Qua","Qui","Sex","Sab"]
+        const calFirstDay = 0 // Março 2026 começa no domingo
+        const calDays = 31
+        const calCells: (number|null)[] = []
+        for (let i = 0; i < calFirstDay; i++) calCells.push(null)
+        for (let d = 1; d <= calDays; d++) calCells.push(d)
+        const todayDate = 22
+
+        /* Próximos agendamentos */
+        const appointments = [
+          { done: false, day: "Seg, 23 Mar", time: "08:00", title: "Poda de arbustos", client: "Marco Rodrigues" },
+          { done: false, day: "Seg, 23 Mar", time: "10:30", title: "Manutenção jardim", client: "Juliana Santos" },
+          { done: false, day: "Ter, 24 Mar", time: "14:00", title: "Plantio de mudas", client: "André Costa" },
+          { done: true, day: "Ter, 24 Mar", time: "09:00", title: "Irrigação automática", client: "Pedro Lima" },
+          { done: false, day: "Qua, 25 Mar", time: "15:00", title: "Limpeza de terreno", client: "Cláudia Ferreira" },
+        ]
+
+        /* KPI cards */
+        const kpis = [
+          { label: "Total de Clientes", value: "48", icon: <Users size={11} />, change: 12.5, positive: true },
+          { label: "Clientes Ativos", value: "31", icon: <UserCheck size={11} />, change: 8.3, positive: true },
+          { label: "Receita do Mês", value: "R$ 8.450", icon: <DollarSign size={11} />, change: 15.2, positive: true },
+          { label: "Resultado do Mês", value: "R$ 5.120", icon: <Wallet size={11} />, change: 4.7, positive: true },
+        ]
+
         return (
           <>
-            <div style={{ marginBottom: 18 }}>
-              <div style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.5px", marginBottom: 3 }}>
-                Olá, bom dia 👋
+            {/* ── Header ── */}
+            <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 14 }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2, textAlign: "left", color: T.text }}>
+                  Olá, Pedro Luiz
+                </div>
+                <div style={{ fontSize: 11, color: T.muted, textAlign: "left" }}>Aqui está a visão geral do seu negócio.</div>
               </div>
-              <div style={{ fontSize: 12.5, color: T.muted }}>Visão geral do seu negócio.</div>
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                <div
+                  onClick={() => setMockLightMode(v => !v)}
+                  style={{
+                    width: 24, height: 24, borderRadius: 6,
+                    background: ca(0.05), border: `1px solid ${T.border}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer", transition: "all 0.3s ease",
+                  }}
+                >
+                  {mockLightMode ? <Moon size={11} style={{ color: T.muted }} /> : <Sun size={11} style={{ color: T.muted }} />}
+                </div>
+                <div
+                  onClick={() => setNotificationsOpen(v => !v)}
+                  style={{
+                    width: 24, height: 24, borderRadius: 6,
+                    background: ca(0.05), border: `1px solid ${T.border}`,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    cursor: "pointer",
+                    opacity: notificationsOpen ? 0 : 1,
+                    transform: notificationsOpen ? "scale(0.75)" : "scale(1)",
+                    pointerEvents: notificationsOpen ? "none" : "auto",
+                    transition: "all 0.3s ease",
+                  }}
+                >
+                  <Bell size={11} style={{ color: T.muted }} />
+                </div>
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 6,
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 20, padding: "3px 10px 3px 3px",
+                }}>
+                  <div style={{
+                    width: 22, height: 22, borderRadius: "50%",
+                    background: ga(0.15), color: T.green,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 9, fontWeight: 700,
+                  }}>PL</div>
+                  <div>
+                    <div style={{ fontSize: 9, fontWeight: 600, lineHeight: 1.2, textAlign: "left", color: T.text }}>Pedro Luiz</div>
+                    <div style={{ fontSize: 7.5, color: T.muted, lineHeight: 1, textAlign: "left" }}>pedro@email.com</div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
-              {[
-                { label: "Total Clientes", value: "48" },
-                { label: "Ativos", value: "31" },
-                { label: "Receita", value: "R$ 8.4k" },
-                { label: "Resultado", value: "R$ 5.1k" },
-              ].map(({ label, value }) => (
+
+            {/* ── KPI Cards ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 12 }}>
+              {kpis.map(({ label, value, icon, change, positive }) => (
                 <div key={label} style={{
                   background: T.bg3, border: `1px solid ${T.border}`,
-                  borderRadius: 10, padding: "12px 13px",
+                  borderRadius: 10, padding: "10px 11px",
                 }}>
-                  <div style={{ fontSize: 9.5, textTransform: "uppercase", letterSpacing: "0.07em", color: T.subtle, marginBottom: 6 }}>{label}</div>
-                  <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.5px" }}>{value}</div>
-                  <div style={{ fontSize: 10, color: T.green, marginTop: 3 }}>↑ +12%</div>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 5 }}>
+                    <div style={{ fontSize: 7.5, textTransform: "uppercase", letterSpacing: "0.08em", color: T.subtle, fontWeight: 500 }}>{label}</div>
+                    <div style={{
+                      width: 20, height: 20, borderRadius: "50%",
+                      background: ca(0.06),
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: T.muted,
+                    }}>{icon}</div>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 3, textAlign: "left", color: T.text }}>{value}</div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 3, fontSize: 8.5 }}>
+                    {positive
+                      ? <TrendingUp size={8} style={{ color: pos }} />
+                      : <TrendingDown size={8} style={{ color: "#f87171" }} />
+                    }
+                    <span style={{ color: positive ? pos : "#f87171", fontWeight: 600 }}>
+                      {positive ? "+" : ""}{change.toFixed(1)}%
+                    </span>
+                    <span style={{ color: T.muted, fontWeight: 400 }}>do mês passado</span>
+                  </div>
                 </div>
               ))}
             </div>
-            <div style={{
-              background: T.bg3, border: `1px solid ${T.border}`,
-              borderRadius: 10, padding: "14px 14px 10px",
-            }}>
-              <div style={{ fontSize: 11.5, fontWeight: 700, marginBottom: 12, letterSpacing: "-0.2px" }}>
-                Desempenho Financeiro — 2026
+
+            {/* ── Content Grid: Left (gráfico + produtividade) | Right (calendário + agenda) ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 180px", gap: 8 }}>
+              {/* Coluna esquerda */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {/* Gráfico financeiro */}
+                <div style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "12px 12px 8px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", marginBottom: 10 }}>
+                    <div>
+                      <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "-0.2px", marginBottom: 4, color: T.text }}>
+                        Desempenho Financeiro &mdash; 2026
+                      </div>
+                      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ width: 7, height: 7, borderRadius: 2, background: T.green, display: "inline-block" }} />
+                          <span style={{ fontSize: 8, color: T.muted }}>Receita 50.2K</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ width: 7, height: 7, borderRadius: 2, background: ca(0.12), display: "inline-block" }} />
+                          <span style={{ fontSize: 8, color: T.muted }}>Despesa 28.4K</span>
+                        </div>
+                      </div>
+                    </div>
+                    <div style={{
+                      fontSize: 8, color: T.muted, background: ca(0.05),
+                      border: `1px solid ${T.border}`, borderRadius: 5, padding: "3px 8px",
+                      fontWeight: 500,
+                    }}>2026 ▾</div>
+                  </div>
+                  {/* Barras duplas (receita + despesa) */}
+                  <div style={{ display: "flex", alignItems: "flex-end", gap: 4, height: 80 }}>
+                    {chartBars.map(([r, d], i) => (
+                      <div key={i} style={{ flex: 1, display: "flex", alignItems: "flex-end", gap: 1, height: "100%" }}>
+                        <div style={{
+                          flex: 1, borderRadius: "2px 2px 0 0",
+                          height: `${r}%`, background: T.green, minHeight: 2,
+                        }} />
+                        <div style={{
+                          flex: 1, borderRadius: "2px 2px 0 0",
+                          height: `${d}%`, background: ca(0.10), minHeight: 2,
+                        }} />
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ display: "flex", justifyContent: "space-between", marginTop: 5, fontSize: 7, color: T.subtle }}>
+                    {months.map(m => <span key={m}>{m}</span>)}
+                  </div>
+                </div>
+
+                {/* Produtividade do mês */}
+                <div style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "12px 12px 10px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "-0.2px", color: T.text }}>Produtividade do Mês</div>
+                    <div style={{ fontSize: 8, color: T.muted, fontWeight: 500 }}>Ver agenda</div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16 }}>
+                    {/* Serviços Concluídos */}
+                    <div>
+                      <div style={{ fontSize: 8, color: T.muted, marginBottom: 3 }}>Serviços Concluídos</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.5px", marginBottom: 5, lineHeight: 1, color: T.text }}>72.5%</div>
+                      <div style={{
+                        height: 5, background: ca(0.08), borderRadius: 3, overflow: "hidden",
+                      }}>
+                        <div style={{ width: "72.5%", height: "100%", background: T.green, borderRadius: 3 }} />
+                      </div>
+                      <div style={{ fontSize: 7.5, color: T.muted, marginTop: 3 }}>do mês atual</div>
+                    </div>
+                    {/* Serviços Pendentes */}
+                    <div>
+                      <div style={{ fontSize: 8, color: T.muted, marginBottom: 3 }}>Serviços Pendentes</div>
+                      <div style={{ fontSize: 20, fontWeight: 800, letterSpacing: "-0.5px", marginBottom: 5, lineHeight: 1, color: T.text }}>27.5%</div>
+                      <div style={{
+                        height: 5, background: ca(0.08), borderRadius: 3, overflow: "hidden",
+                      }}>
+                        <div style={{ width: "27.5%", height: "100%", background: T.green, borderRadius: 3 }} />
+                      </div>
+                      <div style={{ fontSize: 7.5, color: T.muted, marginTop: 3 }}>do mês atual</div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90 }}>
-                {barHeights.map((h, i) => (
-                  <div key={i} style={{
-                    flex: 1, borderRadius: "3px 3px 0 0", minHeight: 4,
-                    height: `${h}%`,
-                    background: i % 2 === 0 ? "rgba(26,255,94,0.85)" : "rgba(255,255,255,0.09)",
-                  }} />
-                ))}
-              </div>
-              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 9, color: T.subtle }}>
-                {["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"].map(m => (
-                  <span key={m}>{m}</span>
-                ))}
+
+              {/* Coluna direita */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {/* Mini Calendário */}
+                <div style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "10px 10px 8px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 6 }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: T.text }}>Março 2026</div>
+                    <div style={{ display: "flex", gap: 3 }}>
+                      <div style={{
+                        width: 16, height: 16, borderRadius: 4,
+                        background: ca(0.06),
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <ChevronLeft size={9} style={{ color: T.muted }} />
+                      </div>
+                      <div style={{
+                        width: 16, height: 16, borderRadius: 4,
+                        background: ca(0.06),
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                      }}>
+                        <ChevronRight size={9} style={{ color: T.muted }} />
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)" }}>
+                    {calDayNames.map(n => (
+                      <div key={n} style={{
+                        textAlign: "center", fontSize: 7, color: T.muted,
+                        padding: "2px 0", fontWeight: 500,
+                      }}>{n}</div>
+                    ))}
+                    {calCells.map((d, i) => (
+                      <div key={i} style={{
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        padding: "1.5px 0",
+                      }}>
+                        {d !== null ? (
+                          <span style={{
+                            width: 17, height: 17, borderRadius: "50%",
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 8, fontWeight: d === todayDate ? 700 : 400,
+                            background: d === todayDate ? T.green : "transparent",
+                            color: d === todayDate ? onGreen : T.muted,
+                          }}>{d}</span>
+                        ) : null}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Próxima Agenda */}
+                <div style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "10px 10px 8px",
+                  flex: 1, minHeight: 0, display: "flex", flexDirection: "column",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 700, color: T.text }}>Próxima Agenda</div>
+                    <div style={{ fontSize: 7.5, color: T.green, fontWeight: 500 }}>Ver todos</div>
+                  </div>
+                  <div style={{ flex: 1, overflow: "hidden" }}>
+                    {appointments.map((a, i) => (
+                      <div key={i} style={{
+                        display: "flex", alignItems: "flex-start", gap: 5,
+                        padding: "5px 4px",
+                        borderBottom: i < appointments.length - 1 ? `1px solid ${ca(0.04)}` : "none",
+                      }}>
+                        {/* Checkbox */}
+                        {a.done ? (
+                          <div style={{
+                            width: 11, height: 11, borderRadius: 3, marginTop: 1,
+                            background: T.green, flexShrink: 0,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                          }}>
+                            <Check size={7} style={{ color: onGreen }} />
+                          </div>
+                        ) : (
+                          <div style={{
+                            width: 11, height: 11, borderRadius: 3, marginTop: 1,
+                            border: `1.5px solid ${ca(0.15)}`, flexShrink: 0,
+                          }} />
+                        )}
+                        {/* Data/hora */}
+                        <div style={{ flexShrink: 0, width: 36 }}>
+                          <div style={{ fontSize: 6.5, color: T.muted, fontWeight: 500, lineHeight: 1.2 }}>{a.day}</div>
+                          <div style={{ fontSize: 6.5, color: T.muted }}>{a.time}</div>
+                        </div>
+                        {/* Título + cliente */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{
+                            fontSize: 9, fontWeight: 600, lineHeight: 1.2,
+                            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                          }}>{a.title}</div>
+                          <div style={{
+                            fontSize: 7.5, color: T.muted,
+                            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                          }}>{a.client}</div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
           </>
@@ -702,7 +1014,7 @@ function DashboardMockup() {
                   background: t.done ? T.green : "transparent",
                   display: "flex", alignItems: "center", justifyContent: "center",
                 }}>
-                  {t.done && <span style={{ fontSize: 9, color: "#000", fontWeight: 800 }}>✓</span>}
+                  {t.done && <span style={{ fontSize: 9, color: onGreen, fontWeight: 800 }}>✓</span>}
                 </div>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{
@@ -874,7 +1186,7 @@ function DashboardMockup() {
               </div>
               <div style={{
                 width: 28, height: 28, borderRadius: 8,
-                background: T.green, color: "#000",
+                background: T.green, color: onGreen,
                 display: "flex", alignItems: "center", justifyContent: "center",
                 fontSize: 13,
               }}>↑</div>
@@ -893,12 +1205,14 @@ function DashboardMockup() {
       borderRadius: 18,
       overflow: "hidden",
       background: T.bg2,
-      boxShadow: `0 0 0 1px ${T.border}, 0 48px 100px rgba(0,0,0,0.64), 0 0 80px rgba(26,255,94,0.04)`,
+      boxShadow: `0 0 0 1px ${T.border}, 0 48px 100px rgba(0,0,0,0.64), 0 0 80px ${ga(0.04)}`,
+      transition: "background 0.4s ease, border-color 0.4s ease, box-shadow 0.4s ease",
     }}>
       {/* Browser bar */}
       <div style={{
-        background: "#191919",
+        background: browserBarBg,
         borderBottom: `1px solid ${T.border}`,
+        transition: "background 0.4s ease",
         padding: "11px 16px",
         display: "flex", alignItems: "center", gap: 8,
       }}>
@@ -906,7 +1220,7 @@ function DashboardMockup() {
         <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#febc2e" }} />
         <div style={{ width: 10, height: 10, borderRadius: "50%", background: "#28c840" }} />
         <div style={{
-          flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 6,
+          flex: 1, background: ca(0.05), borderRadius: 6,
           padding: "5px 12px", fontSize: 11.5, color: T.muted,
           textAlign: "center", margin: "0 16px",
           transition: "all 0.2s ease",
@@ -915,71 +1229,281 @@ function DashboardMockup() {
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", minHeight: 400 }}>
+      {/* Content: sidebar + main (com efeito "abraço" rounded) */}
+      <div style={{ display: "grid", gridTemplateColumns: "200px 1fr", minHeight: 420 }}>
 
-        {/* Sidebar */}
+        {/* ── Sidebar ── */}
         <div style={{
-          background: "#111",
-          borderRight: `1px solid ${T.border}`,
-          padding: "18px 0",
+          background: sidebarBg,
+          display: "flex", flexDirection: "column",
+          transition: "background 0.4s ease",
         }}>
+          {/* Header: logo + nome + botão minimizar */}
           <div style={{
-            padding: "0 14px 16px",
-            fontSize: 12, fontWeight: 800, letterSpacing: "-0.3px",
-            color: "#cfe8d4",
+            display: "flex", alignItems: "center", gap: 8,
+            padding: "14px 12px",
             borderBottom: `1px solid ${T.border}`,
-            marginBottom: 8,
           }}>
-            Gestão<span style={{ color: T.green }}>Garden</span>
+            <div style={{
+              width: 26, height: 26, borderRadius: 7,
+              background: ga(0.15),
+              display: "flex", alignItems: "center", justifyContent: "center",
+              flexShrink: 0,
+            }}>
+              <span style={{ color: T.green, fontWeight: 700, fontSize: 12 }}>V</span>
+            </div>
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textAlign: "left", color: T.text }}>Verde Vivo</div>
+              <div style={{ fontSize: 8, color: ca(0.35), lineHeight: 1, textAlign: "left" }}>Jardinagem Profissional</div>
+            </div>
+            <div style={{
+              width: 20, height: 20, borderRadius: 5,
+              display: "flex", alignItems: "center", justifyContent: "center",
+              color: ca(0.35), cursor: "pointer",
+            }}>
+              <ChevronLeft size={12} />
+            </div>
           </div>
 
-          <div style={{ padding: "10px 8px 4px", fontSize: 9.5, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: T.subtle }}>
-            Principal
-          </div>
-          {sidebarItems.map(({ icon, label }) => (
-            <div
-              key={label}
-              onClick={() => setActiveView(label)}
-              style={{
-                display: "flex", alignItems: "center", gap: 9,
-                padding: "8px 12px", margin: "1px 6px", borderRadius: 7,
-                fontSize: 12, fontWeight: 500,
-                background: activeView === label ? "rgba(26,255,94,0.1)" : "transparent",
-                color: activeView === label ? T.green : T.muted,
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
-            >
-              {icon} {label}
+          {/* Campo de busca */}
+          <div style={{ padding: "10px 10px 6px" }}>
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: ca(0.04), borderRadius: 10,
+              padding: "7px 10px",
+            }}>
+              <Search size={11} style={{ color: ca(0.2), flexShrink: 0 }} />
+              <span style={{ fontSize: 10, color: ca(0.2) }}>Pesquise aqui...</span>
             </div>
-          ))}
+          </div>
 
-          <div style={{ padding: "12px 8px 4px", fontSize: 9.5, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: T.subtle }}>
-            Negócios
-          </div>
-          {sidebarItems2.map(({ icon, label }) => (
-            <div
-              key={label}
-              onClick={() => setActiveView(label)}
-              style={{
-                display: "flex", alignItems: "center", gap: 9,
-                padding: "8px 12px", margin: "1px 6px", borderRadius: 7,
-                fontSize: 12, fontWeight: 500,
-                background: activeView === label ? "rgba(26,255,94,0.1)" : "transparent",
-                color: activeView === label ? T.green : T.muted,
-                cursor: "pointer",
-                transition: "all 0.15s ease",
-              }}
-            >
-              {icon} {label}
+          {/* Navegação */}
+          <nav style={{ flex: 1, overflow: "hidden", padding: "2px 6px" }}>
+            {/* Menu Principal */}
+            <div style={{ padding: "8px 8px 4px", fontSize: 8, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: ca(0.22) }}>
+              Menu Principal
             </div>
-          ))}
+            {sidebarItems.map(({ icon, label }) => {
+              const isActive = activeView === label
+              return (
+                <div
+                  key={label}
+                  onClick={() => setActiveView(label)}
+                  style={{
+                    position: "relative",
+                    display: "flex", alignItems: "center", gap: 9,
+                    padding: "7px 10px", margin: "1px 0", borderRadius: 10,
+                    fontSize: 11.5, fontWeight: isActive ? 600 : 400,
+                    color: isActive ? T.green : ca(0.4),
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {isActive && (
+                    <div style={{
+                      position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
+                      width: 3, height: 18, borderRadius: "0 3px 3px 0",
+                      background: T.green,
+                    }} />
+                  )}
+                  {icon} {label}
+                </div>
+              )
+            })}
+
+            {/* Negócios */}
+            <div style={{ padding: "10px 8px 4px", fontSize: 8, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase", color: ca(0.22) }}>
+              Negócios
+            </div>
+            {sidebarItems2.map(({ icon, label }) => {
+              const isActive = activeView === label
+              return (
+                <div
+                  key={label}
+                  onClick={() => setActiveView(label)}
+                  style={{
+                    position: "relative",
+                    display: "flex", alignItems: "center", gap: 9,
+                    padding: "7px 10px", margin: "1px 0", borderRadius: 10,
+                    fontSize: 11.5, fontWeight: isActive ? 600 : 400,
+                    color: isActive ? T.green : ca(0.4),
+                    cursor: "pointer",
+                    transition: "all 0.15s ease",
+                  }}
+                >
+                  {isActive && (
+                    <div style={{
+                      position: "absolute", left: 0, top: "50%", transform: "translateY(-50%)",
+                      width: 3, height: 18, borderRadius: "0 3px 3px 0",
+                      background: T.green,
+                    }} />
+                  )}
+                  {icon} {label}
+                </div>
+              )
+            })}
+          </nav>
+
+          {/* Rodapé: badge plano + card próximo serviço */}
+          <div style={{ borderTop: `1px solid ${T.border}`, padding: "10px 10px 12px" }}>
+            {/* Badge de plano */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6,
+              padding: "5px 8px", borderRadius: 7, marginBottom: 8,
+            }}>
+              <CreditCard size={10} style={{ color: ca(0.28), flexShrink: 0 }} />
+              <span style={{ fontSize: 9, color: ca(0.28), flex: 1 }}>Plano Plus</span>
+              <span style={{
+                fontSize: 7.5, fontWeight: 600, padding: "1px 6px", borderRadius: 10,
+                background: ga(0.12), color: T.green,
+              }}>Plus</span>
+            </div>
+
+            {/* Card próximo serviço */}
+            <div style={{
+              background: ca(0.04), borderRadius: 10,
+              padding: "10px 10px 9px",
+            }}>
+              <div style={{ fontSize: 7, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", color: ca(0.2), marginBottom: 5 }}>
+                Próximo Serviço
+              </div>
+              <div style={{ fontSize: 10, fontWeight: 600, lineHeight: 1.3, marginBottom: 2, color: T.text }}>
+                Poda de arbustos
+              </div>
+              <div style={{ fontSize: 8, color: ca(0.3), marginBottom: 8 }}>
+                Seg, 23 Mar &middot; 08:00
+              </div>
+              <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 4 }}>
+                <div style={{ display: "flex", gap: 4, flexWrap: "wrap" }}>
+                  <span style={{
+                    fontSize: 7, fontWeight: 600, padding: "2px 7px", borderRadius: 10,
+                    background: ga(0.12), color: T.green,
+                  }}>Serviço</span>
+                  <span style={{
+                    fontSize: 7, fontWeight: 500, padding: "2px 7px", borderRadius: 10,
+                    background: ca(0.05), color: ca(0.35),
+                  }}>Marco R.</span>
+                </div>
+                <div style={{
+                  width: 16, height: 16, borderRadius: "50%",
+                  background: T.green,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  <ArrowRight size={8} style={{ color: onGreen }} />
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Main area */}
-        <div style={{ padding: "22px 20px", display: "flex", flexDirection: "column" }}>
-          {renderContent()}
+        {/* ── Main area com efeito "abraço" + painel notificações ── */}
+        <div style={{
+          background: sidebarBg,
+          padding: "10px 10px 10px 0",
+          transition: "background 0.4s ease",
+        }}>
+          <div style={{ display: "flex", height: "100%", gap: 0 }}>
+            {/* Conteúdo principal */}
+            <div style={{
+              flex: 1,
+              background: T.bg,
+              color: T.text,
+              borderRadius: 20,
+              overflow: "hidden",
+              padding: "20px 18px",
+              display: "flex", flexDirection: "column",
+              minWidth: 0,
+              transition: "background 0.4s ease, color 0.4s ease",
+            }}>
+              {renderContent()}
+            </div>
+
+            {/* Painel de notificações — anima largura como o real */}
+            <div style={{
+              width: notificationsOpen ? 200 : 0,
+              flexShrink: 0,
+              overflow: "hidden",
+              transition: "width 0.5s ease-in-out",
+            }}>
+              <div style={{
+                marginLeft: 8,
+                width: 192,
+                height: "100%",
+                background: T.bg,
+                color: T.text,
+                borderRadius: 20,
+                display: "flex", flexDirection: "column",
+                overflow: "hidden",
+                opacity: notificationsOpen ? 1 : 0,
+                transition: "opacity 0.3s ease 0.2s, background 0.4s ease",
+              }}>
+                {/* Header do painel */}
+                <div style={{
+                  padding: "12px 12px 10px",
+                  borderBottom: `1px solid ${T.border}`,
+                  display: "flex", alignItems: "center", justifyContent: "space-between",
+                  flexShrink: 0,
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <div style={{
+                      width: 22, height: 22, borderRadius: "50%",
+                      border: `1px solid ${T.border}`, background: T.bg3,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      <Bell size={10} style={{ color: T.muted }} />
+                    </div>
+                    <span style={{ fontSize: 10.5, fontWeight: 700, color: T.text }}>Notificações</span>
+                  </div>
+                  <div
+                    onClick={() => setNotificationsOpen(false)}
+                    style={{
+                      width: 18, height: 18, borderRadius: "50%",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: T.muted, cursor: "pointer",
+                    }}
+                  >
+                    <X size={10} />
+                  </div>
+                </div>
+
+                {/* Lista de notificações */}
+                <div style={{ flex: 1, overflow: "hidden", padding: "8px 10px" }}>
+                  {mockNotifications.map(n => (
+                    <div key={n.id} style={{
+                      display: "flex", alignItems: "flex-start", gap: 7,
+                      padding: "7px 6px",
+                      borderRadius: 8,
+                      background: n.unread ? ga(0.04) : "transparent",
+                      marginBottom: 2,
+                    }}>
+                      <span style={{ fontSize: 12, lineHeight: 1, marginTop: 1, flexShrink: 0 }}>{n.icon}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: 4, marginBottom: 1,
+                        }}>
+                          <span style={{
+                            fontSize: 8.5, fontWeight: 600, lineHeight: 1.2, color: T.text,
+                            whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                          }}>{n.title}</span>
+                          {n.unread && (
+                            <span style={{
+                              width: 5, height: 5, borderRadius: "50%",
+                              background: T.green, flexShrink: 0,
+                            }} />
+                          )}
+                        </div>
+                        <div style={{
+                          fontSize: 7.5, color: T.muted, lineHeight: 1.3,
+                          whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis",
+                        }}>{n.desc}</div>
+                        <div style={{ fontSize: 7, color: T.subtle, marginTop: 2 }}>{n.time}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>
