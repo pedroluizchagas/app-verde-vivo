@@ -157,6 +157,17 @@ const globalCSS = `
   .reveal.delay-3 { transition-delay: 0.24s; }
   .reveal.delay-4 { transition-delay: 0.32s; }
 
+  /* Dashboard rise — fade-in one-shot, 3D driven by scroll */
+  .dashboard-rise {
+    opacity: 0;
+    transform-origin: center bottom;
+    transition: opacity 0.8s cubic-bezier(0.22,0.68,0.35,1.0);
+    will-change: transform, opacity;
+  }
+  .dashboard-rise.visible {
+    opacity: 1;
+  }
+
   /* ── Marquee ── */
   @keyframes marquee {
     from { transform: translateX(0); }
@@ -2835,21 +2846,60 @@ function Hero() {
         </div>
 
         {/* Dashboard */}
-        <div style={{
-          animation: "dashboardRise 1.2s 0.6s cubic-bezier(0.22,0.68,0.35,1.0) both",
-          position: "relative",
-          willChange: "transform, opacity",
-        }}>
-          <div style={{
-            position: "absolute", bottom: -1, left: 0, right: 0,
-            height: 220,
-            background: `linear-gradient(to top, ${T.bg}, transparent)`,
-            zIndex: 2, pointerEvents: "none",
-          }} />
-          <DashboardMockup />
-        </div>
+        <DashboardRiseWrapper />
       </div>
     </section>
+  )
+}
+
+function DashboardRiseWrapper() {
+  const wrapRef = useRef<HTMLDivElement>(null)
+  const fadeRef = useReveal("0px 0px -40px 0px")
+
+  useEffect(() => {
+    const el = wrapRef.current
+    if (!el) return
+
+    const update = () => {
+      const rect = el.getBoundingClientRect()
+      const vh = window.innerHeight
+      // progress: 0 = element bottom at viewport bottom, 1 = element top at viewport center
+      const raw = 1 - (rect.top / vh)
+      const progress = Math.max(0, Math.min(1, raw))
+
+      const rotateX = 6 * (1 - progress)       // 6deg → 0deg
+      const translateY = 120 * (1 - progress)   // 120px → 0px
+      const scale = 0.96 + 0.04 * progress      // 0.96 → 1
+
+      el.style.transform = `perspective(1200px) rotateX(${rotateX}deg) translateY(${translateY}px) scale(${scale})`
+    }
+
+    update()
+    window.addEventListener("scroll", update, { passive: true })
+    window.addEventListener("resize", update, { passive: true })
+    return () => {
+      window.removeEventListener("scroll", update)
+      window.removeEventListener("resize", update)
+    }
+  }, [])
+
+  return (
+    <div
+      ref={(node) => {
+        (wrapRef as React.MutableRefObject<HTMLDivElement | null>).current = node;
+        (fadeRef as React.MutableRefObject<HTMLDivElement | null>).current = node
+      }}
+      className="dashboard-rise"
+      style={{ position: "relative" }}
+    >
+      <div style={{
+        position: "absolute", bottom: -1, left: 0, right: 0,
+        height: 220,
+        background: `linear-gradient(to top, ${T.bg}, transparent)`,
+        zIndex: 2, pointerEvents: "none",
+      }} />
+      <DashboardMockup />
+    </div>
   )
 }
 
