@@ -382,22 +382,510 @@ function Navbar() {
    HERO DASHBOARD MOCKUP
 ───────────────────────────────────────────── */
 function DashboardMockup() {
-  const barHeights = [28, 52, 38, 68, 44, 82, 56, 94, 62, 78, 42, 22]
+  const [activeView, setActiveView] = useState("Visão Geral")
 
   const sidebarItems = [
-    { icon: <Home size={14} />, label: "Visão Geral", active: true },
-    { icon: <Users size={14} />, label: "Clientes" },
-    { icon: <Calendar size={14} />, label: "Agenda" },
-    { icon: <ClipboardList size={14} />, label: "Ordens de Serviço" },
-    { icon: <FileText size={14} />, label: "Orçamentos" },
-    { icon: <NotebookText size={14} />, label: "Notas" },
+    { icon: <Home size={14} />, label: "Visão Geral", route: "" },
+    { icon: <Users size={14} />, label: "Clientes", route: "clients" },
+    { icon: <Calendar size={14} />, label: "Agenda", route: "schedule" },
+    { icon: <ClipboardList size={14} />, label: "Ordens de Serviço", route: "work-orders" },
+    { icon: <FileText size={14} />, label: "Orçamentos", route: "budgets" },
+    { icon: <NotebookText size={14} />, label: "Notas", route: "notes" },
+    { icon: <CheckSquare size={14} />, label: "Tarefas", route: "tasks" },
   ]
   const sidebarItems2 = [
-    { icon: <Wallet size={14} />, label: "Financeiro" },
-    { icon: <Package size={14} />, label: "Estoque" },
-    { icon: <Wrench size={14} />, label: "Manutenções" },
-    { icon: <Bot size={14} />, label: "Assistente Íris" },
+    { icon: <Wallet size={14} />, label: "Financeiro", route: "finance" },
+    { icon: <Package size={14} />, label: "Estoque", route: "stock" },
+    { icon: <Wrench size={14} />, label: "Manutenções", route: "maintenance" },
+    { icon: <Bot size={14} />, label: "Assistente Íris", route: "assistant" },
   ]
+
+  const allItems = [...sidebarItems, ...sidebarItems2]
+  const activeRoute = allItems.find(i => i.label === activeView)?.route || ""
+  const urlPath = activeRoute
+    ? `app.gestaogarden.com/dashboard/${activeRoute}`
+    : "app.gestaogarden.com/dashboard"
+
+  /* ── Helpers de mockup ── */
+  const KpiCard = ({ label, value, sub }: { label: string; value: string; sub?: string }) => (
+    <div style={{
+      background: T.bg3, border: `1px solid ${T.border}`,
+      borderRadius: 8, padding: "10px 11px",
+    }}>
+      <div style={{ fontSize: 8.5, textTransform: "uppercase", letterSpacing: "0.08em", color: T.subtle, marginBottom: 4 }}>{label}</div>
+      <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.4px" }}>{value}</div>
+      {sub && <div style={{ fontSize: 9, color: T.green, marginTop: 2 }}>{sub}</div>}
+    </div>
+  )
+
+  const PageHeader = ({ title, subtitle }: { title: string; subtitle: string }) => (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+      <div>
+        <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2 }}>{title}</div>
+        <div style={{ fontSize: 11, color: T.muted }}>{subtitle}</div>
+      </div>
+      <div style={{
+        width: 28, height: 28, borderRadius: "50%",
+        background: T.green, color: "#000",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        fontSize: 16, fontWeight: 700, lineHeight: 1,
+      }}>+</div>
+    </div>
+  )
+
+  const StatusBadge = ({ label, color }: { label: string; color: string }) => (
+    <span style={{
+      fontSize: 8, fontWeight: 600, padding: "2px 6px", borderRadius: 4,
+      background: color === "green" ? "rgba(26,255,94,0.12)" : color === "amber" ? "rgba(255,191,0,0.12)" : color === "blue" ? "rgba(59,130,246,0.12)" : color === "red" ? "rgba(239,68,68,0.12)" : "rgba(255,255,255,0.06)",
+      color: color === "green" ? "#4ade80" : color === "amber" ? "#fbbf24" : color === "blue" ? "#60a5fa" : color === "red" ? "#f87171" : T.muted,
+    }}>{label}</span>
+  )
+
+  const ListRow = ({ children }: { children: React.ReactNode }) => (
+    <div style={{
+      display: "flex", alignItems: "center", gap: 8,
+      padding: "7px 10px", borderRadius: 7,
+      background: "rgba(255,255,255,0.02)",
+      border: `1px solid ${T.border}`,
+      marginBottom: 4,
+    }}>{children}</div>
+  )
+
+  const AvatarCircle = ({ initials, size = 26 }: { initials: string; size?: number }) => (
+    <div style={{
+      width: size, height: size, borderRadius: "50%",
+      background: "rgba(26,255,94,0.1)", color: T.green,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      fontSize: size * 0.38, fontWeight: 700, flexShrink: 0,
+    }}>{initials}</div>
+  )
+
+  /* ── Conteúdo por view ── */
+  const renderContent = () => {
+    switch (activeView) {
+
+      case "Visão Geral": {
+        const barHeights = [28, 52, 38, 68, 44, 82, 56, 94, 62, 78, 42, 22]
+        return (
+          <>
+            <div style={{ marginBottom: 18 }}>
+              <div style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.5px", marginBottom: 3 }}>
+                Olá, bom dia 👋
+              </div>
+              <div style={{ fontSize: 12.5, color: T.muted }}>Visão geral do seu negócio.</div>
+            </div>
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
+              {[
+                { label: "Total Clientes", value: "48" },
+                { label: "Ativos", value: "31" },
+                { label: "Receita", value: "R$ 8.4k" },
+                { label: "Resultado", value: "R$ 5.1k" },
+              ].map(({ label, value }) => (
+                <div key={label} style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "12px 13px",
+                }}>
+                  <div style={{ fontSize: 9.5, textTransform: "uppercase", letterSpacing: "0.07em", color: T.subtle, marginBottom: 6 }}>{label}</div>
+                  <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.5px" }}>{value}</div>
+                  <div style={{ fontSize: 10, color: T.green, marginTop: 3 }}>↑ +12%</div>
+                </div>
+              ))}
+            </div>
+            <div style={{
+              background: T.bg3, border: `1px solid ${T.border}`,
+              borderRadius: 10, padding: "14px 14px 10px",
+            }}>
+              <div style={{ fontSize: 11.5, fontWeight: 700, marginBottom: 12, letterSpacing: "-0.2px" }}>
+                Desempenho Financeiro — 2026
+              </div>
+              <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90 }}>
+                {barHeights.map((h, i) => (
+                  <div key={i} style={{
+                    flex: 1, borderRadius: "3px 3px 0 0", minHeight: 4,
+                    height: `${h}%`,
+                    background: i % 2 === 0 ? "rgba(26,255,94,0.85)" : "rgba(255,255,255,0.09)",
+                  }} />
+                ))}
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 9, color: T.subtle }}>
+                {["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"].map(m => (
+                  <span key={m}>{m}</span>
+                ))}
+              </div>
+            </div>
+          </>
+        )
+      }
+
+      case "Clientes":
+        return (
+          <>
+            <PageHeader title="Clientes" subtitle="48 clientes cadastrados" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
+              <KpiCard label="Total" value="48" sub="clientes" />
+              <KpiCard label="Novos" value="5" sub="este mês" />
+              <KpiCard label="Ativos" value="31" sub="↑ +8%" />
+            </div>
+            {[
+              { initials: "MR", name: "Marco Rodrigues", phone: "(11) 98765-4321", tag: "Ativo" },
+              { initials: "JS", name: "Juliana Santos", phone: "(11) 91234-5678", tag: "Ativo" },
+              { initials: "AC", name: "André Costa", phone: "(21) 99876-5432", tag: "Novo" },
+              { initials: "PL", name: "Pedro Lima", phone: "(11) 97654-3210", tag: "Ativo" },
+              { initials: "CF", name: "Cláudia Ferreira", phone: "(11) 93456-7890", tag: "Inativo" },
+            ].map(c => (
+              <ListRow key={c.initials}>
+                <AvatarCircle initials={c.initials} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
+                  <div style={{ fontSize: 9.5, color: T.muted }}>{c.phone}</div>
+                </div>
+                <StatusBadge label={c.tag} color={c.tag === "Ativo" ? "green" : c.tag === "Novo" ? "blue" : "muted"} />
+              </ListRow>
+            ))}
+          </>
+        )
+
+      case "Agenda":
+        return (
+          <>
+            <PageHeader title="Agenda" subtitle="Próximos agendamentos" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
+              <KpiCard label="Hoje" value="3" sub="agendamentos" />
+              <KpiCard label="Semana" value="8" sub="próximos" />
+              <KpiCard label="Concluídos" value="22" sub="este mês" />
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Hoje</div>
+            {[
+              { time: "08:00", title: "Poda de arbustos", client: "Marco Rodrigues", status: "scheduled" },
+              { time: "10:30", title: "Manutenção jardim", client: "Juliana Santos", status: "in_progress" },
+              { time: "14:00", title: "Plantio de mudas", client: "André Costa", status: "scheduled" },
+            ].map((a, i) => (
+              <ListRow key={i}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: T.green, width: 36, flexShrink: 0 }}>{a.time}</div>
+                <div style={{
+                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                  background: a.status === "in_progress" ? "#fbbf24" : "#3b82f6",
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
+                  <div style={{ fontSize: 9.5, color: T.muted }}>{a.client}</div>
+                </div>
+              </ListRow>
+            ))}
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, margin: "10px 0 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Amanhã</div>
+            {[
+              { time: "09:00", title: "Irrigação automática", client: "Pedro Lima" },
+              { time: "15:00", title: "Limpeza de terreno", client: "Cláudia Ferreira" },
+            ].map((a, i) => (
+              <ListRow key={i}>
+                <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, width: 36, flexShrink: 0 }}>{a.time}</div>
+                <div style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: "#3b82f6" }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600 }}>{a.title}</div>
+                  <div style={{ fontSize: 9.5, color: T.muted }}>{a.client}</div>
+                </div>
+              </ListRow>
+            ))}
+          </>
+        )
+
+      case "Ordens de Serviço":
+        return (
+          <>
+            <PageHeader title="Ordens de Serviço" subtitle="12 OS cadastradas" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 14 }}>
+              <KpiCard label="Total" value="12" />
+              <KpiCard label="Em aberto" value="4" />
+              <KpiCard label="Concluídas" value="7" />
+              <KpiCard label="Faturado" value="R$ 14.2K" />
+            </div>
+            {[
+              { id: "OS-012", title: "Paisagismo completo", client: "Marco Rodrigues", status: "Emitida", statusColor: "blue", amount: "R$ 3.200" },
+              { id: "OS-011", title: "Instalação de irrigação", client: "Juliana Santos", status: "Rascunho", statusColor: "amber", amount: "R$ 1.850" },
+              { id: "OS-010", title: "Poda de árvores", client: "Pedro Lima", status: "Concluída", statusColor: "green", amount: "R$ 980" },
+              { id: "OS-009", title: "Replantio canteiro", client: "André Costa", status: "Concluída", statusColor: "green", amount: "R$ 650" },
+            ].map(o => (
+              <ListRow key={o.id}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
+                    <span style={{ fontSize: 9, color: T.subtle, fontWeight: 600 }}>{o.id}</span>
+                    <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.title}</span>
+                  </div>
+                  <div style={{ fontSize: 9.5, color: T.muted }}>{o.client}</div>
+                </div>
+                <StatusBadge label={o.status} color={o.statusColor} />
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.text, flexShrink: 0 }}>{o.amount}</div>
+              </ListRow>
+            ))}
+          </>
+        )
+
+      case "Orçamentos":
+        return (
+          <>
+            <PageHeader title="Orçamentos" subtitle="15 orçamentos" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 14 }}>
+              <KpiCard label="Total" value="15" />
+              <KpiCard label="Pendentes" value="6" />
+              <KpiCard label="Aprovados" value="8" />
+              <KpiCard label="Valor" value="R$ 22.5K" />
+            </div>
+            {[
+              { title: "Jardim residencial completo", client: "Marco Rodrigues", status: "Aprovado", statusColor: "green", amount: "R$ 4.500" },
+              { title: "Manutenção mensal condomínio", client: "Cond. Jardins", status: "Pendente", statusColor: "amber", amount: "R$ 2.800" },
+              { title: "Paisagismo área externa", client: "Juliana Santos", status: "Pendente", statusColor: "amber", amount: "R$ 6.200" },
+              { title: "Replantio e adubação", client: "Pedro Lima", status: "Aprovado", statusColor: "green", amount: "R$ 1.350" },
+            ].map((b, i) => (
+              <ListRow key={i}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 2 }}>{b.title}</div>
+                  <div style={{ fontSize: 9.5, color: T.muted }}>{b.client}</div>
+                </div>
+                <StatusBadge label={b.status} color={b.statusColor} />
+                <div style={{ fontSize: 11, fontWeight: 700, flexShrink: 0 }}>{b.amount}</div>
+              </ListRow>
+            ))}
+          </>
+        )
+
+      case "Notas":
+        return (
+          <>
+            <PageHeader title="Notas" subtitle="9 notas" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
+              <KpiCard label="Total" value="9" sub="notas" />
+              <KpiCard label="Alta prioridade" value="3" />
+              <KpiCard label="Com tags" value="6" />
+            </div>
+            {[
+              { title: "Cuidados com orquídeas", preview: "Regar 2x por semana, luz indireta...", importance: "high", tag: "Plantas" },
+              { title: "Fornecedor de mudas", preview: "Contato: Flora Garden - (11) 3456...", importance: "medium", tag: "Fornecedores" },
+              { title: "Receita de adubo orgânico", preview: "Misturar húmus com casca de ovo...", importance: "low", tag: "Técnicas" },
+              { title: "Pragas em roseiras", preview: "Aplicar neem a cada 15 dias...", importance: "high", tag: "Pragas" },
+            ].map((n, i) => (
+              <ListRow key={i}>
+                <div style={{
+                  width: 4, height: 28, borderRadius: 2, flexShrink: 0,
+                  background: n.importance === "high" ? "#f87171" : n.importance === "medium" ? "#fbbf24" : "rgba(255,255,255,0.1)",
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 2 }}>{n.title}</div>
+                  <div style={{ fontSize: 9.5, color: T.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{n.preview}</div>
+                </div>
+                <StatusBadge label={n.tag} color="muted" />
+              </ListRow>
+            ))}
+          </>
+        )
+
+      case "Tarefas":
+        return (
+          <>
+            <PageHeader title="Tarefas" subtitle="14 tarefas" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 14 }}>
+              <KpiCard label="Abertas" value="5" />
+              <KpiCard label="Em andamento" value="3" />
+              <KpiCard label="Concluídas" value="4" />
+              <KpiCard label="Atrasadas" value="2" />
+            </div>
+            {[
+              { title: "Comprar sementes de grama", done: false, due: "Hoje", priority: "high" },
+              { title: "Orçar sistema de irrigação", done: false, due: "Amanhã", priority: "medium" },
+              { title: "Entregar relatório mensal", done: false, due: "25/03", priority: "high" },
+              { title: "Revisar equipamentos", done: true, due: "20/03", priority: "low" },
+              { title: "Agendar visita técnica", done: true, due: "18/03", priority: "medium" },
+            ].map((t, i) => (
+              <ListRow key={i}>
+                <div style={{
+                  width: 14, height: 14, borderRadius: 3, flexShrink: 0,
+                  border: t.done ? "none" : `1.5px solid ${T.subtle}`,
+                  background: t.done ? T.green : "transparent",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                }}>
+                  {t.done && <span style={{ fontSize: 9, color: "#000", fontWeight: 800 }}>✓</span>}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{
+                    fontSize: 11, fontWeight: 600,
+                    textDecoration: t.done ? "line-through" : "none",
+                    color: t.done ? T.muted : T.text,
+                  }}>{t.title}</div>
+                </div>
+                <div style={{ fontSize: 9, color: t.due === "Hoje" ? "#f87171" : T.muted, flexShrink: 0 }}>{t.due}</div>
+              </ListRow>
+            ))}
+          </>
+        )
+
+      case "Financeiro":
+        return (
+          <>
+            <PageHeader title="Financeiro" subtitle="março de 2026" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 14 }}>
+              <KpiCard label="Receita" value="R$ 8.4K" sub="↑ +15%" />
+              <KpiCard label="Despesas" value="R$ 3.3K" />
+              <KpiCard label="Resultado" value="R$ 5.1K" sub="↑ +22%" />
+              <KpiCard label="Saldo" value="R$ 24.8K" />
+            </div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Transações recentes</div>
+            {[
+              { desc: "Serviço de paisagismo", type: "income", amount: "+ R$ 3.200", date: "22/03" },
+              { desc: "Compra de fertilizantes", type: "expense", amount: "- R$ 280", date: "21/03" },
+              { desc: "Manutenção mensal", type: "income", amount: "+ R$ 1.500", date: "20/03" },
+              { desc: "Combustível", type: "expense", amount: "- R$ 350", date: "19/03" },
+              { desc: "Poda e limpeza", type: "income", amount: "+ R$ 850", date: "18/03" },
+            ].map((t, i) => (
+              <ListRow key={i}>
+                <div style={{
+                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
+                  background: t.type === "income" ? "#4ade80" : "#f87171",
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600 }}>{t.desc}</div>
+                  <div style={{ fontSize: 9.5, color: T.muted }}>{t.date}</div>
+                </div>
+                <div style={{
+                  fontSize: 11, fontWeight: 700, flexShrink: 0,
+                  color: t.type === "income" ? "#4ade80" : "#f87171",
+                }}>{t.amount}</div>
+              </ListRow>
+            ))}
+          </>
+        )
+
+      case "Estoque":
+        return (
+          <>
+            <PageHeader title="Estoque" subtitle="Produtos e movimentações" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
+              <KpiCard label="Produtos" value="18" sub="cadastrados" />
+              <KpiCard label="Estoque baixo" value="3" sub="atenção" />
+              <KpiCard label="Última compra" value="R$ 245" />
+            </div>
+            {[
+              { name: "Adubo NPK 10-10-10", unit: "kg", qty: 45, status: "ok" },
+              { name: "Semente grama esmeralda", unit: "kg", qty: 3, status: "low" },
+              { name: "Substrato vegetal", unit: "L", qty: 120, status: "ok" },
+              { name: "Defensivo orgânico Neem", unit: "L", qty: 2, status: "low" },
+              { name: "Muda de primavera", unit: "un", qty: 30, status: "ok" },
+            ].map((p, i) => (
+              <ListRow key={i}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                  <div style={{ fontSize: 9.5, color: T.muted }}>{p.unit}</div>
+                </div>
+                <div style={{ fontSize: 11, fontWeight: 700, flexShrink: 0, marginRight: 4 }}>{p.qty}</div>
+                <StatusBadge label={p.status === "low" ? "Baixo" : "OK"} color={p.status === "low" ? "red" : "green"} />
+              </ListRow>
+            ))}
+          </>
+        )
+
+      case "Manutenções":
+        return (
+          <>
+            <PageHeader title="Manutenções" subtitle="8 planos cadastrados" />
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
+              <KpiCard label="Total" value="8" sub="planos" />
+              <KpiCard label="Ativos" value="6" sub="em execução" />
+              <KpiCard label="Alertas" value="2" sub="atrasados" />
+            </div>
+            {[
+              { title: "Manutenção jardim frontal", client: "Marco Rodrigues", status: "Ativo", statusColor: "green", freq: "Mensal" },
+              { title: "Poda trimestral", client: "Juliana Santos", status: "Ativo", statusColor: "green", freq: "Trimestral" },
+              { title: "Irrigação e adubação", client: "Cond. Jardins", status: "Alerta", statusColor: "amber", freq: "Mensal" },
+              { title: "Controle de pragas", client: "Pedro Lima", status: "Pausado", statusColor: "muted", freq: "Bimestral" },
+            ].map((m, i) => (
+              <ListRow key={i}>
+                <div style={{
+                  width: 4, height: 28, borderRadius: 2, flexShrink: 0,
+                  background: m.statusColor === "green" ? "#4ade80" : m.statusColor === "amber" ? "#fbbf24" : "rgba(255,255,255,0.1)",
+                }} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 2 }}>{m.title}</div>
+                  <div style={{ fontSize: 9.5, color: T.muted }}>{m.client} · {m.freq}</div>
+                </div>
+                <StatusBadge label={m.status} color={m.statusColor} />
+              </ListRow>
+            ))}
+          </>
+        )
+
+      case "Assistente Íris":
+        return (
+          <>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, paddingBottom: 12, borderBottom: `1px solid ${T.border}` }}>
+              <div style={{
+                width: 30, height: 30, borderRadius: "50%",
+                background: "rgba(26,255,94,0.1)",
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Bot size={14} color={T.green} />
+              </div>
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 700 }}>Íris</div>
+                <div style={{ fontSize: 9.5, color: T.muted }}>Assistente de jardinagem com IA</div>
+              </div>
+              <div style={{ marginLeft: "auto" }}>
+                <StatusBadge label="Online" color="green" />
+              </div>
+            </div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
+              <div style={{ display: "flex", gap: 8, maxWidth: "85%" }}>
+                <AvatarCircle initials="I" size={22} />
+                <div style={{
+                  background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
+                  borderRadius: "2px 10px 10px 10px", padding: "8px 10px",
+                  fontSize: 11, lineHeight: 1.5, color: T.muted,
+                }}>
+                  Olá! Sou a Íris, sua assistente de jardinagem. Como posso ajudar hoje?
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, maxWidth: "75%", alignSelf: "flex-end" }}>
+                <div style={{
+                  background: "rgba(26,255,94,0.1)", border: "1px solid rgba(26,255,94,0.15)",
+                  borderRadius: "10px 2px 10px 10px", padding: "8px 10px",
+                  fontSize: 11, lineHeight: 1.5, color: T.text,
+                }}>
+                  Agendar poda para o Marco amanhã às 9h
+                </div>
+              </div>
+              <div style={{ display: "flex", gap: 8, maxWidth: "85%" }}>
+                <AvatarCircle initials="I" size={22} />
+                <div style={{
+                  background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
+                  borderRadius: "2px 10px 10px 10px", padding: "8px 10px",
+                  fontSize: 11, lineHeight: 1.5, color: T.muted,
+                }}>
+                  Poda agendada para Marco Rodrigues amanhã (23/03) às 09:00. Deseja adicionar alguma observação?
+                </div>
+              </div>
+            </div>
+            <div style={{
+              marginTop: "auto", paddingTop: 10,
+              display: "flex", gap: 6, alignItems: "center",
+            }}>
+              <div style={{
+                flex: 1, background: "rgba(255,255,255,0.04)",
+                border: `1px solid ${T.border}`, borderRadius: 8,
+                padding: "8px 10px", fontSize: 11, color: T.subtle,
+              }}>
+                Digite ou fale com a Íris...
+              </div>
+              <div style={{
+                width: 28, height: 28, borderRadius: 8,
+                background: T.green, color: "#000",
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 13,
+              }}>↑</div>
+            </div>
+          </>
+        )
+
+      default:
+        return null
+    }
+  }
 
   return (
     <div style={{
@@ -421,8 +909,9 @@ function DashboardMockup() {
           flex: 1, background: "rgba(255,255,255,0.05)", borderRadius: 6,
           padding: "5px 12px", fontSize: 11.5, color: T.muted,
           textAlign: "center", margin: "0 16px",
+          transition: "all 0.2s ease",
         }}>
-          app.gestaogarden.com/dashboard
+          {urlPath}
         </div>
       </div>
 
@@ -448,15 +937,20 @@ function DashboardMockup() {
           <div style={{ padding: "10px 8px 4px", fontSize: 9.5, fontWeight: 600, letterSpacing: "0.08em", textTransform: "uppercase", color: T.subtle }}>
             Principal
           </div>
-          {sidebarItems.map(({ icon, label, active }) => (
-            <div key={label} style={{
-              display: "flex", alignItems: "center", gap: 9,
-              padding: "8px 12px", margin: "1px 6px", borderRadius: 7,
-              fontSize: 12, fontWeight: 500,
-              background: active ? "rgba(26,255,94,0.1)" : "transparent",
-              color: active ? T.green : T.muted,
-              cursor: "pointer",
-            }}>
+          {sidebarItems.map(({ icon, label }) => (
+            <div
+              key={label}
+              onClick={() => setActiveView(label)}
+              style={{
+                display: "flex", alignItems: "center", gap: 9,
+                padding: "8px 12px", margin: "1px 6px", borderRadius: 7,
+                fontSize: 12, fontWeight: 500,
+                background: activeView === label ? "rgba(26,255,94,0.1)" : "transparent",
+                color: activeView === label ? T.green : T.muted,
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
               {icon} {label}
             </div>
           ))}
@@ -465,73 +959,27 @@ function DashboardMockup() {
             Negócios
           </div>
           {sidebarItems2.map(({ icon, label }) => (
-            <div key={label} style={{
-              display: "flex", alignItems: "center", gap: 9,
-              padding: "8px 12px", margin: "1px 6px", borderRadius: 7,
-              fontSize: 12, fontWeight: 500, color: T.muted, cursor: "pointer",
-            }}>
+            <div
+              key={label}
+              onClick={() => setActiveView(label)}
+              style={{
+                display: "flex", alignItems: "center", gap: 9,
+                padding: "8px 12px", margin: "1px 6px", borderRadius: 7,
+                fontSize: 12, fontWeight: 500,
+                background: activeView === label ? "rgba(26,255,94,0.1)" : "transparent",
+                color: activeView === label ? T.green : T.muted,
+                cursor: "pointer",
+                transition: "all 0.15s ease",
+              }}
+            >
               {icon} {label}
             </div>
           ))}
         </div>
 
         {/* Main area */}
-        <div style={{ padding: "22px 20px" }}>
-          <div style={{ marginBottom: 18 }}>
-            <div style={{ fontSize: 19, fontWeight: 800, letterSpacing: "-0.5px", marginBottom: 3 }}>
-              Olá, bom dia 👋
-            </div>
-            <div style={{ fontSize: 12.5, color: T.muted }}>Visão geral do seu negócio.</div>
-          </div>
-
-          {/* Stats */}
-          <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 10, marginBottom: 16 }}>
-            {[
-              { label: "Total Clientes", value: "48" },
-              { label: "Ativos", value: "31" },
-              { label: "Receita", value: "R$ 8.4k" },
-              { label: "Resultado", value: "R$ 5.1k" },
-            ].map(({ label, value }) => (
-              <div key={label} style={{
-                background: T.bg3, border: `1px solid ${T.border}`,
-                borderRadius: 10, padding: "12px 13px",
-              }}>
-                <div style={{ fontSize: 9.5, textTransform: "uppercase", letterSpacing: "0.07em", color: T.subtle, marginBottom: 6 }}>{label}</div>
-                <div style={{ fontSize: 18, fontWeight: 800, letterSpacing: "-0.5px" }}>{value}</div>
-                <div style={{ fontSize: 10, color: T.green, marginTop: 3 }}>↑ +12%</div>
-              </div>
-            ))}
-          </div>
-
-          {/* Chart */}
-          <div style={{
-            background: T.bg3, border: `1px solid ${T.border}`,
-            borderRadius: 10, padding: "14px 14px 10px",
-          }}>
-            <div style={{ fontSize: 11.5, fontWeight: 700, marginBottom: 12, letterSpacing: "-0.2px" }}>
-              Desempenho Financeiro — 2026
-            </div>
-            <div style={{ display: "flex", alignItems: "flex-end", gap: 6, height: 90 }}>
-              {barHeights.map((h, i) => (
-                <div
-                  key={i}
-                  style={{
-                    flex: 1, borderRadius: "3px 3px 0 0",
-                    minHeight: 4,
-                    height: `${h}%`,
-                    background: i % 2 === 0
-                      ? `rgba(26,255,94,0.85)`
-                      : "rgba(255,255,255,0.09)",
-                  }}
-                />
-              ))}
-            </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginTop: 8, fontSize: 9, color: T.subtle }}>
-              {["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"].map(m => (
-                <span key={m}>{m}</span>
-              ))}
-            </div>
-          </div>
+        <div style={{ padding: "22px 20px", display: "flex", flexDirection: "column" }}>
+          {renderContent()}
         </div>
       </div>
     </div>
