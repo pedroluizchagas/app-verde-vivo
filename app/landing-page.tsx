@@ -47,6 +47,26 @@ import {
   Mic,
   Cloud,
   Map,
+  Phone,
+  Mail,
+  MapPin,
+  UserPlus,
+  Clock3,
+  CalendarDays,
+  User,
+  Loader2,
+  ArrowUpRight,
+  ArrowDownRight,
+  Banknote,
+  AlertCircle,
+  AlertTriangle,
+  ArrowUpCircle,
+  ArrowDownCircle,
+  Droplets,
+  Send,
+  LogOut,
+  UserCircle,
+  Settings,
 } from "lucide-react"
 
 /* ─────────────────────────────────────────────
@@ -582,11 +602,18 @@ function DashboardMockup() {
                 >
                   <Bell size={11} style={{ color: T.muted }} />
                 </div>
-                <div style={{
-                  display: "flex", alignItems: "center", gap: 6,
-                  background: T.bg3, border: `1px solid ${T.border}`,
-                  borderRadius: 20, padding: "3px 10px 3px 3px",
-                }}>
+                <div
+                  onClick={() => setActiveView("Perfil")}
+                  style={{
+                    display: "flex", alignItems: "center", gap: 6,
+                    background: T.bg3, border: `1px solid ${T.border}`,
+                    borderRadius: 20, padding: "3px 10px 3px 3px",
+                    cursor: "pointer",
+                    transition: "border-color 0.2s ease",
+                  }}
+                  onMouseEnter={e => (e.currentTarget.style.borderColor = T.borderHover)}
+                  onMouseLeave={e => (e.currentTarget.style.borderColor = T.border)}
+                >
                   <div style={{
                     width: 22, height: 22, borderRadius: "50%",
                     background: ga(0.15), color: T.green,
@@ -829,108 +856,559 @@ function DashboardMockup() {
         )
       }
 
-      case "Clientes":
-        return (
-          <>
-            <PageHeader title="Clientes" subtitle="48 clientes cadastrados" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
-              <KpiCard label="Total" value="48" sub="clientes" />
-              <KpiCard label="Novos" value="5" sub="este mês" />
-              <KpiCard label="Ativos" value="31" sub="↑ +8%" />
-            </div>
-            {[
-              { initials: "MR", name: "Marco Rodrigues", phone: "(11) 98765-4321", tag: "Ativo" },
-              { initials: "JS", name: "Juliana Santos", phone: "(11) 91234-5678", tag: "Ativo" },
-              { initials: "AC", name: "André Costa", phone: "(21) 99876-5432", tag: "Novo" },
-              { initials: "PL", name: "Pedro Lima", phone: "(11) 97654-3210", tag: "Ativo" },
-              { initials: "CF", name: "Cláudia Ferreira", phone: "(11) 93456-7890", tag: "Inativo" },
-            ].map(c => (
-              <ListRow key={c.initials}>
-                <AvatarCircle initials={c.initials} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11.5, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{c.name}</div>
-                  <div style={{ fontSize: 9.5, color: T.muted }}>{c.phone}</div>
-                </div>
-                <StatusBadge label={c.tag} color={c.tag === "Ativo" ? "green" : c.tag === "Novo" ? "blue" : "muted"} />
-              </ListRow>
-            ))}
-          </>
-        )
+      case "Clientes": {
+        /* Paleta de cores dos avatares (6 cores rotativas como no real) */
+        const avatarColors = [
+          { bg: "rgba(16,185,129,0.15)", color: mockLightMode ? "#059669" : "#34d399" },
+          { bg: "rgba(59,130,246,0.15)", color: mockLightMode ? "#2563eb" : "#60a5fa" },
+          { bg: "rgba(139,92,246,0.15)", color: mockLightMode ? "#7c3aed" : "#a78bfa" },
+          { bg: "rgba(245,158,11,0.15)", color: mockLightMode ? "#d97706" : "#fbbf24" },
+          { bg: "rgba(244,63,94,0.15)", color: mockLightMode ? "#e11d48" : "#fb7185" },
+          { bg: "rgba(20,184,166,0.15)", color: mockLightMode ? "#0d9488" : "#2dd4bf" },
+        ]
+        const getAvatarStyle = (name: string) => avatarColors[name.charCodeAt(0) % 6]
 
-      case "Agenda":
-        return (
-          <>
-            <PageHeader title="Agenda" subtitle="Próximos agendamentos" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
-              <KpiCard label="Hoje" value="3" sub="agendamentos" />
-              <KpiCard label="Semana" value="8" sub="próximos" />
-              <KpiCard label="Concluídos" value="22" sub="este mês" />
-            </div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Hoje</div>
-            {[
-              { time: "08:00", title: "Poda de arbustos", client: "Marco Rodrigues", status: "scheduled" },
-              { time: "10:30", title: "Manutenção jardim", client: "Juliana Santos", status: "in_progress" },
-              { time: "14:00", title: "Plantio de mudas", client: "André Costa", status: "scheduled" },
-            ].map((a, i) => (
-              <ListRow key={i}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: T.green, width: 36, flexShrink: 0 }}>{a.time}</div>
-                <div style={{
-                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                  background: a.status === "in_progress" ? "#fbbf24" : "#3b82f6",
-                }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{a.title}</div>
-                  <div style={{ fontSize: 9.5, color: T.muted }}>{a.client}</div>
-                </div>
-              </ListRow>
-            ))}
-            <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, margin: "10px 0 6px", textTransform: "uppercase", letterSpacing: "0.06em" }}>Amanhã</div>
-            {[
-              { time: "09:00", title: "Irrigação automática", client: "Pedro Lima" },
-              { time: "15:00", title: "Limpeza de terreno", client: "Cláudia Ferreira" },
-            ].map((a, i) => (
-              <ListRow key={i}>
-                <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, width: 36, flexShrink: 0 }}>{a.time}</div>
-                <div style={{ width: 6, height: 6, borderRadius: "50%", flexShrink: 0, background: "#3b82f6" }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600 }}>{a.title}</div>
-                  <div style={{ fontSize: 9.5, color: T.muted }}>{a.client}</div>
-                </div>
-              </ListRow>
-            ))}
-          </>
-        )
+        /* Dados mock dos clientes agrupados alfabeticamente */
+        const clientGroups = [
+          { letter: "A", clients: [
+            { name: "André Costa", phone: "(21) 99876-5432", email: "andre@email.com", address: "R. das Flores, 45" },
+          ]},
+          { letter: "C", clients: [
+            { name: "Cláudia Ferreira", phone: "(11) 93456-7890", email: null, address: "Av. Paulista, 1200" },
+            { name: "Carlos Mendes", phone: "(11) 94567-8901", email: "carlos.m@email.com", address: null },
+          ]},
+          { letter: "J", clients: [
+            { name: "Juliana Santos", phone: "(11) 91234-5678", email: "ju.santos@email.com", address: "R. Augusta, 320" },
+          ]},
+          { letter: "M", clients: [
+            { name: "Marco Rodrigues", phone: "(11) 98765-4321", email: "marco.r@email.com", address: "R. Oscar Freire, 89" },
+            { name: "Marina Oliveira", phone: "(11) 92345-6789", email: "marina@email.com", address: null },
+          ]},
+          { letter: "P", clients: [
+            { name: "Pedro Lima", phone: "(11) 97654-3210", email: null, address: "R. Consolação, 500" },
+          ]},
+        ]
 
-      case "Ordens de Serviço":
+        const getInitials = (name: string) => name.split(" ").slice(0, 2).map(w => w.charAt(0).toUpperCase()).join("")
+
         return (
           <>
-            <PageHeader title="Ordens de Serviço" subtitle="12 OS cadastradas" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 14 }}>
-              <KpiCard label="Total" value="12" />
-              <KpiCard label="Em aberto" value="4" />
-              <KpiCard label="Concluídas" value="7" />
-              <KpiCard label="Faturado" value="R$ 14.2K" />
+            {/* Header: título + botão circular add */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2, color: T.text }}>Clientes</div>
+                <div style={{ fontSize: 11, color: T.muted }}>48 clientes cadastrados</div>
+              </div>
+              <div style={{
+                width: 30, height: 30, borderRadius: "50%",
+                background: T.green, color: onGreen,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 17, fontWeight: 600, lineHeight: 1,
+              }}>+</div>
             </div>
-            {[
-              { id: "OS-012", title: "Paisagismo completo", client: "Marco Rodrigues", status: "Emitida", statusColor: "blue", amount: "R$ 3.200" },
-              { id: "OS-011", title: "Instalação de irrigação", client: "Juliana Santos", status: "Rascunho", statusColor: "amber", amount: "R$ 1.850" },
-              { id: "OS-010", title: "Poda de árvores", client: "Pedro Lima", status: "Concluída", statusColor: "green", amount: "R$ 980" },
-              { id: "OS-009", title: "Replantio canteiro", client: "André Costa", status: "Concluída", statusColor: "green", amount: "R$ 650" },
-            ].map(o => (
-              <ListRow key={o.id}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 2 }}>
-                    <span style={{ fontSize: 9, color: T.subtle, fontWeight: 600 }}>{o.id}</span>
-                    <span style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.title}</span>
+
+            {/* KPI Strip — 3 cards com ícones */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+              {[
+                { label: "Total", value: "48", sub: "clientes", icon: <Users size={10} /> },
+                { label: "Novos", value: "5", sub: "este mês", icon: <UserCheck size={10} /> },
+                { label: "Ativos", value: "31", sub: "últimos 30 dias", icon: <UserCheck size={10} /> },
+              ].map(k => (
+                <div key={k.label} style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "10px 11px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div style={{ fontSize: 7.5, textTransform: "uppercase", letterSpacing: "0.08em", color: T.subtle, fontWeight: 500 }}>{k.label}</div>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: "50%", background: ca(0.06),
+                      display: "flex", alignItems: "center", justifyContent: "center", color: T.muted,
+                    }}>{k.icon}</div>
                   </div>
-                  <div style={{ fontSize: 9.5, color: T.muted }}>{o.client}</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.4px", color: T.text }}>{k.value}</div>
+                  <div style={{ fontSize: 8, color: T.muted, marginTop: 1 }}>{k.sub}</div>
                 </div>
-                <StatusBadge label={o.status} color={o.statusColor} />
-                <div style={{ fontSize: 11, fontWeight: 700, color: T.text, flexShrink: 0 }}>{o.amount}</div>
-              </ListRow>
-            ))}
+              ))}
+            </div>
+
+            {/* Barra de busca */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 6,
+              background: T.bg3, border: `1px solid ${T.border}`,
+              borderRadius: 10, padding: "8px 10px", marginBottom: 14,
+            }}>
+              <Search size={11} style={{ color: T.muted, flexShrink: 0 }} />
+              <span style={{ fontSize: 9.5, color: T.subtle }}>Buscar por nome, telefone ou endereço...</span>
+            </div>
+
+            {/* Lista agrupada alfabeticamente */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+              {clientGroups.map(group => (
+                <div key={group.letter}>
+                  {/* Header do grupo: letra + linha + contagem */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                    <span style={{ fontSize: 8.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: T.muted, flexShrink: 0 }}>{group.letter}</span>
+                    <div style={{ flex: 1, height: 1, background: T.border }} />
+                    <span style={{ fontSize: 7.5, color: T.muted, flexShrink: 0 }}>{group.clients.length}</span>
+                  </div>
+                  {/* Grid de cards 2 colunas */}
+                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 6 }}>
+                    {group.clients.map(c => {
+                      const avStyle = getAvatarStyle(c.name)
+                      return (
+                        <div key={c.name} style={{
+                          background: T.bg3, border: `1px solid ${T.border}`,
+                          borderRadius: 10, padding: "10px 10px",
+                          display: "flex", alignItems: "center", gap: 8,
+                        }}>
+                          {/* Avatar colorido */}
+                          <div style={{
+                            width: 28, height: 28, borderRadius: "50%", flexShrink: 0,
+                            background: avStyle.bg, color: avStyle.color,
+                            display: "flex", alignItems: "center", justifyContent: "center",
+                            fontSize: 9, fontWeight: 700,
+                          }}>{getInitials(c.name)}</div>
+                          {/* Info */}
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{
+                              fontSize: 10, fontWeight: 600, color: T.text, lineHeight: 1.2,
+                              whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 3,
+                            }}>{c.name}</div>
+                            <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "2px 8px" }}>
+                              <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                                <Phone size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                                <span style={{ fontSize: 7.5, color: T.muted }}>{c.phone}</span>
+                              </div>
+                              {c.email && (
+                                <div style={{ display: "flex", alignItems: "center", gap: 3, minWidth: 0 }}>
+                                  <Mail size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                                  <span style={{ fontSize: 7.5, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.email}</span>
+                                </div>
+                              )}
+                            </div>
+                            {c.address && (
+                              <div style={{ display: "flex", alignItems: "center", gap: 3, marginTop: 1 }}>
+                                <MapPin size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                                <span style={{ fontSize: 7.5, color: T.muted, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{c.address}</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))}
+            </div>
           </>
         )
+      }
+
+      case "Agenda": {
+        /* Cores de status */
+        const statusColors: Record<string, { bg: string; text: string; border: string; dot: string }> = {
+          scheduled:   { bg: "rgba(59,130,246,0.10)", text: mockLightMode ? "#2563eb" : "#60a5fa", border: "#3b82f6", dot: "#3b82f6" },
+          in_progress: { bg: "rgba(245,158,11,0.10)", text: mockLightMode ? "#d97706" : "#fbbf24", border: "#f59e0b", dot: "#f59e0b" },
+          completed:   { bg: "rgba(16,185,129,0.10)", text: mockLightMode ? "#059669" : "#34d399", border: "#10b981", dot: "#10b981" },
+        }
+        const statusLabels: Record<string, string> = { scheduled: "Agendado", in_progress: "Em andamento", completed: "Concluído" }
+        const typeLabelsAg: Record<string, string> = { service: "Serviço", technical_visit: "Visita técnica", meeting: "Reunião" }
+
+        /* Dados mock */
+        const todayAppts = [
+          { day: 22, month: "Mar", time: "08:00 – 10:00", title: "Poda de arbustos", type: "service", client: "Marco Rodrigues", address: "R. Oscar Freire, 89", status: "completed" },
+          { day: 22, month: "Mar", time: "10:30 – 12:00", title: "Manutenção jardim", type: "service", client: "Juliana Santos", address: "R. Augusta, 320", status: "in_progress" },
+          { day: 22, month: "Mar", time: "14:00 – 16:00", title: "Plantio de mudas", type: "service", client: "André Costa", address: "R. das Flores, 45", status: "scheduled" },
+        ]
+        const tomorrowAppts = [
+          { day: 23, month: "Mar", time: "09:00 – 11:00", title: "Irrigação automática", type: "technical_visit", client: "Pedro Lima", address: "R. Consolação, 500", status: "scheduled" },
+          { day: 23, month: "Mar", time: "15:00 – 17:00", title: "Limpeza de terreno", type: "service", client: "Cláudia Ferreira", address: "Av. Paulista, 1200", status: "scheduled" },
+        ]
+
+        /* Mini calendário — dias do mês de março 2026 */
+        const calDays = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"]
+        const marchStart = 0 // Março 2026 começa no domingo
+        const marchDays = 31
+        const calCells: (number | null)[] = [...Array(marchStart).fill(null), ...Array.from({ length: marchDays }, (_, i) => i + 1)]
+
+        return (
+          <>
+            {/* Header — largura total */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2, color: T.text }}>Agenda</div>
+                <div style={{ fontSize: 11, color: T.muted }}>9 agendamentos próximos</div>
+              </div>
+              <div style={{
+                width: 30, height: 30, borderRadius: "50%",
+                background: T.green, color: onGreen,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 17, fontWeight: 600, lineHeight: 1,
+              }}>+</div>
+            </div>
+
+            {/* KPI Strip — largura total */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+              {[
+                { label: "Hoje", value: "3", sub: "agendamentos", icon: <Clock3 size={10} /> },
+                { label: "Esta semana", value: "8", sub: "próximos", icon: <CalendarDays size={10} /> },
+                { label: "Concluídos", value: "22", sub: "este mês", icon: <CheckCircle2 size={10} /> },
+              ].map(k => (
+                <div key={k.label} style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "10px 11px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div style={{ fontSize: 7.5, textTransform: "uppercase", letterSpacing: "0.08em", color: T.subtle, fontWeight: 500 }}>{k.label}</div>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: "50%", background: ca(0.06),
+                      display: "flex", alignItems: "center", justifyContent: "center", color: T.muted,
+                    }}>{k.icon}</div>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.4px", color: T.text }}>{k.value}</div>
+                  <div style={{ fontSize: 8, color: T.muted, marginTop: 1 }}>{k.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* ── Grid: Tabs+Lista ao lado de Calendário+Serviços ── */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 140px", gap: 10, flex: 1, minHeight: 0 }}>
+              {/* ── Coluna principal: Tabs + Compromissos ── */}
+              <div style={{ display: "flex", flexDirection: "column", minWidth: 0 }}>
+                {/* Tabs */}
+                <div style={{ display: "flex", gap: 0, marginBottom: 12, background: T.bg3, borderRadius: 8, padding: 3 }}>
+                  <div style={{
+                    flex: 1, textAlign: "center", fontSize: 9, fontWeight: 600, padding: "5px 0",
+                    borderRadius: 6, background: T.bg, color: T.text,
+                    boxShadow: `0 1px 2px ${ca(0.08)}`,
+                  }}>
+                    Próximos
+                    <span style={{
+                      marginLeft: 4, fontSize: 7.5, fontWeight: 500,
+                      padding: "1px 5px", borderRadius: 8,
+                      background: ga(0.1), color: T.green,
+                    }}>5</span>
+                  </div>
+                  <div style={{
+                    flex: 1, textAlign: "center", fontSize: 9, fontWeight: 500, padding: "5px 0",
+                    borderRadius: 6, color: T.muted,
+                  }}>Anteriores</div>
+                </div>
+
+                {/* ── Grupo: Hoje ── */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <div style={{
+                    width: 5, height: 5, borderRadius: "50%", background: T.green,
+                    boxShadow: `0 0 4px ${ga(0.5)}`,
+                    animation: "pulse 2s infinite",
+                  }} />
+                  <span style={{ fontSize: 8.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: T.green, flexShrink: 0 }}>Hoje</span>
+                  <div style={{ flex: 1, height: 1, background: T.border }} />
+                  <span style={{ fontSize: 7.5, color: T.muted, flexShrink: 0 }}>3 serviços</span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 5, marginBottom: 12 }}>
+                  {todayAppts.map((ap, i) => {
+                    const sc = statusColors[ap.status]
+                    return (
+                      <div key={i} style={{
+                        background: T.bg3, border: `1px solid ${T.border}`,
+                        borderRadius: 10, borderLeft: `3px solid ${sc.border}`,
+                        padding: "9px 10px",
+                        display: "flex", alignItems: "center", gap: 8,
+                      }}>
+                        {/* Date block */}
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8, background: ca(0.05),
+                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        }}>
+                          <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1, color: T.text, fontVariantNumeric: "tabular-nums" }}>{ap.day}</div>
+                          <div style={{ fontSize: 6.5, textTransform: "uppercase", letterSpacing: "0.06em", color: T.muted, marginTop: 1 }}>{ap.month}</div>
+                        </div>
+                        {/* Content */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
+                            <span style={{ fontSize: 10.5, fontWeight: 600, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ap.title}</span>
+                            <span style={{
+                              fontSize: 7, fontWeight: 500, padding: "1px 5px", borderRadius: 8,
+                              background: ca(0.06), color: T.muted, flexShrink: 0,
+                            }}>{typeLabelsAg[ap.type]}</span>
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "2px 8px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                              <Clock3 size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                              <span style={{ fontSize: 7.5, color: T.muted }}>{ap.time}</span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                              <User size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                              <span style={{ fontSize: 7.5, color: T.muted }}>{ap.client}</span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 3, minWidth: 0 }}>
+                              <MapPin size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                              <span style={{ fontSize: 7.5, color: T.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ap.address}</span>
+                            </div>
+                          </div>
+                        </div>
+                        {/* Status badge */}
+                        <div style={{
+                          fontSize: 7, fontWeight: 500, padding: "3px 6px", borderRadius: 8,
+                          background: sc.bg, color: sc.text, flexShrink: 0, whiteSpace: "nowrap",
+                        }}>{statusLabels[ap.status]}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+
+                {/* ── Grupo: Amanhã ── */}
+                <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 8 }}>
+                  <span style={{ fontSize: 8.5, fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.06em", color: T.muted, flexShrink: 0 }}>Amanhã</span>
+                  <div style={{ flex: 1, height: 1, background: T.border }} />
+                  <span style={{ fontSize: 7.5, color: T.muted, flexShrink: 0 }}>2 serviços</span>
+                </div>
+
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {tomorrowAppts.map((ap, i) => {
+                    const sc = statusColors[ap.status]
+                    return (
+                      <div key={i} style={{
+                        background: T.bg3, border: `1px solid ${T.border}`,
+                        borderRadius: 10, borderLeft: `3px solid ${sc.border}`,
+                        padding: "9px 10px",
+                        display: "flex", alignItems: "center", gap: 8,
+                      }}>
+                        <div style={{
+                          width: 32, height: 32, borderRadius: 8, background: ca(0.05),
+                          display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", flexShrink: 0,
+                        }}>
+                          <div style={{ fontSize: 13, fontWeight: 800, lineHeight: 1, color: T.text, fontVariantNumeric: "tabular-nums" }}>{ap.day}</div>
+                          <div style={{ fontSize: 6.5, textTransform: "uppercase", letterSpacing: "0.06em", color: T.muted, marginTop: 1 }}>{ap.month}</div>
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 3 }}>
+                            <span style={{ fontSize: 10.5, fontWeight: 600, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ap.title}</span>
+                            <span style={{
+                              fontSize: 7, fontWeight: 500, padding: "1px 5px", borderRadius: 8,
+                              background: ca(0.06), color: T.muted, flexShrink: 0,
+                            }}>{typeLabelsAg[ap.type]}</span>
+                          </div>
+                          <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "2px 8px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                              <Clock3 size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                              <span style={{ fontSize: 7.5, color: T.muted }}>{ap.time}</span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                              <User size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                              <span style={{ fontSize: 7.5, color: T.muted }}>{ap.client}</span>
+                            </div>
+                            <div style={{ display: "flex", alignItems: "center", gap: 3, minWidth: 0 }}>
+                              <MapPin size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                              <span style={{ fontSize: 7.5, color: T.muted, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ap.address}</span>
+                            </div>
+                          </div>
+                        </div>
+                        <div style={{
+                          fontSize: 7, fontWeight: 500, padding: "3px 6px", borderRadius: 8,
+                          background: sc.bg, color: sc.text, flexShrink: 0, whiteSpace: "nowrap",
+                        }}>{statusLabels[ap.status]}</div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* ── Coluna lateral: Calendário + Serviços de hoje ── */}
+              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+                {/* Mini calendário */}
+                <div style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "10px 8px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <ChevronLeft size={10} style={{ color: T.muted, cursor: "pointer" }} />
+                    <span style={{ fontSize: 9, fontWeight: 600, color: T.text }}>Março 2026</span>
+                    <ChevronRight size={10} style={{ color: T.muted, cursor: "pointer" }} />
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 0, marginBottom: 2 }}>
+                    {calDays.map(d => (
+                      <div key={d} style={{ fontSize: 6, fontWeight: 700, color: T.subtle, textAlign: "center", padding: "2px 0" }}>{d}</div>
+                    ))}
+                  </div>
+                  <div style={{ display: "grid", gridTemplateColumns: "repeat(7, 1fr)", gap: 0 }}>
+                    {calCells.map((day, i) => (
+                      <div key={i} style={{
+                        fontSize: 7, textAlign: "center", padding: "3px 0",
+                        fontWeight: day === 22 ? 700 : 400,
+                        color: day === 22 ? onGreen : day ? T.muted : "transparent",
+                        borderRadius: "50%",
+                        ...(day === 22 ? {
+                          background: T.green,
+                          width: 16, height: 16, lineHeight: "16px",
+                          borderRadius: "50%", margin: "0 auto",
+                          padding: 0,
+                        } : {}),
+                      }}>{day ?? ""}</div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Serviços de hoje */}
+                <div style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "10px 8px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+                    <span style={{ fontSize: 9, fontWeight: 600, color: T.text }}>Serviços de hoje</span>
+                    <span style={{
+                      fontSize: 7, fontWeight: 500, padding: "1px 5px", borderRadius: 8,
+                      background: ga(0.1), color: T.green,
+                    }}>3</span>
+                  </div>
+                  {todayAppts.map((ap, i) => {
+                    const dotColor = statusColors[ap.status].dot
+                    return (
+                      <div key={i} style={{
+                        display: "flex", alignItems: "center", gap: 5,
+                        padding: "6px 4px",
+                        borderTop: i > 0 ? `1px solid ${ca(0.04)}` : "none",
+                      }}>
+                        <div style={{ width: 5, height: 5, borderRadius: "50%", background: dotColor, flexShrink: 0 }} />
+                        <span style={{ fontSize: 7, color: T.muted, fontVariantNumeric: "tabular-nums", flexShrink: 0, width: 24 }}>{ap.time.split(" – ")[0]}</span>
+                        <span style={{ fontSize: 8, fontWeight: 500, color: T.text, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{ap.title}</span>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+            </div>
+          </>
+        )
+      }
+
+      case "Ordens de Serviço": {
+        /* Cores de status das OS */
+        const osStatusStyles: Record<string, { bg: string; text: string; border: string }> = {
+          draft:     { bg: ca(0.06), text: T.muted, border: T.border },
+          issued:    { bg: "rgba(59,130,246,0.10)", text: mockLightMode ? "#2563eb" : "#60a5fa", border: "#3b82f6" },
+          completed: { bg: "rgba(16,185,129,0.10)", text: mockLightMode ? "#059669" : "#34d399", border: "#10b981" },
+          cancelled: { bg: "rgba(239,68,68,0.10)", text: mockLightMode ? "#dc2626" : "#f87171", border: "#ef4444" },
+        }
+        const osStatusLabels: Record<string, string> = { draft: "Rascunho", issued: "Emitida", completed: "Concluída", cancelled: "Cancelada" }
+
+        /* Dados mock */
+        const activeOrders = [
+          { title: "Paisagismo completo", client: "Marco Rodrigues", date: "18 mar 2026", status: "issued", amount: "R$ 3.200" },
+          { title: "Instalação de irrigação", client: "Juliana Santos", date: "15 mar 2026", status: "draft", amount: "R$ 1.850" },
+          { title: "Limpeza e adubação", client: "Cláudia Ferreira", date: "20 mar 2026", status: "issued", amount: "R$ 980" },
+        ]
+        const historyOrders = [
+          { title: "Poda de árvores", client: "Pedro Lima", date: "10 mar 2026", status: "completed", amount: "R$ 980" },
+          { title: "Replantio canteiro", client: "André Costa", date: "05 mar 2026", status: "completed", amount: "R$ 650" },
+        ]
+
+        return (
+          <>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2, color: T.text }}>Ordens de Serviço</div>
+                <div style={{ fontSize: 11, color: T.muted }}>12 OS cadastradas</div>
+              </div>
+              <div style={{
+                width: 30, height: 30, borderRadius: "50%",
+                background: T.green, color: onGreen,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 17, fontWeight: 600, lineHeight: 1,
+              }}>+</div>
+            </div>
+
+            {/* KPI Strip — 4 cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 12 }}>
+              {[
+                { label: "Total", value: "12", sub: "ordens", icon: <ClipboardList size={10} /> },
+                { label: "Em aberto", value: "3", sub: "ativas", icon: <Loader2 size={10} /> },
+                { label: "Concluídas", value: "7", sub: "este mês", icon: <CheckCircle2 size={10} /> },
+                { label: "Receita", value: "R$ 14K", sub: "concluídas", icon: <DollarSign size={10} /> },
+              ].map(k => (
+                <div key={k.label} style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "10px 11px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div style={{ fontSize: 7.5, textTransform: "uppercase", letterSpacing: "0.08em", color: T.subtle, fontWeight: 500 }}>{k.label}</div>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: "50%", background: ca(0.06),
+                      display: "flex", alignItems: "center", justifyContent: "center", color: T.muted,
+                    }}>{k.icon}</div>
+                  </div>
+                  <div style={{ fontSize: k.label === "Receita" ? 13 : 16, fontWeight: 800, letterSpacing: "-0.4px", color: T.text }}>{k.value}</div>
+                  <div style={{ fontSize: 8, color: T.muted, marginTop: 1 }}>{k.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display: "flex", gap: 0, marginBottom: 12, background: T.bg3, borderRadius: 8, padding: 3 }}>
+              <div style={{
+                flex: 1, textAlign: "center", fontSize: 9, fontWeight: 600, padding: "5px 0",
+                borderRadius: 6, background: T.bg, color: T.text,
+                boxShadow: `0 1px 2px ${ca(0.08)}`,
+              }}>
+                Em andamento
+                <span style={{
+                  marginLeft: 4, fontSize: 7.5, fontWeight: 500,
+                  padding: "1px 5px", borderRadius: 8,
+                  background: ga(0.1), color: T.green,
+                }}>3</span>
+              </div>
+              <div style={{
+                flex: 1, textAlign: "center", fontSize: 9, fontWeight: 500, padding: "5px 0",
+                borderRadius: 6, color: T.muted,
+              }}>Histórico</div>
+            </div>
+
+            {/* Lista de OS ativas */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              {activeOrders.map((o, i) => {
+                const ss = osStatusStyles[o.status]
+                return (
+                  <div key={i} style={{
+                    background: T.bg3, border: `1px solid ${T.border}`,
+                    borderRadius: 10, borderLeft: `3px solid ${ss.border}`,
+                    padding: "10px 12px",
+                    display: "flex", alignItems: "flex-start", gap: 10,
+                  }}>
+                    {/* Conteúdo esquerdo */}
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 4 }}>
+                        <span style={{ fontSize: 10.5, fontWeight: 600, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{o.title}</span>
+                        <span style={{
+                          fontSize: 7, fontWeight: 500, padding: "2px 6px", borderRadius: 8,
+                          background: ss.bg, color: ss.text, flexShrink: 0, whiteSpace: "nowrap",
+                        }}>{osStatusLabels[o.status]}</span>
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "2px 8px" }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                          <User size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                          <span style={{ fontSize: 7.5, color: T.muted }}>{o.client}</span>
+                        </div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                          <Calendar size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                          <span style={{ fontSize: 7.5, color: T.muted }}>{o.date}</span>
+                        </div>
+                      </div>
+                    </div>
+                    {/* Valor à direita */}
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: T.text, fontVariantNumeric: "tabular-nums" }}>{o.amount}</div>
+                      <div style={{ fontSize: 7, color: T.muted }}>total</div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )
+      }
 
       case "Orçamentos":
         return (
@@ -1029,170 +1507,873 @@ function DashboardMockup() {
           </>
         )
 
-      case "Financeiro":
+      case "Financeiro": {
+        /* Cores de receita / despesa */
+        const incomeColor = mockLightMode ? "#059669" : "#34d399"
+        const expenseColor = mockLightMode ? "#ef4444" : "#f87171"
+        const amberColor = mockLightMode ? "#d97706" : "#fbbf24"
+
+        /* Dados mock de transações */
+        const transactions = [
+          { desc: "Serviço de paisagismo", cat: "Serviços", client: "Marco Rodrigues", type: "income", amount: "R$ 3.200", date: "22 mar", status: "paid" },
+          { desc: "Compra de fertilizantes", cat: "Insumos", client: null, type: "expense", amount: "R$ 280", date: "21 mar", status: "paid" },
+          { desc: "Manutenção mensal", cat: "Serviços", client: "Juliana Santos", type: "income", amount: "R$ 1.500", date: "20 mar", status: "paid" },
+          { desc: "Combustível", cat: "Transporte", client: null, type: "expense", amount: "R$ 350", date: "19 mar", status: "pending" },
+          { desc: "Poda e limpeza", cat: "Serviços", client: "Pedro Lima", type: "income", amount: "R$ 850", date: "18 mar", status: "paid" },
+        ]
+
+        /* Pendentes (forecast) */
+        const pending = [
+          { desc: "Manutenção Cond. Jardins", type: "income", amount: "R$ 2.800", due: "25 mar" },
+          { desc: "Aluguel ferramentas", type: "expense", amount: "R$ 420", due: "28 mar" },
+        ]
+
+        /* Vencimentos próximos */
+        const alerts = [
+          { desc: "Combustível março", type: "expense", amount: "R$ 350", due: "24 mar" },
+          { desc: "Manutenção Cond. Jardins", type: "income", amount: "R$ 2.800", due: "25 mar" },
+        ]
+
         return (
           <>
-            <PageHeader title="Financeiro" subtitle="março de 2026" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 14 }}>
-              <KpiCard label="Receita" value="R$ 8.4K" sub="↑ +15%" />
-              <KpiCard label="Despesas" value="R$ 3.3K" />
-              <KpiCard label="Resultado" value="R$ 5.1K" sub="↑ +22%" />
-              <KpiCard label="Saldo" value="R$ 24.8K" />
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2, color: T.text }}>Financeiro</div>
+                <div style={{ fontSize: 11, color: T.muted }}>Março de 2026</div>
+              </div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
+                <div style={{
+                  fontSize: 8, fontWeight: 500, padding: "5px 10px", borderRadius: 8,
+                  border: `1px solid ${T.border}`, color: T.muted,
+                }}>Categorias</div>
+                <div style={{
+                  width: 26, height: 26, borderRadius: "50%",
+                  background: T.green, color: onGreen,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 14, fontWeight: 600, lineHeight: 1,
+                }}>+</div>
+              </div>
             </div>
-            <div style={{ fontSize: 10, fontWeight: 700, color: T.muted, marginBottom: 6, textTransform: "uppercase", letterSpacing: "0.06em" }}>Transações recentes</div>
-            {[
-              { desc: "Serviço de paisagismo", type: "income", amount: "+ R$ 3.200", date: "22/03" },
-              { desc: "Compra de fertilizantes", type: "expense", amount: "- R$ 280", date: "21/03" },
-              { desc: "Manutenção mensal", type: "income", amount: "+ R$ 1.500", date: "20/03" },
-              { desc: "Combustível", type: "expense", amount: "- R$ 350", date: "19/03" },
-              { desc: "Poda e limpeza", type: "income", amount: "+ R$ 850", date: "18/03" },
-            ].map((t, i) => (
-              <ListRow key={i}>
-                <div style={{
-                  width: 6, height: 6, borderRadius: "50%", flexShrink: 0,
-                  background: t.type === "income" ? "#4ade80" : "#f87171",
-                }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600 }}>{t.desc}</div>
-                  <div style={{ fontSize: 9.5, color: T.muted }}>{t.date}</div>
+
+            {/* KPI Strip — 4 cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 8, marginBottom: 12 }}>
+              {[
+                { label: "Saldo atual", value: "R$ 5.1K", sub: "receitas − despesas pagas", icon: <DollarSign size={10} />, valueColor: incomeColor },
+                { label: "Receitas", value: "R$ 8.4K", sub: "6 lançamentos", icon: <TrendingUp size={10} />, valueColor: incomeColor, iconColor: incomeColor },
+                { label: "Despesas", value: "R$ 3.3K", sub: "4 lançamentos", icon: <TrendingDown size={10} />, valueColor: expenseColor, iconColor: expenseColor },
+                { label: "Resultado", value: "R$ 5.1K", sub: "receitas − despesas do mês", icon: <Banknote size={10} />, valueColor: incomeColor },
+              ].map(k => (
+                <div key={k.label} style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "10px 11px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div style={{ fontSize: 7.5, textTransform: "uppercase", letterSpacing: "0.08em", color: T.subtle, fontWeight: 500 }}>{k.label}</div>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: "50%", background: ca(0.06),
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: k.iconColor || T.muted,
+                    }}>{k.icon}</div>
+                  </div>
+                  <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: "-0.4px", color: k.valueColor, fontVariantNumeric: "tabular-nums" }}>{k.value}</div>
+                  <div style={{ fontSize: 7, color: T.muted, marginTop: 1 }}>{k.sub}</div>
                 </div>
-                <div style={{
-                  fontSize: 11, fontWeight: 700, flexShrink: 0,
-                  color: t.type === "income" ? "#4ade80" : "#f87171",
-                }}>{t.amount}</div>
-              </ListRow>
-            ))}
+              ))}
+            </div>
+
+            {/* Previsão + Vencimentos lado a lado */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginBottom: 12 }}>
+              {/* Previsão de fluxo */}
+              <div style={{
+                background: T.bg3, border: `1px solid ${T.border}`,
+                borderRadius: 10, padding: "10px 11px",
+              }}>
+                <div style={{ fontSize: 9, fontWeight: 600, color: T.text, marginBottom: 6 }}>Previsão de fluxo (30 dias)</div>
+                <div style={{ fontSize: 14, fontWeight: 800, color: incomeColor, fontVariantNumeric: "tabular-nums", marginBottom: 2 }}>+ R$ 2.380</div>
+                <div style={{ fontSize: 7, color: T.muted, marginBottom: 8 }}>em lançamentos pendentes</div>
+                {pending.map((p, i) => (
+                  <div key={i} style={{
+                    display: "flex", alignItems: "center", gap: 5,
+                    padding: "5px 0",
+                    borderTop: i > 0 ? `1px solid ${ca(0.04)}` : "none",
+                  }}>
+                    <div style={{
+                      width: 14, height: 14, borderRadius: "50%", flexShrink: 0,
+                      background: p.type === "income" ? "rgba(16,185,129,0.10)" : "rgba(239,68,68,0.10)",
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                    }}>
+                      {p.type === "income"
+                        ? <ArrowUpRight size={7} style={{ color: incomeColor }} />
+                        : <ArrowDownRight size={7} style={{ color: expenseColor }} />
+                      }
+                    </div>
+                    <span style={{ fontSize: 8, color: T.muted, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.desc}</span>
+                    <div style={{ textAlign: "right", flexShrink: 0 }}>
+                      <div style={{ fontSize: 8, fontWeight: 600, color: p.type === "income" ? incomeColor : expenseColor, fontVariantNumeric: "tabular-nums" }}>
+                        {p.type === "income" ? "+" : "−"} {p.amount}
+                      </div>
+                      <div style={{ fontSize: 6.5, color: T.muted }}>{p.due}</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+
+              {/* Vencimentos próximos */}
+              <div style={{
+                background: T.bg3, border: `1px solid ${T.border}`,
+                borderRadius: 10, padding: "10px 11px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 4, marginBottom: 8 }}>
+                  <span style={{ fontSize: 9, fontWeight: 600, color: T.text }}>Vencimentos próximos (7 dias)</span>
+                  <AlertCircle size={8} style={{ color: amberColor, flexShrink: 0 }} />
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+                  {alerts.map((al, i) => (
+                    <div key={i} style={{
+                      borderRadius: 7, border: `1px solid ${ca(0.06)}`,
+                      padding: "7px 8px",
+                      display: "flex", alignItems: "center", gap: 6,
+                    }}>
+                      <span style={{
+                        fontSize: 7, fontWeight: 500, padding: "2px 5px", borderRadius: 8, flexShrink: 0,
+                        background: al.type === "income" ? "rgba(16,185,129,0.10)" : "rgba(239,68,68,0.10)",
+                        color: al.type === "income" ? incomeColor : expenseColor,
+                      }}>{al.type === "income" ? "Receita" : "Despesa"}</span>
+                      <span style={{ fontSize: 8, color: T.muted, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{al.desc}</span>
+                      <div style={{ textAlign: "right", flexShrink: 0 }}>
+                        <div style={{ fontSize: 8, fontWeight: 600, color: T.text, fontVariantNumeric: "tabular-nums" }}>{al.amount}</div>
+                        <div style={{ fontSize: 6.5, color: T.muted }}>{al.due}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Lançamentos do mês */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 8 }}>
+              <span style={{ fontSize: 10, fontWeight: 600, color: T.text }}>Lançamentos do mês</span>
+            </div>
+
+            {/* Tabs */}
+            <div style={{ display: "flex", gap: 0, marginBottom: 10, background: T.bg3, borderRadius: 8, padding: 3 }}>
+              <div style={{
+                flex: 1, textAlign: "center", fontSize: 9, fontWeight: 600, padding: "5px 0",
+                borderRadius: 6, background: T.bg, color: T.text,
+                boxShadow: `0 1px 2px ${ca(0.08)}`,
+              }}>
+                Todos
+                <span style={{
+                  marginLeft: 4, fontSize: 7.5, fontWeight: 500,
+                  padding: "1px 5px", borderRadius: 8,
+                  background: ga(0.1), color: T.green,
+                }}>5</span>
+              </div>
+              <div style={{
+                flex: 1, textAlign: "center", fontSize: 9, fontWeight: 500, padding: "5px 0",
+                borderRadius: 6, color: T.muted,
+              }}>
+                Receitas
+                <span style={{
+                  marginLeft: 3, fontSize: 7.5, fontWeight: 500,
+                  padding: "1px 5px", borderRadius: 8,
+                  background: "rgba(16,185,129,0.10)", color: incomeColor,
+                }}>3</span>
+              </div>
+              <div style={{
+                flex: 1, textAlign: "center", fontSize: 9, fontWeight: 500, padding: "5px 0",
+                borderRadius: 6, color: T.muted,
+              }}>
+                Despesas
+                <span style={{
+                  marginLeft: 3, fontSize: 7.5, fontWeight: 500,
+                  padding: "1px 5px", borderRadius: 8,
+                  background: "rgba(239,68,68,0.10)", color: expenseColor,
+                }}>2</span>
+              </div>
+            </div>
+
+            {/* Lista de transações */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              {transactions.map((t, i) => (
+                <div key={i} style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10,
+                  borderLeft: `3px solid ${t.type === "income" ? "#10b981" : "#ef4444"}`,
+                  padding: "9px 10px",
+                  display: "flex", alignItems: "center", gap: 8,
+                }}>
+                  {/* Ícone circular */}
+                  <div style={{
+                    width: 22, height: 22, borderRadius: "50%", flexShrink: 0,
+                    background: t.type === "income" ? "rgba(16,185,129,0.10)" : "rgba(239,68,68,0.10)",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    {t.type === "income"
+                      ? <ArrowUpRight size={9} style={{ color: incomeColor }} />
+                      : <ArrowDownRight size={9} style={{ color: expenseColor }} />
+                    }
+                  </div>
+                  {/* Conteúdo */}
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 10.5, fontWeight: 600, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", marginBottom: 2 }}>{t.desc}</div>
+                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "1px 6px" }}>
+                      <span style={{ fontSize: 7.5, color: T.muted }}>{t.cat}{t.client ? ` · ${t.client}` : ""}</span>
+                      <span style={{ fontSize: 7.5, color: T.muted }}>{t.date}</span>
+                      <span style={{
+                        fontSize: 7, fontWeight: 500, padding: "1px 5px", borderRadius: 8,
+                        background: t.status === "paid" ? "rgba(16,185,129,0.10)" : "rgba(245,158,11,0.10)",
+                        color: t.status === "paid" ? incomeColor : amberColor,
+                      }}>{t.status === "paid" ? "Pago" : "Pendente"}</span>
+                    </div>
+                  </div>
+                  {/* Valor */}
+                  <div style={{
+                    fontSize: 11, fontWeight: 700, flexShrink: 0, fontVariantNumeric: "tabular-nums",
+                    color: t.type === "income" ? incomeColor : expenseColor,
+                  }}>{t.type === "income" ? "+" : "−"} {t.amount}</div>
+                </div>
+              ))}
+            </div>
           </>
         )
+      }
 
-      case "Estoque":
+      case "Estoque": {
+        const redStock = mockLightMode ? "#dc2626" : "#f87171"
+
+        /* Dados mock de produtos */
+        const products = [
+          { name: "Adubo NPK 10-10-10", unit: "kg", minStock: 10, qty: 45, cost: "R$ 3,50" },
+          { name: "Semente grama esmeralda", unit: "kg", minStock: 5, qty: 3, cost: "R$ 12,00" },
+          { name: "Substrato vegetal", unit: "L", minStock: 20, qty: 120, cost: "R$ 1,80" },
+          { name: "Defensivo orgânico Neem", unit: "L", minStock: 5, qty: 2, cost: "R$ 28,00" },
+          { name: "Muda de primavera", unit: "un", minStock: 10, qty: 30, cost: "R$ 8,50" },
+        ]
+
+        /* Movimentações recentes */
+        const movements = [
+          { product: "Adubo NPK 10-10-10", qty: "10 kg", type: "in", desc: "Compra mensal", date: "22/03", cost: "R$ 3,50" },
+          { product: "Semente grama esmeralda", qty: "2 kg", type: "out", desc: "Plantio jardim Marco", date: "21/03", cost: null },
+          { product: "Substrato vegetal", qty: "40 L", type: "in", desc: "Reposição", date: "20/03", cost: "R$ 1,80" },
+          { product: "Defensivo Neem", qty: "1 L", type: "out", desc: "Aplicação Pedro Lima", date: "19/03", cost: null },
+        ]
+
         return (
           <>
-            <PageHeader title="Estoque" subtitle="Produtos e movimentações" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
-              <KpiCard label="Produtos" value="18" sub="cadastrados" />
-              <KpiCard label="Estoque baixo" value="3" sub="atenção" />
-              <KpiCard label="Última compra" value="R$ 245" />
-            </div>
-            {[
-              { name: "Adubo NPK 10-10-10", unit: "kg", qty: 45, status: "ok" },
-              { name: "Semente grama esmeralda", unit: "kg", qty: 3, status: "low" },
-              { name: "Substrato vegetal", unit: "L", qty: 120, status: "ok" },
-              { name: "Defensivo orgânico Neem", unit: "L", qty: 2, status: "low" },
-              { name: "Muda de primavera", unit: "un", qty: 30, status: "ok" },
-            ].map((p, i) => (
-              <ListRow key={i}>
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
-                  <div style={{ fontSize: 9.5, color: T.muted }}>{p.unit}</div>
-                </div>
-                <div style={{ fontSize: 11, fontWeight: 700, flexShrink: 0, marginRight: 4 }}>{p.qty}</div>
-                <StatusBadge label={p.status === "low" ? "Baixo" : "OK"} color={p.status === "low" ? "red" : "green"} />
-              </ListRow>
-            ))}
-          </>
-        )
-
-      case "Manutenções":
-        return (
-          <>
-            <PageHeader title="Manutenções" subtitle="8 planos cadastrados" />
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 14 }}>
-              <KpiCard label="Total" value="8" sub="planos" />
-              <KpiCard label="Ativos" value="6" sub="em execução" />
-              <KpiCard label="Alertas" value="2" sub="atrasados" />
-            </div>
-            {[
-              { title: "Manutenção jardim frontal", client: "Marco Rodrigues", status: "Ativo", statusColor: "green", freq: "Mensal" },
-              { title: "Poda trimestral", client: "Juliana Santos", status: "Ativo", statusColor: "green", freq: "Trimestral" },
-              { title: "Irrigação e adubação", client: "Cond. Jardins", status: "Alerta", statusColor: "amber", freq: "Mensal" },
-              { title: "Controle de pragas", client: "Pedro Lima", status: "Pausado", statusColor: "muted", freq: "Bimestral" },
-            ].map((m, i) => (
-              <ListRow key={i}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2, color: T.text }}>Estoque</div>
+                <div style={{ fontSize: 11, color: T.muted }}>Produtos e movimentações</div>
+              </div>
+              <div style={{ display: "flex", gap: 6, alignItems: "center" }}>
                 <div style={{
-                  width: 4, height: 28, borderRadius: 2, flexShrink: 0,
-                  background: m.statusColor === "green" ? "#4ade80" : m.statusColor === "amber" ? "#fbbf24" : "rgba(255,255,255,0.1)",
-                }} />
-                <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 11, fontWeight: 600, marginBottom: 2 }}>{m.title}</div>
-                  <div style={{ fontSize: 9.5, color: T.muted }}>{m.client} · {m.freq}</div>
+                  fontSize: 8, fontWeight: 500, padding: "5px 10px", borderRadius: 8,
+                  border: `1px solid ${T.border}`, color: T.muted,
+                }}>Nova movimentação</div>
+                <div style={{
+                  width: 26, height: 26, borderRadius: "50%",
+                  background: T.green, color: onGreen,
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontSize: 14, fontWeight: 600, lineHeight: 1,
+                }}>+</div>
+              </div>
+            </div>
+
+            {/* KPI Strip — 3 cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+              {[
+                { label: "Produtos", value: "18", sub: "cadastrados", icon: <Package size={10} />, valueColor: T.text },
+                { label: "Estoque baixo", value: "2", sub: "abaixo do mínimo", icon: <AlertTriangle size={10} />, valueColor: redStock, iconColor: redStock },
+                { label: "Movimentações", value: "12", sub: "10 mais recentes", icon: <ArrowUpCircle size={10} />, valueColor: T.text },
+              ].map(k => (
+                <div key={k.label} style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "10px 11px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div style={{ fontSize: 7.5, textTransform: "uppercase", letterSpacing: "0.08em", color: T.subtle, fontWeight: 500 }}>{k.label}</div>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: "50%", background: ca(0.06),
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      color: k.iconColor || T.muted,
+                    }}>{k.icon}</div>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.4px", color: k.valueColor }}>{k.value}</div>
+                  <div style={{ fontSize: 8, color: T.muted, marginTop: 1 }}>{k.sub}</div>
                 </div>
-                <StatusBadge label={m.status} color={m.statusColor} />
-              </ListRow>
-            ))}
+              ))}
+            </div>
+
+            {/* Título da seção */}
+            <div style={{ fontSize: 10, fontWeight: 600, color: T.text, marginBottom: 8 }}>Produtos e saldo atual</div>
+
+            {/* Grid: Produtos + Última compra */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 130px", gap: 10, alignItems: "start", marginBottom: 12 }}>
+              {/* Lista de produtos */}
+              <div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+                  {products.map((p, i) => {
+                    const isLow = p.qty < p.minStock
+                    return (
+                      <div key={i} style={{
+                        borderRadius: 8, border: `1px solid ${ca(0.06)}`,
+                        padding: "8px 10px",
+                        display: "flex", alignItems: "center", justifyContent: "space-between",
+                      }}>
+                        <div style={{ minWidth: 0 }}>
+                          <div style={{ fontSize: 9, fontWeight: 500, color: T.text, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{p.name}</div>
+                          <div style={{ fontSize: 7, color: T.muted }}>{p.unit} — Mín: {p.minStock}</div>
+                        </div>
+                        <div style={{ textAlign: "right", flexShrink: 0 }}>
+                          <div style={{ fontSize: 10, fontWeight: 700, color: isLow ? redStock : T.text }}>{p.qty} {p.unit}</div>
+                          <div style={{ fontSize: 7, color: T.muted }}>Custo: {p.cost}</div>
+                        </div>
+                      </div>
+                    )
+                  })}
+                </div>
+              </div>
+
+              {/* Última compra */}
+              <div style={{
+                background: T.bg3, border: `1px solid ${T.border}`,
+                borderRadius: 10, padding: "10px 10px",
+              }}>
+                <div style={{ fontSize: 9, fontWeight: 600, color: T.text, marginBottom: 8 }}>Última compra</div>
+                <div style={{ fontSize: 9, fontWeight: 500, color: T.text, marginBottom: 2 }}>Adubo NPK 10-10-10</div>
+                <div style={{ fontSize: 7, color: T.muted, marginBottom: 4 }}>10 kg — Unit: R$ 3,50</div>
+                <div style={{ fontSize: 10, fontWeight: 700, color: T.text, marginBottom: 2 }}>R$ 35,00</div>
+                <div style={{ fontSize: 7, color: T.muted, marginBottom: 6 }}>22/03/2026</div>
+                <div style={{ fontSize: 7, color: T.muted }}>Reposição mensal de estoque</div>
+              </div>
+            </div>
+
+            {/* Tabs de movimentações */}
+            <div style={{ display: "flex", gap: 0, marginBottom: 10, background: T.bg3, borderRadius: 8, padding: 3 }}>
+              {["Recentes", "Saídas", "Entradas"].map((tab, i) => (
+                <div key={tab} style={{
+                  flex: 1, textAlign: "center", fontSize: 9, padding: "5px 0", borderRadius: 6,
+                  ...(i === 0
+                    ? { fontWeight: 600, background: T.bg, color: T.text, boxShadow: `0 1px 2px ${ca(0.08)}` }
+                    : { fontWeight: 500, color: T.muted }
+                  ),
+                }}>{tab}</div>
+              ))}
+            </div>
+
+            {/* Lista de movimentações */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {movements.map((m, i) => (
+                <div key={i} style={{
+                  borderRadius: 8, border: `1px solid ${ca(0.06)}`,
+                  padding: "7px 10px",
+                  display: "flex", alignItems: "center", gap: 7,
+                }}>
+                  {m.type === "in"
+                    ? <ArrowUpCircle size={11} style={{ color: mockLightMode ? "#059669" : "#10b981", flexShrink: 0 }} />
+                    : <ArrowDownCircle size={11} style={{ color: redStock, flexShrink: 0 }} />
+                  }
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: 9, fontWeight: 500, color: T.text }}>{m.product} ({m.qty})</div>
+                    <div style={{ fontSize: 7, color: T.muted }}>{m.desc}</div>
+                  </div>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <div style={{ fontSize: 8, color: T.text }}>{m.date}</div>
+                    {m.cost && <div style={{ fontSize: 7, color: T.muted }}>Unit: {m.cost}</div>}
+                  </div>
+                </div>
+              ))}
+            </div>
           </>
         )
+      }
 
-      case "Assistente Íris":
+      case "Manutenções": {
+        /* Cores de status */
+        const mtStatusStyles: Record<string, { border: string; bg: string; text: string }> = {
+          active:    { border: "#10b981", bg: "rgba(16,185,129,0.10)", text: mockLightMode ? "#059669" : "#34d399" },
+          paused:    { border: "#f59e0b", bg: "rgba(245,158,11,0.10)", text: mockLightMode ? "#d97706" : "#fbbf24" },
+          cancelled: { border: T.border, bg: ca(0.06), text: T.muted },
+        }
+        const mtStatusLabels: Record<string, string> = { active: "Ativo", paused: "Pausado", cancelled: "Cancelado" }
+
+        const amberMt = mockLightMode ? "#d97706" : "#fbbf24"
+        const emeraldMt = mockLightMode ? "#059669" : "#34d399"
+
+        /* Dados mock — planos de manutenção mensal regular */
+        const plans = [
+          { title: "Manutenção mensal - Jardim frontal", client: "Marco Rodrigues", status: "active", sun: "Sol pleno", water: "3x/sem", lastDate: "15 mar 2026", overdue: false },
+          { title: "Manutenção mensal - Área externa", client: "Juliana Santos", status: "active", sun: "Meia sombra", water: "2x/sem", lastDate: "10 mar 2026", overdue: false },
+          { title: "Manutenção mensal - Jardim condomínio", client: "Cond. Jardins", status: "active", sun: null, water: "4x/sem", lastDate: null, overdue: true, overdueDays: 32 },
+          { title: "Manutenção mensal - Quintal", client: "Pedro Lima", status: "paused", sun: "Sol pleno", water: "2x/sem", lastDate: "28 fev 2026", overdue: false },
+          { title: "Manutenção mensal - Varanda e jardineiras", client: "André Costa", status: "active", sun: "Meia sombra", water: "3x/sem", lastDate: "18 mar 2026", overdue: false },
+        ]
+
         return (
           <>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 14, paddingBottom: 12, borderBottom: `1px solid ${T.border}` }}>
+            {/* Header */}
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 12 }}>
+              <div>
+                <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2, color: T.text }}>Manutenções</div>
+                <div style={{ fontSize: 11, color: T.muted }}>5 planos cadastrados</div>
+              </div>
               <div style={{
                 width: 30, height: 30, borderRadius: "50%",
-                background: "rgba(26,255,94,0.1)",
+                background: T.green, color: onGreen,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 17, fontWeight: 600, lineHeight: 1,
+              }}>+</div>
+            </div>
+
+            {/* KPI Strip — 3 cards */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginBottom: 12 }}>
+              {[
+                { label: "Total", value: "5", sub: "planos", icon: <Wrench size={10} />, valueColor: T.text },
+                { label: "Ativos", value: "4", sub: "em andamento", icon: <CheckCircle2 size={10} />, valueColor: emeraldMt },
+                { label: "Atrasados", value: "1", sub: "sem manutenção", icon: <AlertTriangle size={10} />, valueColor: amberMt },
+              ].map(k => (
+                <div key={k.label} style={{
+                  background: T.bg3, border: `1px solid ${T.border}`,
+                  borderRadius: 10, padding: "10px 11px",
+                }}>
+                  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+                    <div style={{ fontSize: 7.5, textTransform: "uppercase", letterSpacing: "0.08em", color: T.subtle, fontWeight: 500 }}>{k.label}</div>
+                    <div style={{
+                      width: 18, height: 18, borderRadius: "50%", background: ca(0.06),
+                      display: "flex", alignItems: "center", justifyContent: "center", color: T.muted,
+                    }}>{k.icon}</div>
+                  </div>
+                  <div style={{ fontSize: 16, fontWeight: 800, letterSpacing: "-0.4px", color: k.valueColor }}>{k.value}</div>
+                  <div style={{ fontSize: 8, color: T.muted, marginTop: 1 }}>{k.sub}</div>
+                </div>
+              ))}
+            </div>
+
+            {/* Lista de planos */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 5 }}>
+              {plans.map((m, i) => {
+                const ss = mtStatusStyles[m.status]
+                return (
+                  <div key={i} style={{
+                    background: T.bg3, border: `1px solid ${T.border}`,
+                    borderRadius: 10, borderLeft: `3px solid ${ss.border}`,
+                    padding: "10px 12px",
+                  }}>
+                    {/* Título + badge status */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 5 }}>
+                      <span style={{ fontSize: 10.5, fontWeight: 600, color: T.text, flex: 1, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{m.title}</span>
+                      <span style={{
+                        fontSize: 7, fontWeight: 500, padding: "2px 6px", borderRadius: 8,
+                        background: ss.bg, color: ss.text, flexShrink: 0,
+                      }}>{mtStatusLabels[m.status]}</span>
+                    </div>
+
+                    {/* Cliente */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 3, marginBottom: 5 }}>
+                      <User size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                      <span style={{ fontSize: 8, color: T.muted }}>{m.client}</span>
+                    </div>
+
+                    {/* Chips: sol + rega */}
+                    <div style={{ display: "flex", flexWrap: "wrap", gap: 4, marginBottom: 5 }}>
+                      {m.sun && (
+                        <div style={{
+                          display: "flex", alignItems: "center", gap: 3,
+                          padding: "2px 6px", borderRadius: 8,
+                          background: "rgba(245,158,11,0.10)",
+                          fontSize: 7, fontWeight: 500, color: amberMt,
+                        }}>
+                          <Sun size={7} />
+                          {m.sun}
+                        </div>
+                      )}
+                      <div style={{
+                        display: "flex", alignItems: "center", gap: 3,
+                        padding: "2px 6px", borderRadius: 8,
+                        background: "rgba(59,130,246,0.10)",
+                        fontSize: 7, fontWeight: 500, color: mockLightMode ? "#2563eb" : "#60a5fa",
+                      }}>
+                        <Droplets size={7} />
+                        Rega {m.water}
+                      </div>
+                    </div>
+
+                    {/* Status info: alerta ou última manutenção */}
+                    <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                      {m.overdue ? (
+                        <>
+                          <AlertTriangle size={8} style={{ color: "#f59e0b", flexShrink: 0 }} />
+                          <span style={{ fontSize: 7.5, fontWeight: 500, color: amberMt }}>
+                            {m.overdueDays ? `Sem manutenção há ${m.overdueDays} dias` : "Nunca executado"}
+                          </span>
+                        </>
+                      ) : m.lastDate ? (
+                        <>
+                          <Calendar size={8} style={{ color: T.muted, flexShrink: 0 }} />
+                          <span style={{ fontSize: 7.5, color: T.muted }}>Última manutenção: {m.lastDate}</span>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          </>
+        )
+      }
+
+      case "Assistente": {
+        const primaryBg = mockLightMode ? "#16a34a" : "#22c55e"
+        const primaryText = mockLightMode ? "#ffffff" : "#000000"
+        const mutedBubble = mockLightMode ? "rgba(0,0,0,0.05)" : "rgba(255,255,255,0.04)"
+        const emeraldOnline = mockLightMode ? "#059669" : "#10b981"
+
+        return (
+          <div style={{ display: "flex", flexDirection: "column", flex: 1, minHeight: 0 }}>
+            {/* Header */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: 8,
+              padding: "12px 14px", borderBottom: `1px solid ${ca(0.06)}`,
+            }}>
+              <div style={{
+                width: 26, height: 26, borderRadius: "50%",
+                background: ga(0.1),
                 display: "flex", alignItems: "center", justifyContent: "center",
               }}>
-                <Bot size={14} color={T.green} />
+                <Sparkles size={12} style={{ color: T.green }} />
               </div>
-              <div>
-                <div style={{ fontSize: 13, fontWeight: 700 }}>Íris</div>
-                <div style={{ fontSize: 9.5, color: T.muted }}>Assistente de jardinagem com IA</div>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: T.text, lineHeight: 1.2 }}>Íris</div>
+                <div style={{ fontSize: 8, color: T.muted }}>Assistente de jardinagem com IA</div>
               </div>
-              <div style={{ marginLeft: "auto" }}>
-                <StatusBadge label="Online" color="green" />
+              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                <div style={{
+                  width: 6, height: 6, borderRadius: "50%",
+                  background: emeraldOnline,
+                  boxShadow: `0 0 4px ${emeraldOnline}`,
+                }} />
+                <span style={{ fontSize: 8, color: T.muted }}>Online</span>
               </div>
             </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1 }}>
-              <div style={{ display: "flex", gap: 8, maxWidth: "85%" }}>
-                <AvatarCircle initials="I" size={22} />
+
+            {/* Messages area */}
+            <div style={{
+              flex: 1, padding: "14px 14px", display: "flex", flexDirection: "column", gap: 10,
+              overflow: "hidden",
+            }}>
+              {/* Mensagem assistente 1 */}
+              <div style={{ display: "flex", gap: 6, alignItems: "flex-end", maxWidth: "85%" }}>
                 <div style={{
-                  background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
-                  borderRadius: "2px 10px 10px 10px", padding: "8px 10px",
-                  fontSize: 11, lineHeight: 1.5, color: T.muted,
+                  width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                  background: ga(0.1),
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  marginBottom: 1,
+                }}>
+                  <Sparkles size={8} style={{ color: T.green }} />
+                </div>
+                <div style={{
+                  background: mutedBubble,
+                  borderRadius: "2px 12px 12px 12px",
+                  padding: "8px 10px",
+                  fontSize: 9.5, lineHeight: 1.6, color: T.text,
                 }}>
                   Olá! Sou a Íris, sua assistente de jardinagem. Como posso ajudar hoje?
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8, maxWidth: "75%", alignSelf: "flex-end" }}>
+
+              {/* Sugestões */}
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 4, paddingLeft: 26 }}>
+                {["Agendar serviço", "Criar orçamento", "Novo cliente", "Registrar despesa"].map(s => (
+                  <div key={s} style={{
+                    fontSize: 8, padding: "4px 8px", borderRadius: 10,
+                    border: `1px solid ${ca(0.08)}`, color: T.muted,
+                  }}>{s}</div>
+                ))}
+              </div>
+
+              {/* Mensagem usuário 1 */}
+              <div style={{ display: "flex", gap: 6, alignItems: "flex-end", alignSelf: "flex-end", maxWidth: "78%" }}>
                 <div style={{
-                  background: "rgba(26,255,94,0.1)", border: "1px solid rgba(26,255,94,0.15)",
-                  borderRadius: "10px 2px 10px 10px", padding: "8px 10px",
-                  fontSize: 11, lineHeight: 1.5, color: T.text,
+                  background: primaryBg, color: primaryText,
+                  borderRadius: "12px 12px 2px 12px",
+                  padding: "8px 10px",
+                  fontSize: 9.5, lineHeight: 1.6,
                 }}>
                   Agendar poda para o Marco amanhã às 9h
                 </div>
               </div>
-              <div style={{ display: "flex", gap: 8, maxWidth: "85%" }}>
-                <AvatarCircle initials="I" size={22} />
+
+              {/* Mensagem assistente 2 */}
+              <div style={{ display: "flex", gap: 6, alignItems: "flex-end", maxWidth: "85%" }}>
                 <div style={{
-                  background: "rgba(255,255,255,0.04)", border: `1px solid ${T.border}`,
-                  borderRadius: "2px 10px 10px 10px", padding: "8px 10px",
-                  fontSize: 11, lineHeight: 1.5, color: T.muted,
+                  width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                  background: ga(0.1),
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  marginBottom: 1,
+                }}>
+                  <Sparkles size={8} style={{ color: T.green }} />
+                </div>
+                <div style={{
+                  background: mutedBubble,
+                  borderRadius: "2px 12px 12px 12px",
+                  padding: "8px 10px",
+                  fontSize: 9.5, lineHeight: 1.6, color: T.text,
                 }}>
                   Poda agendada para Marco Rodrigues amanhã (23/03) às 09:00. Deseja adicionar alguma observação?
                 </div>
               </div>
+
+              {/* Mensagem usuário 2 */}
+              <div style={{ display: "flex", gap: 6, alignItems: "flex-end", alignSelf: "flex-end", maxWidth: "78%" }}>
+                <div style={{
+                  background: primaryBg, color: primaryText,
+                  borderRadius: "12px 12px 2px 12px",
+                  padding: "8px 10px",
+                  fontSize: 9.5, lineHeight: 1.6,
+                }}>
+                  Não, está ótimo. Obrigado!
+                </div>
+              </div>
+
+              {/* Mensagem assistente 3 */}
+              <div style={{ display: "flex", gap: 6, alignItems: "flex-end", maxWidth: "85%" }}>
+                <div style={{
+                  width: 20, height: 20, borderRadius: "50%", flexShrink: 0,
+                  background: ga(0.1),
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  marginBottom: 1,
+                }}>
+                  <Sparkles size={8} style={{ color: T.green }} />
+                </div>
+                <div style={{
+                  background: mutedBubble,
+                  borderRadius: "2px 12px 12px 12px",
+                  padding: "8px 10px",
+                  fontSize: 9.5, lineHeight: 1.6, color: T.text,
+                }}>
+                  Perfeito! Agendamento confirmado. Precisa de mais alguma coisa?
+                </div>
+              </div>
             </div>
+
+            {/* Input area */}
             <div style={{
-              marginTop: "auto", paddingTop: 10,
-              display: "flex", gap: 6, alignItems: "center",
+              padding: "8px 14px 12px",
+              borderTop: `1px solid ${ca(0.06)}`,
+              display: "flex", gap: 5, alignItems: "center",
             }}>
               <div style={{
-                flex: 1, background: "rgba(255,255,255,0.04)",
-                border: `1px solid ${T.border}`, borderRadius: 8,
-                padding: "8px 10px", fontSize: 11, color: T.subtle,
+                flex: 1, background: mutedBubble,
+                border: `1px solid ${ca(0.08)}`, borderRadius: 8,
+                padding: "7px 10px", fontSize: 9.5, color: T.subtle,
               }}>
-                Digite ou fale com a Íris...
+                Peça algo à Íris...
               </div>
               <div style={{
-                width: 28, height: 28, borderRadius: 8,
-                background: T.green, color: onGreen,
+                width: 26, height: 26, borderRadius: 8,
+                border: `1px solid ${ca(0.08)}`,
                 display: "flex", alignItems: "center", justifyContent: "center",
-                fontSize: 13,
-              }}>↑</div>
+                color: T.muted,
+              }}>
+                <Mic size={11} />
+              </div>
+              <div style={{
+                width: 26, height: 26, borderRadius: 8,
+                background: primaryBg,
+                display: "flex", alignItems: "center", justifyContent: "center",
+              }}>
+                <Send size={10} style={{ color: primaryText }} />
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      case "Perfil": {
+        return (
+          <>
+            {/* Header */}
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: "-0.4px", marginBottom: 2, color: T.text }}>Perfil</div>
+              <div style={{ fontSize: 11, color: T.muted }}>Gerencie suas informações e preferências</div>
+            </div>
+
+            {/* Hero card — preview do perfil */}
+            <div style={{
+              background: T.bg3, border: `1px solid ${T.border}`,
+              borderRadius: 10, padding: "14px 14px",
+              display: "flex", alignItems: "center", gap: 10, marginBottom: 12,
+            }}>
+              {/* Avatar grande */}
+              <div style={{
+                width: 40, height: 40, borderRadius: "50%", flexShrink: 0,
+                background: ga(0.15), color: T.green,
+                display: "flex", alignItems: "center", justifyContent: "center",
+                fontSize: 14, fontWeight: 700,
+                border: `2px solid ${T.border}`,
+              }}>PL</div>
+              {/* Info */}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: T.text, marginBottom: 2 }}>Pedro Luiz</div>
+                <div style={{ fontSize: 8, color: T.muted, marginBottom: 3 }}>Membro desde janeiro de 2026</div>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "2px 10px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                    <Mail size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                    <span style={{ fontSize: 8, color: T.muted }}>pedro@email.com</span>
+                  </div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 3 }}>
+                    <Phone size={7} style={{ color: T.muted, flexShrink: 0 }} />
+                    <span style={{ fontSize: 8, color: T.muted }}>(11) 99876-5432</span>
+                  </div>
+                </div>
+              </div>
+              {/* Botão sair */}
+              <div style={{
+                display: "flex", alignItems: "center", gap: 4,
+                fontSize: 8, fontWeight: 500, padding: "5px 9px", borderRadius: 7,
+                border: `1px solid ${mockLightMode ? "rgba(220,38,38,0.3)" : "rgba(248,113,113,0.3)"}`,
+                color: mockLightMode ? "#dc2626" : "#f87171",
+                flexShrink: 0,
+              }}>
+                <LogOut size={9} />
+                Sair
+              </div>
+            </div>
+
+            {/* Grid 2 colunas — seções do perfil */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
+              {/* Foto de perfil */}
+              <div style={{
+                background: T.bg3, border: `1px solid ${T.border}`,
+                borderRadius: 10, padding: "12px 12px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10 }}>
+                  <div style={{
+                    width: 16, height: 16, borderRadius: "50%", background: ca(0.06),
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <UserCircle size={8} style={{ color: T.muted }} />
+                  </div>
+                  <span style={{ fontSize: 9.5, fontWeight: 600, color: T.text }}>Foto de perfil</span>
+                </div>
+                <div style={{
+                  borderRadius: 8, border: `1px dashed ${ca(0.12)}`,
+                  padding: "16px 0", display: "flex", flexDirection: "column",
+                  alignItems: "center", justifyContent: "center", gap: 4,
+                }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: "50%",
+                    background: ga(0.15), color: T.green,
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontSize: 13, fontWeight: 700,
+                    border: `2px solid ${ga(0.2)}`,
+                  }}>PL</div>
+                  <span style={{ fontSize: 7.5, color: T.muted }}>Clique para trocar</span>
+                </div>
+              </div>
+
+              {/* Empresa e marca d'água */}
+              <div style={{
+                background: T.bg3, border: `1px solid ${T.border}`,
+                borderRadius: 10, padding: "12px 12px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10 }}>
+                  <div style={{
+                    width: 16, height: 16, borderRadius: "50%", background: ca(0.06),
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Sparkles size={8} style={{ color: T.muted }} />
+                  </div>
+                  <span style={{ fontSize: 9.5, fontWeight: 600, color: T.text }}>Empresa e marca d&apos;água</span>
+                </div>
+                {/* Campos */}
+                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                  <div>
+                    <div style={{ fontSize: 7.5, fontWeight: 500, color: T.muted, marginBottom: 3 }}>Nome da empresa</div>
+                    <div style={{
+                      background: ca(0.03), border: `1px solid ${ca(0.08)}`,
+                      borderRadius: 6, padding: "6px 8px", fontSize: 9, color: T.text,
+                    }}>Verde Vivo</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 7.5, fontWeight: 500, color: T.muted, marginBottom: 3 }}>Subtítulo <span style={{ color: ca(0.3) }}>(opcional)</span></div>
+                    <div style={{
+                      background: ca(0.03), border: `1px solid ${ca(0.08)}`,
+                      borderRadius: 6, padding: "6px 8px", fontSize: 9, color: T.text,
+                    }}>Jardinagem & Paisagismo</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Preferências */}
+              <div style={{
+                background: T.bg3, border: `1px solid ${T.border}`,
+                borderRadius: 10, padding: "12px 12px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10 }}>
+                  <div style={{
+                    width: 16, height: 16, borderRadius: "50%", background: ca(0.06),
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Settings size={8} style={{ color: T.muted }} />
+                  </div>
+                  <span style={{ fontSize: 9.5, fontWeight: 600, color: T.text }}>Preferências</span>
+                </div>
+                <div style={{ display: "flex", flexDirection: "column", gap: 7 }}>
+                  <div>
+                    <div style={{ fontSize: 7.5, fontWeight: 500, color: T.muted, marginBottom: 3 }}>Vencimento do cartão</div>
+                    <div style={{
+                      background: ca(0.03), border: `1px solid ${ca(0.08)}`,
+                      borderRadius: 6, padding: "6px 8px", fontSize: 9, color: T.text,
+                    }}>10</div>
+                  </div>
+                  <div>
+                    <div style={{ fontSize: 7.5, fontWeight: 500, color: T.muted, marginBottom: 3 }}>Margem de lucro padrão (%)</div>
+                    <div style={{
+                      background: ca(0.03), border: `1px solid ${ca(0.08)}`,
+                      borderRadius: 6, padding: "6px 8px", fontSize: 9, color: T.text,
+                    }}>20</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Assinatura */}
+              <div style={{
+                background: T.bg3, border: `1px solid ${T.border}`,
+                borderRadius: 10, padding: "12px 12px",
+              }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 10 }}>
+                  <div style={{
+                    width: 16, height: 16, borderRadius: "50%", background: ga(0.08),
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                  }}>
+                    <Sparkles size={8} style={{ color: T.green }} />
+                  </div>
+                  <span style={{ fontSize: 9.5, fontWeight: 600, color: T.text }}>Assinatura</span>
+                </div>
+                <div style={{
+                  borderRadius: 8, background: ca(0.04), border: `1px solid ${ca(0.06)}`,
+                  padding: "14px 10px", textAlign: "center",
+                }}>
+                  <div style={{ fontSize: 9.5, fontWeight: 600, color: T.text, marginBottom: 3 }}>Plano Plus</div>
+                  <div style={{ fontSize: 8, color: T.muted, marginBottom: 6 }}>R$ 77,90/mês · Ativo</div>
+                  <div style={{
+                    display: "inline-flex", alignItems: "center", gap: 3,
+                    fontSize: 7.5, fontWeight: 500, padding: "3px 8px", borderRadius: 8,
+                    background: ga(0.1), color: T.green,
+                  }}>
+                    <CheckCircle2 size={7} />
+                    Assinatura ativa
+                  </div>
+                </div>
+              </div>
             </div>
           </>
         )
+      }
 
       default:
         return null
@@ -1413,6 +2594,7 @@ function DashboardMockup() {
               padding: "20px 18px",
               display: "flex", flexDirection: "column",
               minWidth: 0,
+              textAlign: "left",
               transition: "background 0.4s ease, color 0.4s ease",
             }}>
               {renderContent()}
