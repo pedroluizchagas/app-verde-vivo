@@ -52,7 +52,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     })()
 
     // Listen for changes on auth state (logged in, signed out, etc.)
-    const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setUser(session?.user ?? null)
     })
 

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react"
+import { useEffect, useState, useCallback, useRef } from "react"
 import {
   View,
   Text,
@@ -85,9 +85,17 @@ const STATUS_DISPLAY: Record<string, { label: string; icon: keyof typeof Ionicon
 
 async function getFreshAccessToken(): Promise<string | null> {
   const { data: sessionData } = await supabase.auth.getSession()
-  const token = sessionData?.session?.access_token
-  if (token) return token
-  // Token ausente ou sessao expirada: tenta renovar via refresh token
+  const session = sessionData?.session
+
+  if (session) {
+    // Verifica se o access_token esta expirado ou vai expirar nos proximos 30s
+    const expiresAt = session.expires_at ?? 0
+    const isExpiredOrExpiringSoon = Date.now() / 1000 >= expiresAt - 30
+
+    if (!isExpiredOrExpiringSoon) return session.access_token
+  }
+
+  // Token ausente ou expirado: tenta renovar via refresh token
   const { data: refreshData } = await supabase.auth.refreshSession()
   return refreshData?.session?.access_token ?? null
 }
@@ -184,6 +192,7 @@ export function PlanScreen() {
   const [status, setStatus] = useState<SubscriptionStatus | null>(null)
   const [loadingStatus, setLoadingStatus] = useState(true)
   const [subscribing, setSubscribing] = useState<Plan | null>(null)
+  const subscribingRef = useRef(false)
 
   const fetchStatus = useCallback(async () => {
     setLoadingStatus(true)
@@ -276,6 +285,8 @@ export function PlanScreen() {
   }, [navigation])
 
   const handleSubscribe = async (plan: Plan) => {
+    if (subscribingRef.current) return
+    subscribingRef.current = true
     setSubscribing(plan)
     try {
       const token = await getFreshAccessToken()
@@ -342,12 +353,14 @@ export function PlanScreen() {
         Alert.alert("Erro", msg || "Erro inesperado.")
       }
     } finally {
+      subscribingRef.current = false
       setSubscribing(null)
     }
   }
 
   const handleReopenPayment = async () => {
-    if (!status?.subscription) return
+    if (!status?.subscription || subscribingRef.current) return
+    subscribingRef.current = true
     setSubscribing(status.subscription.plan as Plan)
     try {
       const token = await getFreshAccessToken()
@@ -393,6 +406,7 @@ export function PlanScreen() {
         Alert.alert("Erro", msg || "Erro inesperado.")
       }
     } finally {
+      subscribingRef.current = false
       setSubscribing(null)
     }
   }

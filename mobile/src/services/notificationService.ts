@@ -1,7 +1,7 @@
 import * as Notifications from "expo-notifications"
 import { Platform } from "react-native"
 import { supabase } from "../supabase"
-import { Alert } from "react-native"
+
 
 export interface NotificationSchedule {
   id?: string
@@ -176,7 +176,7 @@ export class NotificationService {
             .eq("id", user.id)
           await supabase
             .from("device_tokens")
-            .upsert({ gardener_id: user.id, token, provider: "expo", platform: Platform.OS, last_seen: new Date().toISOString(), is_active: true }, { onConflict: "token" })
+            .upsert({ gardener_id: user.id, token, provider: "expo", platform: Platform.OS, last_seen: new Date().toISOString(), is_active: true }, { onConflict: "gardener_id,token" })
         } catch (e) {
           console.error("Error saving push token:", e)
         }
