@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
-import { constructStripeWebhookEvent } from "@/lib/stripe/client"
+import { constructStripeWebhookEvent, retrieveStripeSubscription } from "@/lib/stripe/client"
 import type Stripe from "stripe"
 
 export const runtime = "nodejs"
@@ -27,7 +27,8 @@ export async function POST(request: Request) {
   const admin = createServiceRoleClient()
 
   // checkout.session.completed
-  // - Associa o stripe_subscription_id ao registro pendente no banco
+  // - Associa o stripe_subscription_id ao registro pendente
+  // - Ativa a assinatura imediatamente, eliminando a race condition com invoice.payment_succeeded
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as Stripe.Checkout.Session
     const subscriptionDbId = session.metadata?.subscription_db_id
@@ -35,18 +36,36 @@ export async function POST(request: Request) {
       typeof session.subscription === "string" ? session.subscription : session.subscription?.id
 
     if (subscriptionDbId && stripeSubscriptionId) {
-      await admin
+      const { data: sub } = await admin
         .from("subscriptions")
-        .update({
-          stripe_subscription_id: stripeSubscriptionId,
-          updated_at: new Date().toISOString(),
-        })
+        .select("id, user_id, plan")
         .eq("id", subscriptionDbId)
+        .maybeSingle()
+
+      if (sub) {
+        const now = new Date()
+        const periodEnd = new Date(now)
+        periodEnd.setMonth(periodEnd.getMonth() + 1)
+
+        await admin
+          .from("subscriptions")
+          .update({
+            stripe_subscription_id: stripeSubscriptionId,
+            status: "active",
+            current_period_start: now.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+            updated_at: now.toISOString(),
+          })
+          .eq("id", sub.id)
+
+        await admin.from("profiles").update({ plan: sub.plan }).eq("id", sub.user_id)
+      }
     }
   }
 
   // invoice.payment_succeeded
-  // - Ativa a assinatura e atualiza o periodo vigente
+  // - Ativa/renova a assinatura com datas reais do periodo de cobranca
+  // - Fallback via metadados do Stripe cobre casos onde o evento chega antes do checkout.session.completed
   if (event.type === "invoice.payment_succeeded") {
     const invoice = event.data.object as Stripe.Invoice
     const stripeSubscriptionId =
@@ -54,25 +73,56 @@ export async function POST(request: Request) {
 
     if (!stripeSubscriptionId) return NextResponse.json({ ok: true })
 
-    const { data: sub } = await admin
+    let sub: { id: string; user_id: string; plan: string } | null = null
+
+    const { data: subByStripeId } = await admin
       .from("subscriptions")
       .select("id, user_id, plan")
       .eq("stripe_subscription_id", stripeSubscriptionId)
       .maybeSingle()
 
+    sub = subByStripeId ?? null
+
+    // Fallback: recupera metadados da assinatura no Stripe para encontrar o registro no banco
+    if (!sub) {
+      try {
+        const stripeSub = await retrieveStripeSubscription(stripeSubscriptionId)
+        const subscriptionDbId = stripeSub.metadata?.subscription_db_id
+
+        if (subscriptionDbId) {
+          const { data: subByDbId } = await admin
+            .from("subscriptions")
+            .select("id, user_id, plan")
+            .eq("id", subscriptionDbId)
+            .maybeSingle()
+
+          if (subByDbId) {
+            sub = subByDbId
+            await admin
+              .from("subscriptions")
+              .update({ stripe_subscription_id: stripeSubscriptionId, updated_at: new Date().toISOString() })
+              .eq("id", sub.id)
+          }
+        }
+      } catch (err) {
+        console.error("[webhook] Erro ao buscar assinatura Stripe para fallback:", err)
+      }
+    }
+
     if (!sub) return NextResponse.json({ ok: true })
 
-    const now = new Date()
-    const periodEnd = new Date(now)
-    periodEnd.setMonth(periodEnd.getMonth() + 1)
+    const periodStart = invoice.period_start ? new Date(invoice.period_start * 1000) : new Date()
+    const periodEnd = invoice.period_end
+      ? new Date(invoice.period_end * 1000)
+      : (() => { const d = new Date(periodStart); d.setMonth(d.getMonth() + 1); return d })()
 
     await admin
       .from("subscriptions")
       .update({
         status: "active",
-        current_period_start: now.toISOString(),
+        current_period_start: periodStart.toISOString(),
         current_period_end: periodEnd.toISOString(),
-        updated_at: now.toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq("id", sub.id)
 

@@ -90,6 +90,7 @@ interface PlanCardsProps {
 export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialEndsAt }: PlanCardsProps) {
   const [loading, setLoading] = useState<Plan | null>(null)
   const [reopenLoading, setReopenLoading] = useState(false)
+  const [verifyLoading, setVerifyLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
   async function handleSubscribe(plan: Plan) {
@@ -116,6 +117,29 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
       setError(err?.message ?? "Erro ao iniciar assinatura")
     } finally {
       setLoading(null)
+    }
+  }
+
+  async function handleVerifyPayment() {
+    if (verifyLoading || loading !== null || reopenLoading) return
+    setVerifyLoading(true)
+    setError(null)
+    try {
+      const res = await fetch("/api/subscription/verify-payment", { method: "POST" })
+      const data = await res.json()
+      if (!res.ok) {
+        setError(data.message ?? data.error ?? "Erro ao verificar pagamento")
+        return
+      }
+      if (data.activated) {
+        window.location.reload()
+      } else {
+        setError(data.message ?? "Pagamento nao encontrado. Aguarde alguns minutos e tente novamente.")
+      }
+    } catch (err: any) {
+      setError(err?.message ?? "Erro ao verificar pagamento")
+    } finally {
+      setVerifyLoading(false)
     }
   }
 
@@ -193,42 +217,61 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
       {subscription && statusInfo && (
         <div
           className={cn(
-            "flex items-center gap-3 px-4 py-3 rounded-xl border text-sm font-medium",
+            "flex flex-col gap-2 px-4 py-3 rounded-xl border text-sm font-medium",
             statusInfo.color
           )}
         >
-          {statusInfo.icon}
-          <span>
-            {statusInfo.label}
-            {subscription.plan === "basic" && " — Plano Basico"}
-            {subscription.plan === "plus" && " — Plano Plus"}
-            {periodEnd && subscription.status === "active" && (
-              <span className="font-normal opacity-70 ml-1">
-                · Proximo vencimento: {periodEnd}
-              </span>
+          <div className="flex items-center gap-3">
+            {statusInfo.icon}
+            <span>
+              {statusInfo.label}
+              {subscription.plan === "basic" && " — Plano Basico"}
+              {subscription.plan === "plus" && " — Plano Plus"}
+              {periodEnd && subscription.status === "active" && (
+                <span className="font-normal opacity-70 ml-1">
+                  · Proximo vencimento: {periodEnd}
+                </span>
+              )}
+              {subscription.status === "pending" && (
+                <span className="font-normal opacity-70 ml-1">
+                  · Conclua o pagamento para ativar seu plano.
+                </span>
+              )}
+              {subscription.status === "overdue" && (
+                <span className="font-normal opacity-70 ml-1">
+                  · Regularize o pagamento para manter o acesso.
+                </span>
+              )}
+            </span>
+            {(subscription.status === "pending" || subscription.status === "overdue") && (
+              <button
+                type="button"
+                disabled={reopenLoading || verifyLoading || loading !== null}
+                onClick={handleReopenPayment}
+                className="ml-auto text-xs underline underline-offset-2 font-medium shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {reopenLoading ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  "Abrir pagamento"
+                )}
+              </button>
             )}
-            {subscription.status === "pending" && (
-              <span className="font-normal opacity-70 ml-1">
-                · Acesse o link de pagamento para ativar seu plano.
-              </span>
-            )}
-            {subscription.status === "overdue" && (
-              <span className="font-normal opacity-70 ml-1">
-                · Regularize o pagamento para manter o acesso.
-              </span>
-            )}
-          </span>
-          {(subscription.status === "pending" || subscription.status === "overdue") && (
+          </div>
+          {subscription.status === "pending" && (
             <button
               type="button"
-              disabled={reopenLoading || loading !== null}
-              onClick={handleReopenPayment}
-              className="ml-auto text-xs underline underline-offset-2 font-medium shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={verifyLoading || loading !== null || reopenLoading}
+              onClick={handleVerifyPayment}
+              className="flex items-center gap-1.5 text-xs font-normal opacity-60 hover:opacity-100 transition-opacity text-left ml-6 disabled:cursor-not-allowed"
             >
-              {reopenLoading ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              {verifyLoading ? (
+                <>
+                  <Loader2 className="h-3 w-3 animate-spin shrink-0" />
+                  Verificando pagamento...
+                </>
               ) : (
-                "Abrir pagamento"
+                "Ja realizei o pagamento — verificar acesso"
               )}
             </button>
           )}

@@ -97,6 +97,27 @@ export async function createStripePortalSession(
 }
 
 /**
+ * Recupera uma assinatura Stripe pelo ID.
+ */
+export async function retrieveStripeSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
+  const stripe = getStripe()
+  return stripe.subscriptions.retrieve(subscriptionId)
+}
+
+/**
+ * Lista assinaturas ativas de um cliente Stripe.
+ */
+export async function listActiveStripeSubscriptions(customerId: string): Promise<Stripe.Subscription[]> {
+  const stripe = getStripe()
+  const result = await stripe.subscriptions.list({
+    customer: customerId,
+    status: "active",
+    limit: 10,
+  })
+  return result.data
+}
+
+/**
  * Valida e desserializa o evento de webhook do Stripe.
  * Lanca erro se a assinatura for invalida.
  */
