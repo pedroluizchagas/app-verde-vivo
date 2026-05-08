@@ -1,30 +1,66 @@
-# Gardening app VerdeVivo
+# Gestão Garden
 
-*Automatically synced with your [v0.app](https://v0.app) deployments*
+SaaS de gestão para profissionais de jardinagem. Combina gestão operacional (clientes, agenda, ordens de serviço, estoque, financeiro) com **Íris**, assistente de IA que reduz fricção operacional via texto e voz. Web em Next.js (Vercel) + mobile em Expo, backend em Supabase, pagamentos via Stripe e IA via Groq (LLaMA + Whisper).
 
-[![Deployed on Vercel](https://img.shields.io/badge/Deployed%20on-Vercel-black?style=for-the-badge&logo=vercel)](https://vercel.com/planteejardins-8007s-projects/v0-gardening-app-verde-vivo)
-[![Built with v0](https://img.shields.io/badge/Built%20with-v0.app-black?style=for-the-badge)](https://v0.app/chat/dIlVQEUKtrn)
+## Stack
 
-## Overview
+- **Web:** Next.js 16 (App Router) · React 19 · TypeScript 5 · Tailwind v4 · shadcn/ui (Radix)
+- **Mobile:** Expo / React Native (`/mobile`)
+- **Backend:** Supabase (PostgreSQL com RLS + Auth)
+- **Pagamentos:** Stripe (checkout, webhooks, customer portal)
+- **IA:** Groq SDK (LLaMA 3.1 8B + Whisper Large v3)
+- **Pacotes:** pnpm 10 · Node 20+
+- **Deploy:** Vercel
 
-This repository will stay in sync with your deployed chats on [v0.app](https://v0.app).
-Any changes you make to your deployed app will be automatically pushed to this repository from [v0.app](https://v0.app).
+## Estrutura
 
-## Deployment
+A documentação técnica detalhada está em:
 
-Your project is live at:
+- [`CLAUDE.md`](./CLAUDE.md) — convenções, estrutura de pastas e padrões para agentes/devs.
+- [`docs/`](./docs) — visão técnica, arquitetura-alvo, roadmap e fases de execução.
+  - [`docs/00-visao-tecnica.md`](./docs/00-visao-tecnica.md)
+  - [`docs/01-arquitetura-alvo.md`](./docs/01-arquitetura-alvo.md)
+  - [`docs/02-roadmap.md`](./docs/02-roadmap.md)
+  - [`docs/03-padroes-e-convencoes.md`](./docs/03-padroes-e-convencoes.md)
+  - [`docs/04-checklist-pr.md`](./docs/04-checklist-pr.md)
 
-**[https://vercel.com/planteejardins-8007s-projects/v0-gardening-app-verde-vivo](https://vercel.com/planteejardins-8007s-projects/v0-gardening-app-verde-vivo)**
+## Setup local
 
-## Build your app
+Requer **Node 20+** e **pnpm 10+** (`corepack enable` recomendado).
 
-Continue building your app on:
+```bash
+# 1. Clonar
+git clone <url-do-repositorio>
+cd <pasta-do-projeto>
 
-**[https://v0.app/chat/dIlVQEUKtrn](https://v0.app/chat/dIlVQEUKtrn)**
+# 2. Instalar dependências (instalação reprodutível)
+pnpm install --frozen-lockfile
 
-## How It Works
+# 3. Configurar variáveis de ambiente
+cp .env.example .env.local
+# preencher .env.local com as credenciais reais (Supabase, Stripe, Groq, etc.)
 
-1. Create and modify your project using [v0.app](https://v0.app)
-2. Deploy your chats from the v0 interface
-3. Changes are automatically pushed to this repository
-4. Vercel deploys the latest version from this repository
+# 4. Subir o servidor de desenvolvimento
+pnpm dev
+# app disponível em http://localhost:3000
+```
+
+Para o app mobile (`/mobile`), seguir as instruções específicas no diretório (Expo + EAS).
+
+## Scripts
+
+| Comando      | Descrição                                                             |
+| ------------ | --------------------------------------------------------------------- |
+| `pnpm dev`   | Sobe o Next em modo dev (`--hostname 0.0.0.0 --webpack`).             |
+| `pnpm build` | Build de produção (`next build`).                                     |
+| `pnpm start` | Sobe o build de produção (`next start`).                              |
+| `pnpm lint`  | Roda ESLint em todo o projeto.                                        |
+
+## Como contribuir
+
+1. Toda fase do roadmap roda em uma branch `feat/fase-NN-<slug>` e abre um PR draft.
+2. Padrões obrigatórios de código, naming, commits e PRs em [`docs/03-padroes-e-convencoes.md`](./docs/03-padroes-e-convencoes.md).
+3. Definition of Done de cada PR e template do corpo em [`docs/04-checklist-pr.md`](./docs/04-checklist-pr.md).
+4. Commits seguem **Conventional Commits** em pt-BR (ex.: `feat(stripe): adicionar idempotência ao webhook`).
+
+Antes de abrir o PR, garanta que `pnpm lint && pnpm build` passem localmente.
