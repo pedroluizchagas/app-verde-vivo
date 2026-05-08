@@ -70,11 +70,11 @@ export function ExportMaintenanceICSButton({ planId }: { planId: string }) {
 
       const pad = (n: number) => String(n).padStart(2, "0")
       const fmt = (d: Date) => `${d.getUTCFullYear()}${pad(d.getUTCMonth() + 1)}${pad(d.getUTCDate())}T${pad(d.getUTCHours())}${pad(d.getUTCMinutes())}00Z`
-      const uid = `${planId}-${Date.now()}@verdevivo`
+      const uid = `${planId}-${Date.now()}@gestaogarden`
       const ics = [
         "BEGIN:VCALENDAR",
         "VERSION:2.0",
-        "PRODID:-//VerdeVivo//Manutenção//PT-BR",
+        "PRODID:-//GestaoGarden//Manutenção//PT-BR",
         "CALSCALE:GREGORIAN",
         "BEGIN:VEVENT",
         `UID:${uid}`,

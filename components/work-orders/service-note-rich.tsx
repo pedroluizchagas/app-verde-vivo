@@ -115,7 +115,7 @@ export function WorkOrderServiceNoteRich({ order, items, companyName, watermarkB
     ctx.fillStyle = "#666"; ctx.font = "500 13px system-ui"
     const empLabel = "Empresa"
     ctx.fillText(empLabel, margin, headerH + 118)
-    const empVal = companyName || "VerdeVivo"
+    const empVal = companyName || "Gestão Garden"
     ctx.fillStyle = "#111"; ctx.font = "400 14px system-ui"
     ctx.fillText(empVal, bw - margin - ctx.measureText(empVal).width, headerH + 118)
     ctx.fillStyle = "#666"; ctx.font = "500 13px system-ui"

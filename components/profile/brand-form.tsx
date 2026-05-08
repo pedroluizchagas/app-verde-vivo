@@ -126,7 +126,7 @@ export function BrandForm() {
             setCompanyName(e.target.value)
             setSuccess(false)
           }}
-          placeholder="Ex.: VerdeVivo"
+          placeholder="Ex.: Gestão Garden"
           className="h-11"
           disabled={loading}
         />
