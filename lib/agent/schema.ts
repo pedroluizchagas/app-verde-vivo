@@ -42,6 +42,7 @@ export type AgentIntent =
   | "record_service_income"
   | "record_income"
   | "record_expense"
+  | "record_inventory_purchase"
   | "record_partner_commission"
   | "create_note"
   | "create_task"
@@ -50,8 +51,10 @@ export type AgentIntent =
   | "close_monthly_execution"
   | "none";
 
+export type AgentParams = Record<string, unknown>;
+
 export interface AgentResponse {
   intent: AgentIntent;
-  params: Record<string, unknown>;
+  params: AgentParams;
   reply: string;
 }

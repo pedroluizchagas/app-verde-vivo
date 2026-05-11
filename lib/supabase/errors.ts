@@ -1,6 +1,19 @@
-export function isSupabaseUnreachable(err: any): boolean {
-  const cause = err?.cause;
-  const causeCode = cause?.code;
+type ErrorComCause = {
+  cause?: { code?: string } | null;
+  status?: number;
+  response?: { status?: number };
+  originalError?: { status?: number };
+  message?: string;
+};
+
+function asErrorComCause(err: unknown): ErrorComCause {
+  if (typeof err !== "object" || err === null) return {};
+  return err as ErrorComCause;
+}
+
+export function isSupabaseUnreachable(err: unknown): boolean {
+  const e = asErrorComCause(err);
+  const causeCode = e.cause?.code;
   if (
     causeCode === "ENOTFOUND" ||
     causeCode === "EAI_AGAIN" ||
@@ -9,12 +22,11 @@ export function isSupabaseUnreachable(err: any): boolean {
   ) {
     return true;
   }
-  const status =
-    (err as any)?.status ?? (err as any)?.response?.status ?? (err as any)?.originalError?.status;
+  const status = e.status ?? e.response?.status ?? e.originalError?.status;
   if (typeof status === "number" && status >= 500) {
     return true;
   }
-  const msg = String((err as any)?.message || "");
+  const msg = String(e.message ?? "");
   if (/web server is down/i.test(msg)) return true;
   if (/\b521\b/.test(msg)) return true;
   if (/cloudflare/i.test(msg)) return true;

@@ -103,8 +103,9 @@ export async function updateSession(request: NextRequest) {
       }
     }
   } catch (error) {
-    const code = (error as any)?.code;
-    const causeCode = (error as any)?.cause?.code;
+    const err = error as { code?: string; cause?: { code?: string } } | null;
+    const code = err?.code;
+    const causeCode = err?.cause?.code;
     if (code === "refresh_token_not_found") {
       const toClear = request.cookies.getAll().filter((c) => c.name.startsWith("sb-"));
       if (toClear.length) {

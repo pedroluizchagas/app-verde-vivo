@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
 import { constructStripeWebhookEvent, retrieveStripeSubscription } from "@/lib/stripe/client";
 import { enforceRateLimit, getClientIp } from "@/lib/rate-limit";
+import { obterSubscriptionIdDeInvoice } from "@/lib/types/stripe";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
@@ -76,8 +77,7 @@ export async function POST(request: Request) {
   // - Fallback via metadados do Stripe cobre casos onde o evento chega antes do checkout.session.completed
   if (event.type === "invoice.payment_succeeded") {
     const invoice = event.data.object as Stripe.Invoice;
-    const stripeSubscriptionId =
-      typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
+    const stripeSubscriptionId = obterSubscriptionIdDeInvoice(invoice);
 
     if (!stripeSubscriptionId) return NextResponse.json({ ok: true });
 
@@ -148,8 +148,7 @@ export async function POST(request: Request) {
   // - Marca assinatura como inadimplente
   if (event.type === "invoice.payment_failed") {
     const invoice = event.data.object as Stripe.Invoice;
-    const stripeSubscriptionId =
-      typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
+    const stripeSubscriptionId = obterSubscriptionIdDeInvoice(invoice);
 
     if (!stripeSubscriptionId) return NextResponse.json({ ok: true });
 

@@ -7072,7 +7072,6 @@ function Stats() {
               <div
                 className="card-hover card-hover-green"
                 style={{
-                  background: T.bg2,
                   border: `1px solid ${T.border}`,
                   borderRadius: 16,
                   padding: "clamp(20px, 4vw, 32px)",

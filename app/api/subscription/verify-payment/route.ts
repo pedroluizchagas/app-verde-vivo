@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { authErrorResponse, requireUser } from "@/lib/auth/api";
 import { listActiveStripeSubscriptions } from "@/lib/stripe/client";
+import { obterPeriodoSubscription } from "@/lib/types/stripe";
 
 export const runtime = "nodejs";
 
@@ -95,11 +96,10 @@ export async function POST(request: Request) {
     }
 
     const now = new Date();
-    const periodStart = stripeSub.current_period_start
-      ? new Date(stripeSub.current_period_start * 1000)
-      : now;
-    const periodEnd = stripeSub.current_period_end
-      ? new Date(stripeSub.current_period_end * 1000)
+    const periodo = obterPeriodoSubscription(stripeSub);
+    const periodStart = periodo.start ? new Date(periodo.start * 1000) : now;
+    const periodEnd = periodo.end
+      ? new Date(periodo.end * 1000)
       : (() => {
           const d = new Date(now);
           d.setMonth(d.getMonth() + 1);

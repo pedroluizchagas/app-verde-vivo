@@ -38,11 +38,17 @@ export async function POST(req: Request) {
       .eq("gardener_id", user.id)
       .gte("scheduled_date", new Date(start.getTime() - 24 * 60 * 60 * 1000).toISOString())
       .order("scheduled_date", { ascending: true });
-    const hasConflict = (overlaps || []).some((a: any) => {
+    type AppointmentOverlap = {
+      id: string;
+      scheduled_date: string;
+      end_date: string | null;
+      duration_minutes: number | null;
+    };
+    const hasConflict = ((overlaps ?? []) as AppointmentOverlap[]).some((a) => {
       const s = new Date(String(a.scheduled_date));
       const e = a.end_date
         ? new Date(String(a.end_date))
-        : new Date(s.getTime() + Number(a.duration_minutes || 0) * 60000);
+        : new Date(s.getTime() + Number(a.duration_minutes ?? 0) * 60000);
       return s < end && e > start;
     });
     if (hasConflict)
@@ -67,7 +73,7 @@ export async function POST(req: Request) {
     const duration = allDay
       ? 0
       : Math.max(0, Math.round((end.getTime() - start.getTime()) / 60000));
-    const minimal: any = {
+    const minimal = {
       gardener_id: user.id,
       client_id: plan.client_id,
       service_id: plan.service_id ?? null,
@@ -102,7 +108,8 @@ export async function POST(req: Request) {
     }
 
     return NextResponse.json({ ok: true, id: appt?.id });
-  } catch (e: any) {
-    return NextResponse.json({ ok: false, error: e?.message || "Erro" }, { status: 500 });
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : "Erro";
+    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
   }
 }

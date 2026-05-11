@@ -1,17 +1,28 @@
 import { createGroqClient } from "@/lib/groq/client";
-import { agentSystemPrompt, type AgentResponse } from "./schema";
+import { agentSystemPrompt, type AgentResponse, type AgentParams } from "./schema";
 import { validateIntent, executeIntent } from "./registry";
 import { classifyText } from "./category-map";
 import { createClient as createSupabaseServer, createClientWithToken } from "@/lib/supabase/server";
 
+const asString = (v: unknown): string | undefined => (typeof v === "string" ? v : undefined);
+const asNumber = (v: unknown): number | undefined => (typeof v === "number" ? v : undefined);
+
 const ctxCache = new Map<string, { v: string; t: number }>();
+
+export interface AssistantResult {
+  reply: string;
+  intent: string;
+  result?: unknown;
+  params?: AgentParams;
+  critical?: boolean;
+}
 
 export async function runAssistant(
   userId: string,
   input: string,
   mode: "dry" | "execute" = "execute",
   authToken?: string,
-): Promise<{ reply: string; intent: string; result?: any; params?: any; critical?: boolean }> {
+): Promise<AssistantResult> {
   const groq = createGroqClient();
   const context = await buildContext(userId, authToken);
   const model =
@@ -21,7 +32,7 @@ export async function runAssistant(
     model,
     temperature: 0.2,
     max_tokens: 512,
-    response_format: { type: "json_object" as any },
+    response_format: { type: "json_object" },
     messages: [
       { role: "system", content: agentSystemPrompt + "\n\nContexto:\n" + context },
       { role: "user", content: input },
@@ -41,15 +52,14 @@ export async function runAssistant(
     if (cls?.kind === "inventory") {
       // converter para compra de estoque
       const qty = parsed.params?.quantity ?? 1;
-      const amount = (parsed.params as any)?.amount;
-      const unit_cost =
-        (parsed.params as any)?.unit_cost ?? (typeof amount === "number" ? amount : undefined);
-      parsed.intent = "record_inventory_purchase" as any;
+      const amount = asNumber(parsed.params?.amount);
+      const unit_cost = asNumber(parsed.params?.unit_cost) ?? amount;
+      parsed.intent = "record_inventory_purchase";
       parsed.params = {
         product_name: cls.product_name,
         quantity: qty,
         unit_cost,
-        description: (parsed.params as any)?.description ?? null,
+        description: parsed.params?.description ?? null,
         also_record_expense: true,
       };
     } else if (cls?.kind === "expense") {
@@ -61,7 +71,7 @@ export async function runAssistant(
     }
 
     // Se não veio 'amount', tenta extrair do texto (suporta "50,00" ou "50 conto")
-    const amt = (parsed.params as any)?.amount;
+    const amt = parsed.params?.amount;
     if (amt == null) {
       const m = input.match(/(\d{1,3}(?:[\.,]\d{3})*[\.,]\d{1,2}|\d{1,6})/);
       if (m) {
@@ -113,7 +123,7 @@ export async function runAssistant(
   // Ajuste de data natural para schedule_visit: interpreta "segunda-feira", "amanhã" etc. como datas futuras
   if (parsed.intent === "schedule_visit") {
     const resolved = resolveNaturalDate(input);
-    const provided = parsed.params?.scheduled_date as string | undefined;
+    const provided = asString(parsed.params?.scheduled_date);
     const providedDate = provided ? new Date(provided) : null;
     const now = new Date();
 
@@ -126,7 +136,7 @@ export async function runAssistant(
   // Ajuste de due_date natural para receitas (approve_budget_and_record_income)
   if (parsed.intent === "approve_budget_and_record_income") {
     const resolvedDue = resolveNaturalDate(input);
-    const provided = parsed.params?.due_date as string | undefined;
+    const provided = asString(parsed.params?.due_date);
     const providedDate = provided ? new Date(provided) : null;
     const now = new Date();
     if ((!provided || (providedDate && providedDate < now)) && resolvedDue) {
@@ -145,13 +155,13 @@ export async function runAssistant(
     ];
     if (incomeCues.some((r) => r.test(input))) {
       parsed.params = { ...(parsed.params || {}), status: "paid" };
-      delete (parsed.params as any).due_date;
+      delete parsed.params.due_date;
     }
   }
 
   if (parsed.intent === "create_task") {
     const resolved = resolveNaturalDate(input);
-    const provided = parsed.params?.due_date as string | undefined;
+    const provided = asString(parsed.params?.due_date);
     const providedDate = provided ? new Date(provided) : null;
     const now = new Date();
     if ((!provided || (providedDate && providedDate < now)) && resolved) {
@@ -186,10 +196,10 @@ export async function runAssistant(
     ];
     if (incomeCues.some((r) => r.test(input))) {
       parsed.params = { ...(parsed.params || {}), status: "paid" };
-      delete (parsed.params as any).due_date;
+      delete parsed.params.due_date;
     }
     const resolvedDue = resolveNaturalDate(input);
-    const provided = parsed.params?.due_date as string | undefined;
+    const provided = asString(parsed.params?.due_date);
     const providedDate = provided ? new Date(provided) : null;
     const now = new Date();
     if ((!provided || (providedDate && providedDate < now)) && resolvedDue) {
@@ -200,7 +210,7 @@ export async function runAssistant(
   // Ajuste de data natural para despesas: transaction_date e opcional due_date
   if (parsed.intent === "record_expense") {
     const resolvedTrx = resolveNaturalDate(input);
-    const providedTrx = parsed.params?.transaction_date as string | undefined;
+    const providedTrx = asString(parsed.params?.transaction_date);
     const providedTrxDate = providedTrx ? new Date(providedTrx) : null;
     const now = new Date();
     if (
@@ -213,7 +223,7 @@ export async function runAssistant(
       parsed.params = { ...(parsed.params || {}), transaction_date: resolvedTrx.slice(0, 10) };
     }
     const resolvedDue = resolveNaturalDate(input);
-    const providedDue = parsed.params?.due_date as string | undefined;
+    const providedDue = asString(parsed.params?.due_date);
     const providedDueDate = providedDue ? new Date(providedDue) : null;
     if ((!providedDue || (providedDueDate && providedDueDate < now)) && resolvedDue) {
       parsed.params = { ...(parsed.params || {}), due_date: resolvedDue.slice(0, 10) };
@@ -234,7 +244,7 @@ export async function runAssistant(
     ];
     if (incomeCues.some((r) => r.test(input))) {
       parsed.params = { ...(parsed.params || {}), status: "paid" };
-      delete (parsed.params as any).due_date;
+      delete parsed.params.due_date;
     }
   }
 
@@ -272,9 +282,10 @@ export async function runAssistant(
       params: validation.value,
       critical: validation.critical,
     };
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : String(err);
     return {
-      reply: `Falha ao executar ação: ${err?.message ?? String(err)}`,
+      reply: `Falha ao executar ação: ${msg}`,
       intent: parsed.intent,
       result: { ok: false },
       params: validation.value,
@@ -320,8 +331,8 @@ async function buildContext(userId: string, token?: string): Promise<string> {
     .select("id, name")
     .eq("gardener_id", userId)
     .limit(10);
-  const serialize = (label: string, arr?: any[]) =>
-    `${label}: ` + (arr || []).map((x) => `${x.name} (${x.id})`).join(", ");
+  const serialize = (label: string, arr?: ReadonlyArray<{ id: string; name: string }>) =>
+    `${label}: ` + (arr ?? []).map((x) => `${x.name} (${x.id})`).join(", ");
   const v = [
     serialize("Clientes", clients.data || []),
     serialize("Produtos", products.data || []),

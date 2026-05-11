@@ -20,8 +20,8 @@ export async function GET() {
     const ok = res.ok;
     const status = res.status;
     return NextResponse.json({ ok, status }, { status: ok ? 200 : 503 });
-  } catch (e: any) {
-    const msg = String(e?.message || "");
+  } catch (e: unknown) {
+    const msg = e instanceof Error ? e.message : String(e ?? "");
     return NextResponse.json({ ok: false, error: msg }, { status: 503 });
   }
 }

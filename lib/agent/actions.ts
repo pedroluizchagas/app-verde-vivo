@@ -1,7 +1,12 @@
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient as createSupabaseServer, createClientWithToken } from "@/lib/supabase/server";
 import { createGroqClient } from "@/lib/groq/client";
+import type { IntentParams } from "./intent-schemas";
 
-export async function scheduleVisit(userId: string, params: any, token?: string) {
+// SupabaseClient sem schema gerado: as tabelas e colunas são acessadas dinamicamente.
+type Supabase = SupabaseClient;
+
+export async function scheduleVisit(userId: string, params: IntentParams<"schedule_visit">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const {
     title = "Visita para orçamento",
@@ -36,7 +41,7 @@ export async function scheduleVisit(userId: string, params: any, token?: string)
   return { ok: true };
 }
 
-export async function createClient(userId: string, params: any, token?: string) {
+export async function createClient(userId: string, params: IntentParams<"create_client">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const { name, phone, address, email, notes } = params || {};
   if (!name || !phone || !address) throw new Error("name, phone e address são obrigatórios");
@@ -59,8 +64,9 @@ export async function createClient(userId: string, params: any, token?: string) 
     .ilike("name", `%${name}%`)
     .limit(10);
 
-  const dup = (candidates || []).find(
-    (c: any) => norm(c.name) === targetName && norm(c.address) === targetAddress,
+  type ClienteCandidato = { id: string; name: string; address: string };
+  const dup = ((candidates ?? []) as ClienteCandidato[]).find(
+    (c) => norm(c.name) === targetName && norm(c.address) === targetAddress,
   );
   if (dup?.id) {
     return { ok: true, existed: true, id: dup.id };
@@ -98,7 +104,7 @@ export async function createClient(userId: string, params: any, token?: string) 
   return { ok: true, id: newId };
 }
 
-export async function createBudget(userId: string, params: any, token?: string) {
+export async function createBudget(userId: string, params: IntentParams<"create_budget">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const { title, description, total_amount, client_id, client_name, valid_until } = params || {};
   if (!title || total_amount == null) throw new Error("title e total_amount são obrigatórios");
@@ -121,7 +127,7 @@ export async function createBudget(userId: string, params: any, token?: string) 
   return { ok: true };
 }
 
-export async function updateBudgetStatus(userId: string, params: any, token?: string) {
+export async function updateBudgetStatus(userId: string, params: IntentParams<"update_budget_status">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const { budget_id, title, client_name, status } = params || {};
   if (!status) throw new Error("status é obrigatório");
@@ -158,7 +164,7 @@ export async function updateBudgetStatus(userId: string, params: any, token?: st
   return { ok: true };
 }
 
-export async function updateStock(userId: string, params: any, token?: string) {
+export async function updateStock(userId: string, params: IntentParams<"update_stock">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const {
     product_id,
@@ -190,7 +196,7 @@ export async function updateStock(userId: string, params: any, token?: string) {
   return { ok: true };
 }
 
-export async function approveBudgetAndRecordIncome(userId: string, params: any, token?: string) {
+export async function approveBudgetAndRecordIncome(userId: string, params: IntentParams<"approve_budget_and_record_income">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const {
     client_id,
@@ -266,7 +272,7 @@ export async function approveBudgetAndRecordIncome(userId: string, params: any, 
   return { ok: true, budget_id: budgetRow?.id, transaction_id: trxRow?.id };
 }
 
-export async function recordExpense(userId: string, params: any, token?: string) {
+export async function recordExpense(userId: string, params: IntentParams<"record_expense">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   let {
     amount,
@@ -325,7 +331,7 @@ function parseAmount(raw: string): number {
 }
 
 async function findOrCreateCategoryId(
-  supabase: any,
+  supabase: Supabase,
   userId: string,
   name?: string,
   parentName?: string,
@@ -378,7 +384,7 @@ async function findOrCreateCategoryId(
   return created?.id ?? null;
 }
 
-export async function recordServiceIncome(userId: string, params: any, token?: string) {
+export async function recordServiceIncome(userId: string, params: IntentParams<"record_service_income">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const {
     client_id,
@@ -447,7 +453,7 @@ export async function recordServiceIncome(userId: string, params: any, token?: s
   return { ok: true, appointment_id: apptRow?.id, transaction_id: trxRow?.id };
 }
 
-async function findClientIdByName(supabase: any, userId: string, name?: string) {
+async function findClientIdByName(supabase: Supabase, userId: string, name?: string) {
   if (!name) return null;
   const { data } = await supabase
     .from("clients")
@@ -459,7 +465,7 @@ async function findClientIdByName(supabase: any, userId: string, name?: string) 
   return data?.id ?? null;
 }
 
-async function findServiceIdByName(supabase: any, userId: string, name?: string) {
+async function findServiceIdByName(supabase: Supabase, userId: string, name?: string) {
   if (!name) return null;
   const { data } = await supabase
     .from("services")
@@ -471,7 +477,7 @@ async function findServiceIdByName(supabase: any, userId: string, name?: string)
   return data?.id ?? null;
 }
 
-async function findProductIdByName(supabase: any, userId: string, name?: string) {
+async function findProductIdByName(supabase: Supabase, userId: string, name?: string) {
   if (!name) return null;
   const { data } = await supabase
     .from("products")
@@ -483,7 +489,7 @@ async function findProductIdByName(supabase: any, userId: string, name?: string)
   return data?.id ?? null;
 }
 
-async function findOrCreateProductId(supabase: any, userId: string, name: string) {
+async function findOrCreateProductId(supabase: Supabase, userId: string, name: string) {
   const existing = await findProductIdByName(supabase, userId, name);
   if (existing) return existing;
   const { data, error } = await supabase
@@ -495,7 +501,7 @@ async function findOrCreateProductId(supabase: any, userId: string, name: string
   return data?.id ?? null;
 }
 
-export async function recordInventoryPurchase(userId: string, params: any, token?: string) {
+export async function recordInventoryPurchase(userId: string, params: IntentParams<"record_inventory_purchase">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const {
     product_id,
@@ -558,7 +564,7 @@ export async function recordInventoryPurchase(userId: string, params: any, token
   return { ok: true, product_id: pid, expense_id: expenseId, expense_recorded: expenseRecorded };
 }
 
-export async function recordPartnerCommission(userId: string, params: any, token?: string) {
+export async function recordPartnerCommission(userId: string, params: IntentParams<"record_partner_commission">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const {
     partner_name,
@@ -604,7 +610,7 @@ export async function recordPartnerCommission(userId: string, params: any, token
   return { ok: true, credit_id: data?.id };
 }
 
-export async function recordIncome(userId: string, params: any, token?: string) {
+export async function recordIncome(userId: string, params: IntentParams<"record_income">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const {
     amount,
@@ -641,7 +647,7 @@ export async function recordIncome(userId: string, params: any, token?: string) 
   return { ok: true, id: data?.id };
 }
 
-export async function createNote(userId: string, params: any, token?: string) {
+export async function createNote(userId: string, params: IntentParams<"create_note">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const { title, content, importance = "medium", tags, client_name, appointment_id } = params || {};
   if (!content || String(content).trim().length === 0) throw new Error("content é obrigatório");
@@ -705,7 +711,7 @@ export async function createNote(userId: string, params: any, token?: string) {
   return { ok: true, id: data?.id };
 }
 
-export async function createTask(userId: string, params: any, token?: string) {
+export async function createTask(userId: string, params: IntentParams<"create_task">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const {
     title,
@@ -774,7 +780,7 @@ export async function createTask(userId: string, params: any, token?: string) {
   return { ok: true, id: data?.id };
 }
 
-export async function createMaintenancePlan(userId: string, params: any, token?: string) {
+export async function createMaintenancePlan(userId: string, params: IntentParams<"create_maintenance_plan">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const {
     client_id,
@@ -818,7 +824,7 @@ export async function createMaintenancePlan(userId: string, params: any, token?:
   return { ok: true, id: data?.id };
 }
 
-export async function generateMonthlyTask(userId: string, params: any, token?: string) {
+export async function generateMonthlyTask(userId: string, params: IntentParams<"generate_monthly_task">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const { plan_id, client_name, cycle } = params || {};
   let pid = plan_id as string | undefined;
@@ -874,7 +880,7 @@ export async function generateMonthlyTask(userId: string, params: any, token?: s
   return { ok: true, task_id: task?.id };
 }
 
-export async function closeMonthlyExecution(userId: string, params: any, token?: string) {
+export async function closeMonthlyExecution(userId: string, params: IntentParams<"close_monthly_execution">, token?: string) {
   const supabase = token ? createClientWithToken(token) : await createSupabaseServer();
   const {
     plan_id,
