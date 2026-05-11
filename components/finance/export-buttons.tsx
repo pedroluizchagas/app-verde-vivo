@@ -8,10 +8,10 @@ type Tx = {
   type: "income" | "expense";
   amount: number;
   transaction_date: string;
-  description: string | null;
-  status: "paid" | "pending";
-  category?: { name: string | null } | null;
-  client?: { name: string | null } | null;
+  description?: string | null;
+  status: "paid" | "pending" | string;
+  category?: { name?: string | null } | null;
+  client?: { name?: string | null } | null;
 };
 
 export function ExportButtons({
