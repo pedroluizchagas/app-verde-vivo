@@ -164,7 +164,10 @@ export async function sincronizarAssinaturaDoStripe(
       updated_at: new Date().toISOString(),
     };
     if (plan) update.plan = plan;
-    const { error: updateErr } = await admin.from("subscriptions").update(update).eq("id", dbRow.id);
+    const { error: updateErr } = await admin
+      .from("subscriptions")
+      .update(update)
+      .eq("id", dbRow.id);
     if (updateErr) {
       console.error("[stripe-sync] erro ao atualizar subscription:", updateErr.message);
       return null;

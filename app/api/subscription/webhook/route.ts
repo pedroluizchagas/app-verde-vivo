@@ -117,10 +117,7 @@ export async function POST(request: Request) {
   } catch (err) {
     const message = err instanceof Error ? err.message : "erro desconhecido";
     console.error(`[webhook] Erro processando ${event.type}:`, message);
-    await admin
-      .from("stripe_events")
-      .update({ error: message })
-      .eq("event_id", event.id);
+    await admin.from("stripe_events").update({ error: message }).eq("event_id", event.id);
     // Retorna 500 para que o Stripe re-tente; o INSERT inicial nao ira recriar a linha,
     // mas como processed_at continua null, o re-tentativa entra pelo caminho normal.
     return NextResponse.json({ error: "processing_failed" }, { status: 500 });
