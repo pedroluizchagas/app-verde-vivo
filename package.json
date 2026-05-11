@@ -1,7 +1,11 @@
 {
-  "name": "my-v0-project",
+  "name": "gestao-garden",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=20.0.0",
+    "pnpm": ">=10.0.0"
+  },
   "scripts": {
     "build": "next build",
     "dev": "next dev --hostname 0.0.0.0 --webpack",

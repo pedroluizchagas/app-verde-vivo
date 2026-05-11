@@ -183,13 +183,13 @@ export function Sidebar({
                   />
                 ) : (
                   <span className="text-primary font-bold text-sm">
-                    {profile?.company_name?.charAt(0)?.toUpperCase() || 'V'}
+                    {profile?.company_name?.charAt(0)?.toUpperCase() || 'G'}
                   </span>
                 )}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold leading-tight truncate">
-                  {profile?.company_name || 'Verde Vivo'}
+                  {profile?.company_name || 'Gestão Garden'}
                 </p>
                 {(profile?.company_subtitle) && (
                   <p className="text-[10px] text-sidebar-foreground/50 truncate">

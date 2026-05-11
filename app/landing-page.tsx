@@ -2376,7 +2376,7 @@ function DashboardMockup() {
                     <div style={{
                       background: ca(0.03), border: `1px solid ${ca(0.08)}`,
                       borderRadius: 6, padding: "6px 8px", fontSize: 9, color: T.text,
-                    }}>Verde Vivo</div>
+                    }}>Gestão Garden</div>
                   </div>
                   <div>
                     <div style={{ fontSize: 7.5, fontWeight: 500, color: T.muted, marginBottom: 3 }}>Subtítulo <span style={{ color: ca(0.3) }}>(opcional)</span></div>
@@ -2512,10 +2512,10 @@ function DashboardMockup() {
               display: "flex", alignItems: "center", justifyContent: "center",
               flexShrink: 0,
             }}>
-              <span style={{ color: T.green, fontWeight: 700, fontSize: 12 }}>V</span>
+              <span style={{ color: T.green, fontWeight: 700, fontSize: 12 }}>G</span>
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 11.5, fontWeight: 700, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textAlign: "left", color: T.text }}>Verde Vivo</div>
+              <div style={{ fontSize: 11.5, fontWeight: 700, lineHeight: 1.2, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", textAlign: "left", color: T.text }}>Gestão Garden</div>
               <div style={{ fontSize: 8, color: ca(0.35), lineHeight: 1, textAlign: "left" }}>Jardinagem Profissional</div>
             </div>
             <div style={{

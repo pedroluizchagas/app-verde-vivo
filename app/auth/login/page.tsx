@@ -53,7 +53,7 @@ export default function LoginPage() {
     try {
       const supabase = createClient()
       const redirectTo =
-        `${process.env.NEXT_PUBLIC_APP_URL || "https://verdevivo.vercel.app"}/auth/callback`
+        `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/auth/callback`
       const { error: resetErr } = await supabase.auth.resetPasswordForEmail(email, { redirectTo })
       if (resetErr) throw resetErr
       setResetSent(true)

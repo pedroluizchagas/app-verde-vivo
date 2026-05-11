@@ -110,7 +110,7 @@ export async function POST(request: Request) {
         .eq("id", user.id)
     }
 
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://verdevivo.vercel.app"
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
 
     // Pre-gera o ID da assinatura no banco para referenciar nos metadados do Stripe
     const subscriptionDbId = randomUUID()

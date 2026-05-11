@@ -503,7 +503,7 @@ export default async function WorkOrderDetailPage({
         companyName={
           (profile as any)?.company_name ||
           (profile as any)?.full_name ||
-          "VerdeVivo"
+          "Gestão Garden"
         }
         watermarkBase64={(profile as any)?.watermark_base64 || undefined}
       />

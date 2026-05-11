@@ -39,7 +39,7 @@ export async function POST(request: Request) {
     )
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://verdevivo.vercel.app"
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
 
   // Para assinatura inadimplente (pagamento falhou no Stripe): Customer Portal
   // O usuario pode atualizar o metodo de pagamento diretamente la.

@@ -18,9 +18,9 @@ const irisFont = localFont({
 })
 
 export const metadata: Metadata = {
-  title: "Íris - Assistente de Jardinagem",
-  description: "Assistente inteligente para gestão de jardinagem",
-  generator: "v0.app",
+  title: "Gestão Garden — Plataforma de Gestão para Jardinagem",
+  description: "SaaS de gestão para profissionais de jardinagem com Íris, assistente de IA integrado.",
+  applicationName: "Gestão Garden",
   icons: { icon: "/img/irislogo.png" },
 }
 

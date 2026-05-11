@@ -1,8 +1,8 @@
-# Verde Vivo — Instruções do Projeto
+# Gestão Garden — Instruções do Projeto
 
 ## Visão Geral
 
-SaaS de gestão para profissionais de jardinagem. Web (Next.js/Vercel) + Mobile (Expo/React Native), com assistente de IA (Groq/LLaMA), pagamentos via Stripe e backend Supabase (PostgreSQL + Auth).
+**Gestão Garden** é um SaaS de gestão para profissionais de jardinagem. Web (Next.js/Vercel) + Mobile (Expo/React Native), com assistente de IA chamado **Íris** (Groq/LLaMA), pagamentos via Stripe e backend Supabase (PostgreSQL + Auth).
 
 ## Stack Técnica
 
