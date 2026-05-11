@@ -1,11 +1,17 @@
 import { NextResponse } from "next/server"
 import { createServiceRoleClient } from "@/lib/supabase/server"
 import { constructStripeWebhookEvent, retrieveStripeSubscription } from "@/lib/stripe/client"
+import { enforceRateLimit, getClientIp } from "@/lib/rate-limit"
 import type Stripe from "stripe"
 
 export const runtime = "nodejs"
 
 export async function POST(request: Request) {
+  // Proteção mínima de webhook: rate limit por IP antes da validação de assinatura,
+  // para evitar consumo desnecessário do verifier do Stripe em caso de flood.
+  const limited = await enforceRateLimit("webhook", getClientIp(request))
+  if (limited) return limited
+
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
   if (!webhookSecret) {
     console.error("[webhook] STRIPE_WEBHOOK_SECRET nao configurado")
@@ -24,6 +30,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_signature" }, { status: 400 })
   }
 
+  // service-role justificado: webhook administrativo do Stripe. Sem usuário autenticado
+  // no contexto da requisição (chamada server-to-server), RLS não se aplica.
   const admin = createServiceRoleClient()
 
   // checkout.session.completed

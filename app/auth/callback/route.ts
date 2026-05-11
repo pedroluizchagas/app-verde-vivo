@@ -13,6 +13,9 @@ export async function GET(request: Request) {
     const supabase = await createClient()
     const { data: sessionData, error } = await supabase.auth.exchangeCodeForSession(code)
     if (!error && sessionData.user) {
+      // service-role justificado: bootstrap do profile/trial logo após o exchange.
+      // Neste ponto a sessão ainda não tem cookies persistidos no Request, então a
+      // chamada via JWT do usuário ficaria sem auth.uid() válido para o RLS.
       const admin = createServiceRoleClient()
 
       const { data: profile } = await admin
