@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
 import { authErrorResponse, requireUser } from "@/lib/auth/api";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import {
@@ -95,35 +94,16 @@ export async function POST(request: Request) {
       try {
         await cancelStripeSubscription(sub.stripe_subscription_id);
       } catch {
-        // Pode ja estar cancelada
+        // Pode ja estar cancelada; o webhook reconcilia.
       }
     }
 
-    await supabase
-      .from("subscriptions")
-      .update({ status: "cancelled", updated_at: new Date().toISOString() })
-      .eq("id", sub.id);
-
-    const newSubscriptionDbId = randomUUID();
-    const { error: insertError } = await supabase.from("subscriptions").insert({
-      id: newSubscriptionDbId,
-      user_id: user.id,
-      plan: sub.plan,
-      status: "pending",
-    });
-    if (insertError) {
-      console.error("[reopen-payment] erro ao inserir nova subscription:", insertError.message);
-      return NextResponse.json(
-        { error: "subscription_insert_failed", message: insertError.message },
-        { status: 500 },
-      );
-    }
-
+    // Subscription pending orfã eliminada (Fase 03): o webhook (`lib/stripe/sync.ts`)
+    // cria/atualiza a subscription local quando o Stripe confirma o pagamento.
     const { url: checkoutUrl } = await createStripeCheckoutSession({
       stripeCustomerId,
       priceId,
       userId: user.id,
-      subscriptionDbId: newSubscriptionDbId,
       successUrl: `${appUrl}/?checkout=success`,
       cancelUrl: `${appUrl}/`,
     });

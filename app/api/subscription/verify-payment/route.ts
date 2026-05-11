@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
 import { authErrorResponse, requireUser } from "@/lib/auth/api";
+import { createServiceRoleClient } from "@/lib/supabase/server";
 import { listActiveStripeSubscriptions } from "@/lib/stripe/client";
-import { obterPeriodoSubscription } from "@/lib/types/stripe";
+import { sincronizarAssinaturaDoStripe } from "@/lib/stripe/sync";
 
 export const runtime = "nodejs";
 
@@ -9,7 +10,7 @@ export async function POST(request: Request) {
   try {
     const { supabase, user } = await requireUser(request);
 
-    // RLS protege: SELECT/UPDATE só atingem linhas onde auth.uid() = id/user_id.
+    // RLS protege: SELECT só atinge linhas onde auth.uid() = id.
     const { data: profile } = await supabase
       .from("profiles")
       .select("stripe_customer_id, plan")
@@ -54,72 +55,26 @@ export async function POST(request: Request) {
       });
     }
 
+    // service-role justificado: sincronizar uma assinatura ativa do Stripe quando o webhook
+    // ainda nao processou. A funcao de sync precisa escrever em `profiles.plan` (protegido
+    // pelo trigger de hardening contra updates do usuario comum) e em `subscriptions`.
+    const admin = createServiceRoleClient();
     const stripeSub = activeStripeSubs[0];
+    const resultado = await sincronizarAssinaturaDoStripe(admin, stripeSub.id, {
+      stripeSubscription: stripeSub,
+    });
 
-    let targetSubId: string | undefined;
-    let plan: string | undefined;
-
-    const { data: subByStripeId } = await supabase
-      .from("subscriptions")
-      .select("id, plan")
-      .eq("user_id", user.id)
-      .eq("stripe_subscription_id", stripeSub.id)
-      .maybeSingle();
-
-    if (subByStripeId) {
-      targetSubId = subByStripeId.id;
-      plan = subByStripeId.plan;
-    } else {
-      const { data: pendingSub } = await supabase
-        .from("subscriptions")
-        .select("id, plan")
-        .eq("user_id", user.id)
-        .in("status", ["pending", "overdue"])
-        .order("created_at", { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (pendingSub) {
-        targetSubId = pendingSub.id;
-        plan = pendingSub.plan;
-      }
-    }
-
-    if (!targetSubId || !plan) {
+    if (!resultado || !resultado.plan) {
       return NextResponse.json(
         {
-          error: "subscription_not_found",
-          message: "Assinatura nao encontrada no banco de dados. Entre em contato com o suporte.",
+          error: "subscription_sync_failed",
+          message: "Falha ao sincronizar assinatura. Entre em contato com o suporte.",
         },
-        { status: 404 },
+        { status: 500 },
       );
     }
 
-    const now = new Date();
-    const periodo = obterPeriodoSubscription(stripeSub);
-    const periodStart = periodo.start ? new Date(periodo.start * 1000) : now;
-    const periodEnd = periodo.end
-      ? new Date(periodo.end * 1000)
-      : (() => {
-          const d = new Date(now);
-          d.setMonth(d.getMonth() + 1);
-          return d;
-        })();
-
-    await supabase
-      .from("subscriptions")
-      .update({
-        stripe_subscription_id: stripeSub.id,
-        status: "active",
-        current_period_start: periodStart.toISOString(),
-        current_period_end: periodEnd.toISOString(),
-        updated_at: now.toISOString(),
-      })
-      .eq("id", targetSubId);
-
-    await supabase.from("profiles").update({ plan }).eq("id", user.id);
-
-    return NextResponse.json({ activated: true, plan });
+    return NextResponse.json({ activated: true, plan: resultado.plan });
   } catch (err) {
     const authResponse = authErrorResponse(err);
     if (authResponse) return authResponse;

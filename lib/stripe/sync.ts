@@ -5,9 +5,11 @@ import { retrieveStripeSubscription } from "@/lib/stripe/client";
 
 /**
  * Status canonico interno da assinatura, derivado de subscription.status do Stripe.
- * Mapeia os estados oficiais para o conjunto que o middleware e a UI conhecem.
+ * Mapeia os 8 estados oficiais para os 4 estados que a tabela aceita
+ * (constraint `subscriptions.status` em scripts/legacy-migrations/023_subscriptions.sql):
+ * 'pending' | 'active' | 'overdue' | 'cancelled' | 'inactive'.
  */
-type StatusLocal = "active" | "overdue" | "cancelled" | "unpaid" | "incomplete";
+type StatusLocal = "active" | "overdue" | "cancelled" | "pending";
 
 function mapearStatus(stripeStatus: Stripe.Subscription.Status): StatusLocal {
   switch (stripeStatus) {
@@ -15,17 +17,16 @@ function mapearStatus(stripeStatus: Stripe.Subscription.Status): StatusLocal {
     case "trialing":
       return "active";
     case "past_due":
+    case "unpaid":
       return "overdue";
     case "canceled":
       return "cancelled";
-    case "unpaid":
-      return "unpaid";
     case "incomplete":
     case "incomplete_expired":
     case "paused":
-      return "incomplete";
+      return "pending";
     default:
-      return "incomplete";
+      return "pending";
   }
 }
 

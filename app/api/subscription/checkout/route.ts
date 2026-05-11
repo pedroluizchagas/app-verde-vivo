@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { randomUUID } from "crypto";
 import { z } from "zod";
 import { authErrorResponse, requireUser } from "@/lib/auth/api";
 import { enforceRateLimit } from "@/lib/rate-limit";
@@ -18,7 +17,25 @@ const PLAN_CONFIG = {
 
 const checkoutBodySchema = z.object({
   plan: z.enum(["basic", "plus"]),
+  idempotencyKey: z.string().trim().min(8).max(255).optional(),
 });
+
+/**
+ * Valida que a URL gerada para success/cancel comeca pelo NEXT_PUBLIC_APP_URL.
+ * Defesa em profundidade contra alteracoes futuras que aceitem URLs vindas do client.
+ */
+function validarUrlChecagem(url: string, base: string): boolean {
+  try {
+    const target = new URL(url);
+    const expected = new URL(base);
+    return (
+      target.origin === expected.origin &&
+      target.pathname.startsWith(expected.pathname.replace(/\/$/, "") || "/")
+    );
+  } catch {
+    return false;
+  }
+}
 
 export async function POST(request: Request) {
   try {
@@ -45,7 +62,7 @@ export async function POST(request: Request) {
         { status: 400 },
       );
     }
-    const plan = parsed.data.plan;
+    const { plan, idempotencyKey } = parsed.data;
 
     const priceId = PLAN_CONFIG[plan].priceId();
     if (!priceId) {
@@ -70,6 +87,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "profile_not_found" }, { status: 404 });
     }
 
+    // Se ja existe uma subscription "viva" (active/pending/overdue), cancelamos a
+    // anterior no Stripe para evitar cobranca duplicada. O webhook (customer.subscription.deleted)
+    // ira atualizar o status no DB — nao precisamos manipular o registro local aqui.
     const { data: existingSub } = await supabase
       .from("subscriptions")
       .select("id, stripe_subscription_id, plan, status")
@@ -79,21 +99,11 @@ export async function POST(request: Request) {
       .limit(1)
       .maybeSingle();
 
-    if (existingSub) {
-      if (existingSub.stripe_subscription_id) {
-        try {
-          await cancelStripeSubscription(existingSub.stripe_subscription_id);
-        } catch {
-          // Pode ja estar cancelada no Stripe
-        }
-      }
-      await supabase
-        .from("subscriptions")
-        .update({ status: "cancelled", updated_at: new Date().toISOString() })
-        .eq("id", existingSub.id);
-
-      if (existingSub.plan !== plan) {
-        await supabase.from("profiles").update({ plan: null }).eq("id", user.id);
+    if (existingSub?.stripe_subscription_id) {
+      try {
+        await cancelStripeSubscription(existingSub.stripe_subscription_id);
+      } catch {
+        // Pode ja estar cancelada no Stripe; o webhook reconcilia.
       }
     }
 
@@ -107,29 +117,25 @@ export async function POST(request: Request) {
     }
 
     const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    const subscriptionDbId = randomUUID();
+    const successUrl = `${appUrl}/?checkout=success`;
+    const cancelUrl = `${appUrl}/`;
 
-    const { error: insertError } = await supabase.from("subscriptions").insert({
-      id: subscriptionDbId,
-      user_id: user.id,
-      plan,
-      status: "pending",
-    });
-    if (insertError) {
-      console.error("[checkout] erro ao inserir subscription pendente:", insertError.message);
+    if (!validarUrlChecagem(successUrl, appUrl) || !validarUrlChecagem(cancelUrl, appUrl)) {
       return NextResponse.json(
-        { error: "subscription_insert_failed", message: insertError.message },
+        { error: "invalid_redirect", message: "URLs de redirecionamento invalidas." },
         { status: 500 },
       );
     }
 
+    // Subscription pending orfã eliminada: o registro local so e criado pelo
+    // webhook (`lib/stripe/sync.ts`) quando o Stripe confirma o pagamento.
     const { url: checkoutUrl } = await createStripeCheckoutSession({
       stripeCustomerId,
       priceId,
       userId: user.id,
-      subscriptionDbId,
-      successUrl: `${appUrl}/?checkout=success`,
-      cancelUrl: `${appUrl}/`,
+      successUrl,
+      cancelUrl,
+      idempotencyKey,
     });
 
     return NextResponse.json({ paymentUrl: checkoutUrl });
