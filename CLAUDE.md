@@ -53,38 +53,45 @@ middleware.ts         # Auth + controle de acesso por plano/assinatura
 ## Convenções de Código
 
 ### Idioma
+
 - **Todo o código é em português:** variáveis, comentários, mensagens de erro, textos de UI
 - Locale: `pt-BR` para datas (`toLocaleDateString("pt-BR", ...)`) e moeda (`Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" })`)
 - HTML lang: `pt-BR`
 
 ### Nomenclatura de Arquivos
+
 - **Componentes e páginas:** kebab-case (ex: `delete-appointment-button.tsx`, `work-order-form.tsx`)
 - **Componentes React:** PascalCase para funções (ex: `NoteCard`, `AppointmentForm`)
 - **Utilitários:** kebab-case (ex: `api-route-auth.ts`)
 - **Extensões:** `.tsx` para componentes, `.ts` para utilitários e API routes
 
 ### Imports
+
 - Sempre usar path alias `@/` para imports absolutos (ex: `@/components/ui/button`, `@/lib/supabase/client`)
 - Nunca usar imports relativos
 
 ### Componentes React
+
 - Usar `"use client"` explicitamente em componentes interativos (formulários, estado)
 - Server Components (async) para páginas que fazem data fetching
 - Props tipadas com `interface` no topo do arquivo
 - Estado local com `useState` — não usar Redux/Zustand/Context
 
 ### Estilização
+
 - Tailwind CSS via className — não usar CSS modules
 - Utilitário `cn()` de `@/lib/utils` para merge de classes (`clsx` + `tailwind-merge`)
 - Variantes de componentes com CVA (`class-variance-authority`)
 - Suporte a dark mode via `next-themes`
 
 ### Formulários
+
 - Estado gerenciado com múltiplos `useState` (não usar React Hook Form para state)
 - Validação com Zod (principalmente no sistema de agentes IA)
 - Mensagens de erro inline em português
 
 ### Data Fetching
+
 - Supabase direto — sem React Query, SWR ou wrappers
 - Server: `createClient()` de `@/lib/supabase/server.ts`
 - Client: `createClient()` de `@/lib/supabase/client.ts`
@@ -93,17 +100,20 @@ middleware.ts         # Auth + controle de acesso por plano/assinatura
 - Pattern: `await supabase.from("tabela").select(...).eq(...)`
 
 ### API Routes
+
 - Sempre declarar `export const runtime = "nodejs"`
 - Respostas com `NextResponse.json()`
 - Auth mobile via Bearer token: usar helper de `@/lib/supabase/api-route-auth.ts`
 - Tratamento de erros com try-catch, mensagens em português
 
 ### Tratamento de Erros
+
 - try-catch com `setError(err?.message || "Erro ao ...")` em componentes client
 - Exibição inline: `<div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>`
 - API routes retornam status HTTP adequados com mensagem de erro em JSON
 
 ### Notificações
+
 - Sonner (`sonner`) disponível para toasts
 - Erros inline no formulário (sem toast para erros de validação)
 

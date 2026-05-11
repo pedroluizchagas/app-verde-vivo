@@ -1,77 +1,77 @@
-import { Suspense } from "react"
-import { createClient } from "@/lib/supabase/server"
-import { Button } from "@/components/ui/button"
-import { Plus, Users, UserCheck, UserPlus } from "lucide-react"
-import Link from "next/link"
-import { ClientCard } from "@/components/clients/client-card"
-import { ClientsSearch } from "@/components/clients/clients-search"
-import { Card, CardContent } from "@/components/ui/card"
+import { Suspense } from "react";
+import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
+import { Plus, Users, UserCheck, UserPlus } from "lucide-react";
+import Link from "next/link";
+import { ClientCard } from "@/components/clients/client-card";
+import { ClientsSearch } from "@/components/clients/clients-search";
+import { Card, CardContent } from "@/components/ui/card";
+import type { ClienteResumo } from "@/lib/domain/types";
 
-function groupAlphabetically(clients: any[]) {
-  const sorted = [...clients].sort((a, b) =>
-    a.name.localeCompare(b.name, "pt-BR")
-  )
-  const groups = new Map<string, any[]>()
+type ClienteListado = ClienteResumo & { created_at?: string | null };
+
+function groupAlphabetically(clients: ClienteListado[]) {
+  const sorted = [...clients].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
+  const groups = new Map<string, ClienteListado[]>();
   for (const client of sorted) {
-    const letter = client.name.charAt(0).toUpperCase()
-    if (!groups.has(letter)) groups.set(letter, [])
-    groups.get(letter)!.push(client)
+    const letter = client.name.charAt(0).toUpperCase();
+    if (!groups.has(letter)) groups.set(letter, []);
+    groups.get(letter)!.push(client);
   }
-  return Array.from(groups.entries())
+  return Array.from(groups.entries());
 }
 
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = await searchParams
-  const query = (typeof sp.q === "string" ? sp.q : "").toLowerCase()
+  const sp = await searchParams;
+  const query = (typeof sp.q === "string" ? sp.q : "").toLowerCase();
 
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: clients } = await supabase
     .from("clients")
     .select("*")
     .eq("gardener_id", user!.id)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
 
-  const allClients = clients || []
+  const allClients = (clients ?? []) as ClienteListado[];
 
   // KPI: novos este mes
-  const now = new Date()
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
+  const now = new Date();
+  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const newThisMonth = allClients.filter(
-    (c) => new Date(c.created_at) >= monthStart
-  ).length
+    (c) => c.created_at != null && new Date(c.created_at) >= monthStart,
+  ).length;
 
   // KPI: ativos (com agendamento nos ultimos 30 dias)
-  const since30 = new Date()
-  since30.setDate(since30.getDate() - 30)
+  const since30 = new Date();
+  since30.setDate(since30.getDate() - 30);
   const { data: recentAppointments } = await supabase
     .from("appointments")
     .select("client_id")
     .eq("gardener_id", user!.id)
-    .gte("scheduled_date", since30.toISOString())
+    .gte("scheduled_date", since30.toISOString());
 
-  const activeCount = new Set(
-    (recentAppointments || []).map((a) => a.client_id).filter(Boolean)
-  ).size
+  const activeCount = new Set((recentAppointments || []).map((a) => a.client_id).filter(Boolean))
+    .size;
 
   const filtered = query
     ? allClients.filter(
         (c) =>
           c.name.toLowerCase().includes(query) ||
-          c.phone.includes(query) ||
+          (c.phone ?? "").includes(query) ||
           c.email?.toLowerCase().includes(query) ||
-          c.address?.toLowerCase().includes(query)
+          c.address?.toLowerCase().includes(query),
       )
-    : allClients
+    : allClients;
 
-  const alphabeticalGroups = !query ? groupAlphabetically(filtered) : null
+  const alphabeticalGroups = !query ? groupAlphabetically(filtered) : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -80,8 +80,8 @@ export default async function ClientsPage({
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Clientes</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">
-            {allClients.length} cliente{allClients.length !== 1 ? "s" : ""}{" "}
-            cadastrado{allClients.length !== 1 ? "s" : ""}
+            {allClients.length} cliente{allClients.length !== 1 ? "s" : ""} cadastrado
+            {allClients.length !== 1 ? "s" : ""}
           </p>
         </div>
         <Button asChild size="icon" className="h-12 w-12 rounded-full">
@@ -104,9 +104,7 @@ export default async function ClientsPage({
                 <Users className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {allClients.length}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{allClients.length}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               cliente{allClients.length !== 1 ? "s" : ""}
             </p>
@@ -123,9 +121,7 @@ export default async function ClientsPage({
                 <UserPlus className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {newThisMonth}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{newThisMonth}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">este mês</p>
           </CardContent>
         </Card>
@@ -141,17 +137,13 @@ export default async function ClientsPage({
               </div>
             </div>
             <p className="text-[22px] font-bold leading-tight">{activeCount}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              últimos 30 dias
-            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">últimos 30 dias</p>
           </CardContent>
         </Card>
       </div>
 
       {/* Busca */}
-      <Suspense
-        fallback={<div className="h-11 rounded-xl bg-muted animate-pulse" />}
-      >
+      <Suspense fallback={<div className="h-11 rounded-xl bg-muted animate-pulse" />}>
         <ClientsSearch />
       </Suspense>
 
@@ -161,8 +153,8 @@ export default async function ClientsPage({
           /* Resultado de busca: lista flat com contador */
           <div className="flex flex-col gap-3">
             <p className="text-[12px] text-muted-foreground">
-              {filtered.length} resultado{filtered.length !== 1 ? "s" : ""}{" "}
-              para &ldquo;{query}&rdquo;
+              {filtered.length} resultado{filtered.length !== 1 ? "s" : ""} para &ldquo;{query}
+              &rdquo;
             </p>
             <div className="grid gap-3 sm:grid-cols-2">
               {filtered.map((client) => (
@@ -180,9 +172,7 @@ export default async function ClientsPage({
                     {letter}
                   </h3>
                   <div className="flex-1 h-px bg-border/60" />
-                  <span className="text-[10px] text-muted-foreground shrink-0">
-                    {group.length}
-                  </span>
+                  <span className="text-[10px] text-muted-foreground shrink-0">{group.length}</span>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {group.map((client) => (
@@ -222,5 +212,5 @@ export default async function ClientsPage({
         </div>
       )}
     </div>
-  )
+  );
 }

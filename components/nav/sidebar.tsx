@@ -1,8 +1,8 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import {
   Home,
   Users,
@@ -21,148 +21,149 @@ import {
   X,
   ArrowRight,
   CreditCard,
-} from 'lucide-react'
-import { cn } from '@/lib/utils'
-import { Button } from '@/components/ui/button'
+  type LucideIcon,
+} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Button } from "@/components/ui/button";
 
 const sections: Array<{
-  title: string
-  items: { href: string; icon: any; label: string }[]
+  title: string;
+  items: { href: string; icon: LucideIcon; label: string }[];
 }> = [
   {
-    title: 'Menu Principal',
+    title: "Menu Principal",
     items: [
-      { href: '/dashboard', icon: Home, label: 'Visão Geral' },
-      { href: '/dashboard/clients', icon: Users, label: 'Clientes' },
-      { href: '/dashboard/schedule', icon: Calendar, label: 'Agenda' },
+      { href: "/dashboard", icon: Home, label: "Visão Geral" },
+      { href: "/dashboard/clients", icon: Users, label: "Clientes" },
+      { href: "/dashboard/schedule", icon: Calendar, label: "Agenda" },
       {
-        href: '/dashboard/work-orders',
+        href: "/dashboard/work-orders",
         icon: ClipboardList,
-        label: 'Ordens de Serviço',
+        label: "Ordens de Serviço",
       },
-      { href: '/dashboard/budgets', icon: FileText, label: 'Orçamentos' },
-      { href: '/dashboard/notes', icon: StickyNote, label: 'Notas' },
-      { href: '/dashboard/tasks', icon: ListTodo, label: 'Tarefas' },
+      { href: "/dashboard/budgets", icon: FileText, label: "Orçamentos" },
+      { href: "/dashboard/notes", icon: StickyNote, label: "Notas" },
+      { href: "/dashboard/tasks", icon: ListTodo, label: "Tarefas" },
     ],
   },
   {
-    title: 'Negócios',
+    title: "Negócios",
     items: [
-      { href: '/dashboard/finance', icon: BarChart3, label: 'Financeiro' },
-      { href: '/dashboard/stock', icon: Package, label: 'Estoque' },
+      { href: "/dashboard/finance", icon: BarChart3, label: "Financeiro" },
+      { href: "/dashboard/stock", icon: Package, label: "Estoque" },
       {
-        href: '/dashboard/maintenance',
+        href: "/dashboard/maintenance",
         icon: CalendarCheck,
-        label: 'Manutenções',
+        label: "Manutenções",
       },
-      { href: '/dashboard/assistant', icon: Bot, label: 'Assistente' },
-      { href: '/dashboard/plan', icon: CreditCard, label: 'Plano' },
+      { href: "/dashboard/assistant", icon: Bot, label: "Assistente" },
+      { href: "/dashboard/plan", icon: CreditCard, label: "Plano" },
     ],
   },
-]
+];
 
 const typeLabels: Record<string, string> = {
-  service: 'Serviço',
-  technical_visit: 'Visita técnica',
-  training: 'Treinamento',
-  meeting: 'Reunião',
-  other: 'Outro',
-}
+  service: "Serviço",
+  technical_visit: "Visita técnica",
+  training: "Treinamento",
+  meeting: "Reunião",
+  other: "Outro",
+};
 
 type NextAppointment = {
-  id: string
-  title: string | null
-  type: string
-  scheduled_date: string
-  all_day: boolean
-  clientName: string | null
-}
+  id: string;
+  title?: string | null;
+  type?: string | null;
+  scheduled_date: string;
+  all_day?: boolean | null;
+  clientName?: string | null;
+};
 
 export function Sidebar({
   profile,
   nextAppointment,
 }: {
   profile?: {
-    full_name: string | null
-    avatar_url: string | null
-    company_name: string | null
-    company_subtitle: string | null
-    watermark_base64: string | null
-    watermark_fit: string | null
-    plan: string | null
-    trial_days_left?: number
-  }
-  nextAppointment?: NextAppointment | null
+    full_name: string | null;
+    avatar_url: string | null;
+    company_name: string | null;
+    company_subtitle: string | null;
+    watermark_base64: string | null;
+    watermark_fit: string | null;
+    plan: string | null;
+    trial_days_left?: number;
+  };
+  nextAppointment?: NextAppointment | null;
 }) {
-  const pathname = usePathname()
-  const [collapsed, setCollapsed] = useState(false)
-  const [searchQuery, setSearchQuery] = useState('')
+  const pathname = usePathname();
+  const [collapsed, setCollapsed] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
-  const allItems = sections.flatMap((s) => s.items)
+  const allItems = sections.flatMap((s) => s.items);
   const filteredItems = searchQuery.trim()
-    ? allItems.filter((item) =>
-        item.label.toLowerCase().includes(searchQuery.toLowerCase()),
-      )
-    : null
+    ? allItems.filter((item) => item.label.toLowerCase().includes(searchQuery.toLowerCase()))
+    : null;
 
   useEffect(() => {
     try {
-      if (localStorage.getItem('sidebar.collapsed') === 'true') {
-        setCollapsed(true)
+      if (localStorage.getItem("sidebar.collapsed") === "true") {
+        setCollapsed(true);
       }
     } catch {}
-  }, [])
+  }, []);
 
   const toggle = () => {
-    const next = !collapsed
-    setCollapsed(next)
+    const next = !collapsed;
+    setCollapsed(next);
     try {
-      localStorage.setItem('sidebar.collapsed', String(next))
+      localStorage.setItem("sidebar.collapsed", String(next));
     } catch {}
-  }
+  };
 
-  const DAY_NAMES = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb']
+  const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
   const MONTH_NAMES = [
-    'Jan',
-    'Fev',
-    'Mar',
-    'Abr',
-    'Mai',
-    'Jun',
-    'Jul',
-    'Ago',
-    'Set',
-    'Out',
-    'Nov',
-    'Dez',
-  ]
+    "Jan",
+    "Fev",
+    "Mar",
+    "Abr",
+    "Mai",
+    "Jun",
+    "Jul",
+    "Ago",
+    "Set",
+    "Out",
+    "Nov",
+    "Dez",
+  ];
 
-  let nextApptTitle = ''
-  let nextApptDateStr = ''
-  let nextApptTimeStr = ''
+  let nextApptTitle = "";
+  let nextApptDateStr = "";
+  let nextApptTimeStr = "";
   if (nextAppointment) {
-    const date = new Date(nextAppointment.scheduled_date)
+    const date = new Date(nextAppointment.scheduled_date);
     nextApptTitle =
-      nextAppointment.title || typeLabels[nextAppointment.type] || 'Serviço'
-    nextApptDateStr = `${DAY_NAMES[date.getDay()]}, ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`
+      nextAppointment.title ||
+      (nextAppointment.type ? typeLabels[nextAppointment.type] : null) ||
+      "Serviço";
+    nextApptDateStr = `${DAY_NAMES[date.getDay()]}, ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
     nextApptTimeStr = nextAppointment.all_day
-      ? 'Dia inteiro'
-      : date.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })
+      ? "Dia inteiro"
+      : date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" });
   }
 
   return (
     <aside
       data-collapsed={collapsed}
       className={cn(
-        'hidden md:flex md:flex-col bg-sidebar text-sidebar-foreground transition-all md:sticky md:top-0 md:h-svh',
-        collapsed ? 'md:w-16' : 'md:w-64',
+        "hidden md:flex md:flex-col bg-sidebar text-sidebar-foreground transition-all md:sticky md:top-0 md:h-svh",
+        collapsed ? "md:w-16" : "md:w-64",
       )}
     >
       {/* Header com logo */}
       <div
         className={cn(
-          'flex items-center border-b border-sidebar-border px-3 py-4',
-          collapsed ? 'justify-center' : 'gap-3',
+          "flex items-center border-b border-sidebar-border px-3 py-4",
+          collapsed ? "justify-center" : "gap-3",
         )}
       >
         {!collapsed ? (
@@ -170,28 +171,25 @@ export function Sidebar({
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
                 {profile?.watermark_base64 ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={profile.watermark_base64}
                     alt="Logo"
                     className={cn(
                       "h-full w-full",
-                      profile.watermark_fit === "cover"
-                        ? "object-cover"
-                        : "object-contain p-0.5"
+                      profile.watermark_fit === "cover" ? "object-cover" : "object-contain p-0.5",
                     )}
                   />
                 ) : (
                   <span className="text-primary font-bold text-sm">
-                    {profile?.company_name?.charAt(0)?.toUpperCase() || 'G'}
+                    {profile?.company_name?.charAt(0)?.toUpperCase() || "G"}
                   </span>
                 )}
               </div>
               <div className="min-w-0">
                 <p className="text-sm font-semibold leading-tight truncate">
-                  {profile?.company_name || 'Gestão Garden'}
+                  {profile?.company_name || "Gestão Garden"}
                 </p>
-                {(profile?.company_subtitle) && (
+                {profile?.company_subtitle && (
                   <p className="text-[10px] text-sidebar-foreground/50 truncate">
                     {profile.company_subtitle}
                   </p>
@@ -235,7 +233,7 @@ export function Sidebar({
             />
             {searchQuery && (
               <button
-                onClick={() => setSearchQuery('')}
+                onClick={() => setSearchQuery("")}
                 className="text-sidebar-foreground/30 hover:text-sidebar-foreground/60 transition-colors shrink-0"
                 aria-label="Limpar busca"
               >
@@ -247,30 +245,25 @@ export function Sidebar({
       )}
 
       {/* Navegação */}
-      <nav
-        className={cn(
-          'flex-1 min-h-0 overflow-y-auto',
-          collapsed ? 'px-1 py-2' : 'px-2 py-1',
-        )}
-      >
+      <nav className={cn("flex-1 min-h-0 overflow-y-auto", collapsed ? "px-1 py-2" : "px-2 py-1")}>
         {filteredItems ? (
           <div className="px-1">
             {filteredItems.length > 0 ? (
               <div className="space-y-0.5">
                 {filteredItems.map((item) => {
-                  const Icon = item.icon
-                  const isActive = pathname === item.href
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       title={item.label}
-                      onClick={() => setSearchQuery('')}
+                      onClick={() => setSearchQuery("")}
                       className={cn(
-                        'relative flex items-center gap-3 rounded-xl py-2.5 px-3 text-sm transition-colors',
+                        "relative flex items-center gap-3 rounded-xl py-2.5 px-3 text-sm transition-colors",
                         isActive
-                          ? 'text-primary font-medium'
-                          : 'text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent',
+                          ? "text-primary font-medium"
+                          : "text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent",
                       )}
                     >
                       {isActive && (
@@ -282,7 +275,7 @@ export function Sidebar({
                       <Icon className="h-[18px] w-[18px] shrink-0" />
                       <span>{item.label}</span>
                     </Link>
-                  )
+                  );
                 })}
               </div>
             ) : (
@@ -301,19 +294,19 @@ export function Sidebar({
               )}
               <div className="space-y-0.5">
                 {section.items.map((item) => {
-                  const Icon = item.icon
-                  const isActive = pathname === item.href
+                  const Icon = item.icon;
+                  const isActive = pathname === item.href;
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
                       title={item.label}
                       className={cn(
-                        'relative flex items-center rounded-xl py-2.5 text-sm transition-colors',
-                        collapsed ? 'justify-center px-2' : 'gap-3 px-3',
+                        "relative flex items-center rounded-xl py-2.5 text-sm transition-colors",
+                        collapsed ? "justify-center px-2" : "gap-3 px-3",
                         isActive
-                          ? 'text-primary font-medium'
-                          : 'text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent',
+                          ? "text-primary font-medium"
+                          : "text-sidebar-foreground/55 hover:text-sidebar-foreground hover:bg-sidebar-accent",
                       )}
                     >
                       {isActive && (
@@ -325,7 +318,7 @@ export function Sidebar({
                       <Icon className="h-[18px] w-[18px] shrink-0" />
                       {!collapsed && <span>{item.label}</span>}
                     </Link>
-                  )
+                  );
                 })}
               </div>
             </div>
@@ -343,13 +336,13 @@ export function Sidebar({
           >
             <CreditCard className="h-3.5 w-3.5 text-sidebar-foreground/40 group-hover:text-sidebar-foreground/60 shrink-0" />
             <span className="text-[11px] text-sidebar-foreground/40 group-hover:text-sidebar-foreground/60 flex-1 leading-none">
-              {profile?.plan === 'plus'
-                ? 'Plano Plus'
-                : profile?.plan === 'basic'
-                  ? 'Plano Basico'
+              {profile?.plan === "plus"
+                ? "Plano Plus"
+                : profile?.plan === "basic"
+                  ? "Plano Basico"
                   : (profile?.trial_days_left ?? 0) > 0
                     ? `Teste: ${profile!.trial_days_left}d restantes`
-                    : 'Sem plano ativo'}
+                    : "Sem plano ativo"}
             </span>
             {!profile?.plan && (profile?.trial_days_left ?? 0) === 0 && (
               <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">
@@ -361,12 +354,12 @@ export function Sidebar({
                 Trial
               </span>
             )}
-            {profile?.plan === 'basic' && (
+            {profile?.plan === "basic" && (
               <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-sidebar-foreground/[0.07] text-sidebar-foreground/40 shrink-0">
                 Basic
               </span>
             )}
-            {profile?.plan === 'plus' && (
+            {profile?.plan === "plus" && (
               <span className="text-[9px] font-semibold px-1.5 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">
                 Plus
               </span>
@@ -390,7 +383,7 @@ export function Sidebar({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                   <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">
-                    {typeLabels[nextAppointment.type] || 'Serviço'}
+                    {(nextAppointment.type ? typeLabels[nextAppointment.type] : null) || "Serviço"}
                   </span>
                   {nextAppointment.clientName && (
                     <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-sidebar-foreground/[0.07] text-sidebar-foreground/45 truncate">
@@ -412,13 +405,11 @@ export function Sidebar({
               <p className="text-[9px] font-semibold uppercase tracking-[0.08em] text-sidebar-foreground/30 mb-2">
                 Próximo Serviço
               </p>
-              <p className="text-[11px] text-sidebar-foreground/30">
-                Nenhum serviço agendado.
-              </p>
+              <p className="text-[11px] text-sidebar-foreground/30">Nenhum serviço agendado.</p>
             </div>
           )}
         </div>
       )}
     </aside>
-  )
+  );
 }

@@ -1,41 +1,39 @@
-import { createClient } from "@/lib/supabase/server"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, FileText, CheckCircle2, Clock, TrendingUp } from "lucide-react"
-import Link from "next/link"
-import { BudgetCard } from "@/components/budgets/budget-card"
+import { createClient } from "@/lib/supabase/server";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, FileText, CheckCircle2, Clock, TrendingUp } from "lucide-react";
+import Link from "next/link";
+import { BudgetCard } from "@/components/budgets/budget-card";
+import type { Budget } from "@/lib/domain/types";
 
 export default async function BudgetsPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: budgets } = await supabase
     .from("budgets")
     .select("*, client:clients(name)")
     .eq("gardener_id", user!.id)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
 
-  const allBudgets = (budgets || []) as any[]
+  const allBudgets = (budgets ?? []) as Budget[];
 
-  const pendingBudgets = allBudgets.filter((b) => b.status === "pending")
-  const approvedBudgets = allBudgets.filter((b) => b.status === "approved")
-  const rejectedBudgets = allBudgets.filter((b) => b.status === "rejected")
+  const pendingBudgets = allBudgets.filter((b) => b.status === "pending");
+  const approvedBudgets = allBudgets.filter((b) => b.status === "approved");
+  const rejectedBudgets = allBudgets.filter((b) => b.status === "rejected");
 
-  const approvedRevenue = approvedBudgets.reduce(
-    (s, b) => s + Number(b.total_amount || 0),
-    0
-  )
+  const approvedRevenue = approvedBudgets.reduce((s, b) => s + Number(b.total_amount ?? 0), 0);
 
   const fmt = (v: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
   const fmtK = (v: number) => {
-    if (v >= 1000) return `R$\u00a0${(v / 1000).toFixed(1)}K`
-    return fmt(v)
-  }
+    if (v >= 1000) return `R$\u00a0${(v / 1000).toFixed(1)}K`;
+    return fmt(v);
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -67,9 +65,7 @@ export default async function BudgetsPage() {
                 <FileText className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {allBudgets.length}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{allBudgets.length}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               orçamento{allBudgets.length !== 1 ? "s" : ""}
             </p>
@@ -86,12 +82,8 @@ export default async function BudgetsPage() {
                 <Clock className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {pendingBudgets.length}
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              aguardando
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{pendingBudgets.length}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">aguardando</p>
           </CardContent>
         </Card>
 
@@ -105,9 +97,7 @@ export default async function BudgetsPage() {
                 <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {approvedBudgets.length}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{approvedBudgets.length}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               aprovado{approvedBudgets.length !== 1 ? "s" : ""}
             </p>
@@ -188,9 +178,7 @@ export default async function BudgetsPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm text-muted-foreground">
-                Nenhum orçamento pendente.
-              </p>
+              <p className="text-sm text-muted-foreground">Nenhum orçamento pendente.</p>
             </div>
           )}
         </TabsContent>
@@ -204,9 +192,7 @@ export default async function BudgetsPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm text-muted-foreground">
-                Nenhum orçamento aprovado.
-              </p>
+              <p className="text-sm text-muted-foreground">Nenhum orçamento aprovado.</p>
             </div>
           )}
         </TabsContent>
@@ -220,13 +206,11 @@ export default async function BudgetsPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm text-muted-foreground">
-                Nenhum orçamento rejeitado.
-              </p>
+              <p className="text-sm text-muted-foreground">Nenhum orçamento rejeitado.</p>
             </div>
           )}
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

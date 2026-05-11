@@ -1,22 +1,45 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Share2, FileText } from "lucide-react"
-import { ExportDashboardPDFButton } from "@/components/reports/export-button"
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Share2, FileText } from "lucide-react";
+import { ExportDashboardPDFButton } from "@/components/reports/export-button";
 
-export function WorkOrderServiceNote({ order, items }: { order: any; items: any[] }) {
-  const selectorId = "work-order-service-note"
+interface ItemNotaOs {
+  id: string;
+  product_id?: string;
+  quantity: number;
+  unit_price: number;
+  unit?: string | null;
+  product?: { name?: string | null; unit?: string | null } | null;
+}
 
-  const currency = (value: number) => new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value)
+interface OrdemNota {
+  id: string;
+  title?: string | null;
+  status?: string | null;
+  description?: string | null;
+  labor_cost?: number | null;
+  discount?: number | null;
+  client?: { name?: string | null; phone?: string | null; address?: string | null } | null;
+}
+
+export function WorkOrderServiceNote({ order, items }: { order: OrdemNota; items: ItemNotaOs[] }) {
+  const selectorId = "work-order-service-note";
+
+  const currency = (value: number) =>
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
   const totals = (() => {
-    const materials = (items || []).reduce((sum, it: any) => sum + Number(it.unit_price) * Number(it.quantity), 0)
-    const labor = Number(order?.labor_cost || 0)
-    const discount = Number(order?.discount || 0)
-    const total = labor + materials - discount
-    return { materials, labor, discount, total }
-  })()
+    const materials = (items || []).reduce(
+      (sum, it) => sum + Number(it.unit_price) * Number(it.quantity),
+      0,
+    );
+    const labor = Number(order?.labor_cost || 0);
+    const discount = Number(order?.discount || 0);
+    const total = labor + materials - discount;
+    return { materials, labor, discount, total };
+  })();
 
   const buildNoteText = () => {
     const lines = [
@@ -25,39 +48,47 @@ export function WorkOrderServiceNote({ order, items }: { order: any; items: any[
       order?.description ? `Descrição: ${order.description}` : undefined,
       `Materiais:`,
       ...(items.length > 0
-        ? items.map((it: any) => `${it.product?.name || it.product_id} — ${Number(it.quantity)} ${String(it.unit || it.product?.unit || "un")} (${currency(Number(it.unit_price) * Number(it.quantity))})`)
+        ? items.map(
+            (it) =>
+              `${it.product?.name || it.product_id} — ${Number(it.quantity)} ${String(it.unit || it.product?.unit || "un")} (${currency(Number(it.unit_price) * Number(it.quantity))})`,
+          )
         : ["Nenhum"]),
       `Mão de obra: ${currency(totals.labor)}`,
       totals.discount > 0 ? `Desconto: ${currency(totals.discount)}` : undefined,
       `Total: ${currency(totals.total)}`,
-      order?.client ? `Cliente: ${order.client?.name} | ${order.client?.phone || ""} | ${order.client?.address || ""}` : undefined,
-    ].filter(Boolean)
-    return lines.join("\n")
-  }
+      order?.client
+        ? `Cliente: ${order.client?.name} | ${order.client?.phone || ""} | ${order.client?.address || ""}`
+        : undefined,
+    ].filter(Boolean);
+    return lines.join("\n");
+  };
 
   const handleShare = async () => {
-    const text = buildNoteText()
-    if ((navigator as any).share) {
+    const text = buildNoteText();
+    if (navigator.share) {
       try {
-        await (navigator as any).share({ title: order?.title || "Ordem de serviço", text })
+        await navigator.share({ title: order?.title || "Ordem de serviço", text });
       } catch {}
     } else {
-      const url = `https://wa.me/?text=${encodeURIComponent(text)}`
-      window.open(url, "_blank")
+      const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
+      window.open(url, "_blank");
     }
-  }
+  };
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(buildNoteText())
-      alert("Nota copiada para a área de transferência")
+      await navigator.clipboard.writeText(buildNoteText());
+      alert("Nota copiada para a área de transferência");
     } catch {}
-  }
+  };
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-lg flex items-center gap-2"><FileText className="h-5 w-5" />Nota de serviço</CardTitle>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <FileText className="h-5 w-5" />
+          Nota de serviço
+        </CardTitle>
       </CardHeader>
       <CardContent>
         <div id={selectorId} className="rounded-md border p-4 space-y-3">
@@ -76,10 +107,15 @@ export function WorkOrderServiceNote({ order, items }: { order: any; items: any[
             <p className="text-sm text-muted-foreground">Materiais</p>
             <div className="space-y-1">
               {items.length > 0 ? (
-                items.map((it: any) => (
+                items.map((it) => (
                   <div key={it.id} className="flex items-center justify-between text-sm">
-                    <span>{it.product?.name || it.product_id} — {Number(it.quantity)} {String(it.unit || it.product?.unit || "un")}</span>
-                    <span className="text-muted-foreground">{currency(Number(it.unit_price) * Number(it.quantity))}</span>
+                    <span>
+                      {it.product?.name || it.product_id} — {Number(it.quantity)}{" "}
+                      {String(it.unit || it.product?.unit || "un")}
+                    </span>
+                    <span className="text-muted-foreground">
+                      {currency(Number(it.unit_price) * Number(it.quantity))}
+                    </span>
                   </div>
                 ))
               ) : (
@@ -111,17 +147,25 @@ export function WorkOrderServiceNote({ order, items }: { order: any; items: any[
             <div className="border-t pt-3 text-sm">
               <p className="text-sm text-muted-foreground">Cliente</p>
               <p className="font-medium">{order.client?.name}</p>
-              {order.client?.phone && <p className="text-muted-foreground">{order.client?.phone}</p>}
-              {order.client?.address && <p className="text-muted-foreground">{order.client?.address}</p>}
+              {order.client?.phone && (
+                <p className="text-muted-foreground">{order.client?.phone}</p>
+              )}
+              {order.client?.address && (
+                <p className="text-muted-foreground">{order.client?.address}</p>
+              )}
             </div>
           )}
         </div>
         <div className="mt-3 flex flex-wrap gap-2">
-          <Button variant="outline" className="gap-2" onClick={handleShare}><Share2 className="h-4 w-4" /> Enviar</Button>
-          <Button variant="outline" className="gap-2" onClick={handleCopy}>Copiar texto</Button>
+          <Button variant="outline" className="gap-2" onClick={handleShare}>
+            <Share2 className="h-4 w-4" /> Enviar
+          </Button>
+          <Button variant="outline" className="gap-2" onClick={handleCopy}>
+            Copiar texto
+          </Button>
           <ExportDashboardPDFButton selector={`#${selectorId}`} fileName={`nota-os-${order?.id}`} />
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

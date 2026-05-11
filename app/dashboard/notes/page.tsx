@@ -1,44 +1,40 @@
-import { createClient } from "@/lib/supabase/server"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Plus, StickyNote, AlertCircle, Tag, Search } from "lucide-react"
-import { NoteCard } from "@/components/notes/note-card"
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Plus, StickyNote, AlertCircle, Tag, Search } from "lucide-react";
+import { NoteCard } from "@/components/notes/note-card";
 
 export default async function NotesPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = await searchParams
-  const q = (typeof sp.q === "string" ? sp.q : "").trim()
+  const sp = await searchParams;
+  const q = (typeof sp.q === "string" ? sp.q : "").trim();
 
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   let query = supabase
     .from("notes")
     .select("id, title, importance, tags, organized_content, created_at")
     .eq("gardener_id", user!.id)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
 
   if (q) {
-    const like = `%${q}%`
-    query = query.or(
-      `title.ilike.${like},content.ilike.${like},organized_content.ilike.${like}`
-    )
+    const like = `%${q}%`;
+    query = query.or(`title.ilike.${like},content.ilike.${like},organized_content.ilike.${like}`);
   }
 
-  const { data: notes } = await query
-  const allNotes = notes || []
+  const { data: notes } = await query;
+  const allNotes = notes || [];
 
-  const highCount = allNotes.filter((n) => n.importance === "high").length
-  const taggedCount = allNotes.filter(
-    (n) => Array.isArray(n.tags) && n.tags.length > 0
-  ).length
+  const highCount = allNotes.filter((n) => n.importance === "high").length;
+  const taggedCount = allNotes.filter((n) => Array.isArray(n.tags) && n.tags.length > 0).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -105,9 +101,7 @@ export default async function NotesPage({
               </div>
             </div>
             <p className="text-[22px] font-bold leading-tight">{taggedCount}</p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              categorizadas
-            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">categorizadas</p>
           </CardContent>
         </Card>
       </div>
@@ -130,8 +124,7 @@ export default async function NotesPage({
         <>
           {q && (
             <p className="text-[12px] text-muted-foreground">
-              {allNotes.length} resultado{allNotes.length !== 1 ? "s" : ""}{" "}
-              para &ldquo;{q}&rdquo;
+              {allNotes.length} resultado{allNotes.length !== 1 ? "s" : ""} para &ldquo;{q}&rdquo;
             </p>
           )}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
@@ -170,5 +163,5 @@ export default async function NotesPage({
         </div>
       )}
     </div>
-  )
+  );
 }

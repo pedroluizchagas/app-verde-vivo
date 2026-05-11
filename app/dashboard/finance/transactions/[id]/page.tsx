@@ -1,44 +1,44 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import { TransactionDetail } from "@/components/finance/transaction-detail"
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { TransactionDetail } from "@/components/finance/transaction-detail";
 
 export default async function TransactionDetailPage({
   params,
 }: {
-  params: Promise<{ id: string }>
+  params: Promise<{ id: string }>;
 }) {
-  const { id } = await params
+  const { id } = await params;
 
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: trx } = await supabase
     .from("financial_transactions")
     .select("*, category:financial_categories(name), client:clients(name)")
     .eq("gardener_id", user!.id)
     .eq("id", id)
-    .maybeSingle()
+    .maybeSingle();
 
   if (!trx) {
-    notFound()
+    notFound();
   }
 
   const { data: categories } = await supabase
     .from("financial_categories")
     .select("id, name, parent_id, kind")
-    .eq("gardener_id", user!.id)
+    .eq("gardener_id", user!.id);
 
   const { data: clients } = await supabase
     .from("clients")
     .select("id, name")
-    .eq("gardener_id", user!.id)
+    .eq("gardener_id", user!.id);
 
-  const typeLabel = trx.type === "income" ? "Receita" : "Despesa"
+  const typeLabel = trx.type === "income" ? "Receita" : "Despesa";
 
   return (
     <div className="flex flex-col gap-4">
@@ -53,17 +53,11 @@ export default async function TransactionDetailPage({
           <h1 className="text-2xl font-bold tracking-tight leading-tight truncate">
             {trx.description || typeLabel}
           </h1>
-          <p className="text-[13px] text-muted-foreground">
-            Detalhe do lançamento
-          </p>
+          <p className="text-[13px] text-muted-foreground">Detalhe do lançamento</p>
         </div>
       </div>
 
-      <TransactionDetail
-        transaction={trx}
-        categories={categories || []}
-        clients={clients || []}
-      />
+      <TransactionDetail transaction={trx} categories={categories || []} clients={clients || []} />
     </div>
-  )
+  );
 }

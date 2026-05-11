@@ -1,100 +1,123 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent } from "@/components/ui/card"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { AlertCircle } from "lucide-react"
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { AlertCircle } from "lucide-react";
 
 interface AppointmentFormProps {
-  clients: { id: string; name: string }[]
-  orders?: { id: string; title: string }[]
+  clients: { id: string; name: string }[];
+  orders?: { id: string; title: string }[];
   appointment?: {
-    id: string
-    title: string
-    description: string | null
-    client_id: string
-    scheduled_date: string
-    end_date?: string | null
-    duration_minutes: number
-    status: string
-  }
+    id: string;
+    title: string;
+    description?: string | null;
+    client_id?: string | null;
+    scheduled_date: string;
+    end_date?: string | null;
+    duration_minutes?: number | null;
+    status: string;
+    type?: string | null;
+    location?: string | null;
+    all_day?: boolean | null;
+  };
 }
 
 export function AppointmentForm({ clients, orders, appointment }: AppointmentFormProps) {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const planIdFromQuery = searchParams?.get("planId") || null
-  const titleFromQuery = searchParams?.get("title") || null
-  const dateFromQuery = searchParams?.get("date") || null
-  const startFromQuery = searchParams?.get("start") || null
-  const endFromQuery = searchParams?.get("end") || null
-  const allDayFromQuery = searchParams?.get("allDay") || null
+  const planIdFromQuery = searchParams?.get("planId") || null;
+  const titleFromQuery = searchParams?.get("title") || null;
+  const dateFromQuery = searchParams?.get("date") || null;
+  const startFromQuery = searchParams?.get("start") || null;
+  const endFromQuery = searchParams?.get("end") || null;
+  const allDayFromQuery = searchParams?.get("allDay") || null;
 
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedClient, setSelectedClient] = useState(appointment?.client_id || "")
-  const [selectedOrder, setSelectedOrder] = useState("")
-  const [status, setStatus] = useState(appointment?.status || "scheduled")
-  const [type, setType] = useState((appointment as any)?.type || "service")
-  const [location, setLocation] = useState((appointment as any)?.location || "")
-  const [allDay, setAllDay] = useState(
-    Boolean((appointment as any)?.all_day) || Boolean(allDayFromQuery)
-  )
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [selectedClient, setSelectedClient] = useState(appointment?.client_id || "");
+  const [selectedOrder, setSelectedOrder] = useState("");
+  const [status, setStatus] = useState(appointment?.status || "scheduled");
+  const [type, setType] = useState(appointment?.type || "service");
+  const [location, setLocation] = useState(appointment?.location || "");
+  const [allDay, setAllDay] = useState(Boolean(appointment?.all_day) || Boolean(allDayFromQuery));
 
   useEffect(() => {
-    if (!planIdFromQuery) return
-    const supabase = createClient()
+    if (!planIdFromQuery) return;
+    const supabase = createClient();
     supabase
       .from("maintenance_plans")
       .select("client_id, client:clients(id, address)")
       .eq("id", planIdFromQuery)
       .maybeSingle()
-      .then(({ data: plan }) => {
-        if (!plan) return
-        const cid = Array.isArray((plan as any)?.client)
-          ? ((plan as any)?.client[0]?.id ?? (plan as any)?.client_id ?? "")
-          : ((plan as any)?.client_id ?? (plan as any)?.client?.id ?? "")
-        if (cid) setSelectedClient(String(cid))
-        const addr = Array.isArray((plan as any)?.client)
-          ? ((plan as any)?.client[0]?.address ?? "")
-          : ((plan as any)?.client?.address ?? "")
-        if (!location && addr) setLocation(String(addr))
-      })
-  }, [planIdFromQuery]) // eslint-disable-line react-hooks/exhaustive-deps
+      .then(({ data: planRaw }) => {
+        type PlanoEmbutido = {
+          client_id?: string;
+          client?: { id?: string; address?: string } | { id?: string; address?: string }[] | null;
+        };
+        const plan = planRaw as PlanoEmbutido | null;
+        if (!plan) return;
+        const cliente = Array.isArray(plan.client)
+          ? (plan.client[0] ?? null)
+          : (plan.client ?? null);
+        const cid = cliente?.id ?? plan.client_id ?? "";
+        if (cid) setSelectedClient(String(cid));
+        const addr = cliente?.address ?? "";
+        if (!location && addr) setLocation(String(addr));
+      });
+  }, [planIdFromQuery]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-    const formData = new FormData(e.currentTarget)
-    const supabase = createClient()
+    const formData = new FormData(e.currentTarget);
+    const supabase = createClient();
 
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
     if (!user) {
-      setError("Usuário não autenticado")
-      setIsLoading(false)
-      return
+      setError("Usuário não autenticado");
+      setIsLoading(false);
+      return;
     }
 
-    const dateStr = formData.get("date") as string
-    const startStr = formData.get("start_time") as string
-    const endStr = formData.get("end_time") as string
-    const startDate = new Date(`${dateStr}T${allDay ? "00:00" : startStr || "00:00"}`)
-    const endDate = new Date(`${dateStr}T${allDay ? "23:59" : endStr || "23:59"}`)
+    const dateStr = formData.get("date") as string;
+    const startStr = formData.get("start_time") as string;
+    const endStr = formData.get("end_time") as string;
+    const startDate = new Date(`${dateStr}T${allDay ? "00:00" : startStr || "00:00"}`);
+    const endDate = new Date(`${dateStr}T${allDay ? "23:59" : endStr || "23:59"}`);
 
-    const appointmentData: any = {
+    const appointmentData: {
+      title: string;
+      description: string | null;
+      client_id: string | null;
+      scheduled_date: string;
+      end_date: string;
+      duration_minutes: number;
+      status: string;
+      type: string;
+      location: string | null;
+      all_day: boolean;
+      gardener_id: string;
+    } = {
       title: formData.get("title") as string,
       description: (formData.get("description") as string) || null,
       client_id: selectedClient || null,
@@ -108,55 +131,53 @@ export function AppointmentForm({ clients, orders, appointment }: AppointmentFor
       location: location || null,
       all_day: allDay,
       gardener_id: user.id,
-    }
+    };
 
     try {
-      let createdId = appointment?.id
+      let createdId = appointment?.id;
       if (appointment) {
         const { error } = await supabase
           .from("appointments")
           .update(appointmentData)
-          .eq("id", appointment.id)
-        if (error) throw error
+          .eq("id", appointment.id);
+        if (error) throw error;
       } else {
         const { data: inserted, error } = await supabase
           .from("appointments")
           .insert([appointmentData])
           .select("id")
-          .single()
-        if (error) throw error
-        createdId = inserted?.id
+          .single();
+        if (error) throw error;
+        createdId = inserted?.id;
       }
 
       if (selectedOrder && createdId) {
         await supabase
           .from("service_orders")
           .update({ appointment_id: createdId })
-          .eq("id", selectedOrder)
+          .eq("id", selectedOrder);
       }
 
-      router.push(
-        appointment ? `/dashboard/schedule/${appointment.id}` : "/dashboard/schedule"
-      )
-      router.refresh()
+      router.push(appointment ? `/dashboard/schedule/${appointment.id}` : "/dashboard/schedule");
+      router.refresh();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "Erro ao salvar agendamento")
+      setError(error instanceof Error ? error.message : "Erro ao salvar agendamento");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const defaultDate = appointment
     ? new Date(appointment.scheduled_date).toISOString().split("T")[0]
-    : dateFromQuery || new Date().toISOString().split("T")[0]
+    : dateFromQuery || new Date().toISOString().split("T")[0];
 
   const defaultStart = appointment
     ? new Date(appointment.scheduled_date).toTimeString().slice(0, 5)
-    : startFromQuery || "09:00"
+    : startFromQuery || "09:00";
 
   const defaultEnd = appointment?.end_date
     ? new Date(appointment.end_date).toTimeString().slice(0, 5)
-    : endFromQuery || "10:00"
+    : endFromQuery || "10:00";
 
   return (
     <Card className="py-0">
@@ -217,9 +238,7 @@ export function AppointmentForm({ clients, orders, appointment }: AppointmentFor
                   onChange={(e) => setAllDay(e.target.checked)}
                   className="h-3.5 w-3.5 rounded accent-primary"
                 />
-                <span className="text-[12px] text-muted-foreground select-none">
-                  Dia inteiro
-                </span>
+                <span className="text-[12px] text-muted-foreground select-none">Dia inteiro</span>
               </label>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -304,9 +323,7 @@ export function AppointmentForm({ clients, orders, appointment }: AppointmentFor
                   name="location"
                   type="text"
                   placeholder={
-                    selectedClient
-                      ? "Endereço do cliente (padrão)"
-                      : "Local do compromisso"
+                    selectedClient ? "Endereço do cliente (padrão)" : "Local do compromisso"
                   }
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
@@ -400,12 +417,12 @@ export function AppointmentForm({ clients, orders, appointment }: AppointmentFor
               {isLoading
                 ? "Salvando..."
                 : appointment
-                ? "Atualizar agendamento"
-                : "Criar agendamento"}
+                  ? "Atualizar agendamento"
+                  : "Criar agendamento"}
             </Button>
           </div>
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

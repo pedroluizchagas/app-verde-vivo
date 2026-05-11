@@ -1,6 +1,6 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound, redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
+import { createClient } from "@/lib/supabase/server";
+import { notFound, redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
   Edit,
@@ -13,10 +13,13 @@ import {
   CheckCircle2,
   CalendarPlus,
   Receipt,
-} from "lucide-react"
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { DeleteClientButton } from "@/components/clients/delete-client-button"
+} from "lucide-react";
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { DeleteClientButton } from "@/components/clients/delete-client-button";
+import type { Appointment, Budget, ClienteResumo } from "@/lib/domain/types";
+
+type ClienteDetalhado = ClienteResumo & { created_at: string };
 
 const appointmentStatusLabels: Record<string, string> = {
   scheduled: "Agendado",
@@ -25,7 +28,7 @@ const appointmentStatusLabels: Record<string, string> = {
   cancelled: "Cancelado",
   in_progress: "Em andamento",
   no_show: "Não compareceu",
-}
+};
 
 const appointmentStatusColors: Record<string, string> = {
   scheduled: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
@@ -34,7 +37,7 @@ const appointmentStatusColors: Record<string, string> = {
   in_progress: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   cancelled: "bg-destructive/10 text-destructive",
   no_show: "bg-muted text-muted-foreground",
-}
+};
 
 const budgetStatusLabels: Record<string, string> = {
   draft: "Rascunho",
@@ -42,7 +45,7 @@ const budgetStatusLabels: Record<string, string> = {
   approved: "Aprovado",
   rejected: "Recusado",
   cancelled: "Cancelado",
-}
+};
 
 const budgetStatusColors: Record<string, string> = {
   draft: "bg-muted text-muted-foreground",
@@ -50,7 +53,7 @@ const budgetStatusColors: Record<string, string> = {
   approved: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   rejected: "bg-destructive/10 text-destructive",
   cancelled: "bg-muted text-muted-foreground",
-}
+};
 
 const AVATAR_COLORS = [
   "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
@@ -59,38 +62,36 @@ const AVATAR_COLORS = [
   "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   "bg-rose-500/15 text-rose-600 dark:text-rose-400",
   "bg-teal-500/15 text-teal-600 dark:text-teal-400",
-]
+];
 
 function getAvatarColor(name: string) {
-  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
+  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 }
 
-export default async function ClientDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
+export default async function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
   if (id === "new") {
-    redirect("/dashboard/clients/new")
+    redirect("/dashboard/clients/new");
   }
 
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  const { data: client } = await supabase
+  const { data: clientRaw } = await supabase
     .from("clients")
     .select("*")
     .eq("id", id)
     .eq("gardener_id", user!.id)
-    .single()
+    .single();
 
-  if (!client) {
-    notFound()
+  if (!clientRaw) {
+    notFound();
   }
+
+  const client = clientRaw as ClienteDetalhado;
 
   const [
     { data: appointments },
@@ -111,44 +112,41 @@ export default async function ClientDetailPage({
       .eq("client_id", id)
       .order("created_at", { ascending: false })
       .limit(5),
-    supabase
-      .from("photos")
-      .select("*", { count: "exact", head: true })
-      .eq("client_id", id),
-    supabase
-      .from("appointments")
-      .select("*", { count: "exact", head: true })
-      .eq("client_id", id),
+    supabase.from("photos").select("*", { count: "exact", head: true }).eq("client_id", id),
+    supabase.from("appointments").select("*", { count: "exact", head: true }).eq("client_id", id),
     supabase
       .from("appointments")
       .select("*", { count: "exact", head: true })
       .eq("client_id", id)
       .eq("status", "completed"),
-  ])
+  ]);
+
+  const appointmentsList = (appointments ?? []) as Appointment[];
+  const budgetsList = (budgets ?? []) as Budget[];
 
   // proximo agendamento futuro
-  const nextAppointment = (appointments || []).find(
-    (a) => new Date(a.scheduled_date) >= new Date() && a.status !== "cancelled"
-  )
+  const nextAppointment = appointmentsList.find(
+    (a) => new Date(a.scheduled_date) >= new Date() && a.status !== "cancelled",
+  );
 
   const initials = client.name
     .split(" ")
     .slice(0, 2)
     .map((w: string) => w.charAt(0).toUpperCase())
-    .join("")
+    .join("");
 
-  const avatarColor = getAvatarColor(client.name)
+  const avatarColor = getAvatarColor(client.name);
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(v)
+    }).format(v);
 
   const memberSince = new Date(client.created_at).toLocaleDateString("pt-BR", {
     month: "long",
     year: "numeric",
-  })
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -165,9 +163,7 @@ export default async function ClientDetailPage({
             <h1 className="text-2xl font-bold tracking-tight leading-tight truncate">
               {client.name}
             </h1>
-            <p className="text-[13px] text-muted-foreground">
-              Cliente desde {memberSince}
-            </p>
+            <p className="text-[13px] text-muted-foreground">Cliente desde {memberSince}</p>
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
@@ -193,9 +189,7 @@ export default async function ClientDetailPage({
                 <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {totalAppointments ?? 0}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{totalAppointments ?? 0}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">no total</p>
           </CardContent>
         </Card>
@@ -210,9 +204,7 @@ export default async function ClientDetailPage({
                 <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {completedAppointments ?? 0}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{completedAppointments ?? 0}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">serviços</p>
           </CardContent>
         </Card>
@@ -227,9 +219,7 @@ export default async function ClientDetailPage({
                 <Camera className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {photosCount ?? 0}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{photosCount ?? 0}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               registrada{(photosCount ?? 0) !== 1 ? "s" : ""}
             </p>
@@ -273,15 +263,11 @@ export default async function ClientDetailPage({
                   {initials}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="font-bold text-[16px] leading-tight truncate">
-                    {client.name}
-                  </p>
+                  <p className="font-bold text-[16px] leading-tight truncate">{client.name}</p>
                   {nextAppointment ? (
                     <p className="text-[12px] text-primary mt-0.5">
                       Próximo:{" "}
-                      {new Date(
-                        nextAppointment.scheduled_date
-                      ).toLocaleDateString("pt-BR", {
+                      {new Date(nextAppointment.scheduled_date).toLocaleDateString("pt-BR", {
                         day: "2-digit",
                         month: "short",
                       })}
@@ -308,9 +294,7 @@ export default async function ClientDetailPage({
                     <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground leading-none mb-0.5">
                       Telefone
                     </p>
-                    <p className="text-[13px] font-medium text-primary truncate">
-                      {client.phone}
-                    </p>
+                    <p className="text-[13px] font-medium text-primary truncate">{client.phone}</p>
                   </div>
                 </a>
 
@@ -341,9 +325,7 @@ export default async function ClientDetailPage({
                     <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground leading-none mb-0.5">
                       Endereço
                     </p>
-                    <p className="text-[13px] font-medium leading-snug">
-                      {client.address}
-                    </p>
+                    <p className="text-[13px] font-medium leading-snug">{client.address}</p>
                   </div>
                 </div>
               </div>
@@ -382,21 +364,17 @@ export default async function ClientDetailPage({
                 </Link>
               </div>
 
-              {appointments && appointments.length > 0 ? (
+              {appointmentsList.length > 0 ? (
                 <div className="flex flex-col">
-                  {appointments.map((apt: any) => {
-                    const statusLabel =
-                      appointmentStatusLabels[apt.status] ?? apt.status
+                  {appointmentsList.map((apt) => {
+                    const statusLabel = appointmentStatusLabels[apt.status] ?? apt.status;
                     const statusColor =
-                      appointmentStatusColors[apt.status] ??
-                      "bg-muted text-muted-foreground"
-                    const dateStr = new Date(
-                      apt.scheduled_date
-                    ).toLocaleDateString("pt-BR", {
+                      appointmentStatusColors[apt.status] ?? "bg-muted text-muted-foreground";
+                    const dateStr = new Date(apt.scheduled_date).toLocaleDateString("pt-BR", {
                       day: "2-digit",
                       month: "short",
                       year: "numeric",
-                    })
+                    });
                     return (
                       <Link
                         key={apt.id}
@@ -407,9 +385,7 @@ export default async function ClientDetailPage({
                           <p className="text-[12px] font-semibold truncate leading-tight">
                             {apt.title || "Serviço"}
                           </p>
-                          <p className="text-[10px] text-muted-foreground mt-0.5">
-                            {dateStr}
-                          </p>
+                          <p className="text-[10px] text-muted-foreground mt-0.5">{dateStr}</p>
                         </div>
                         <span
                           className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full shrink-0 mt-0.5 ${statusColor}`}
@@ -417,7 +393,7 @@ export default async function ClientDetailPage({
                           {statusLabel}
                         </span>
                       </Link>
-                    )
+                    );
                   })}
                 </div>
               ) : (
@@ -446,14 +422,12 @@ export default async function ClientDetailPage({
                 </Link>
               </div>
 
-              {budgets && budgets.length > 0 ? (
+              {budgetsList.length > 0 ? (
                 <div className="flex flex-col">
-                  {budgets.map((budget: any) => {
-                    const statusLabel =
-                      budgetStatusLabels[budget.status] ?? budget.status
+                  {budgetsList.map((budget) => {
+                    const statusLabel = budgetStatusLabels[budget.status] ?? budget.status;
                     const statusColor =
-                      budgetStatusColors[budget.status] ??
-                      "bg-muted text-muted-foreground"
+                      budgetStatusColors[budget.status] ?? "bg-muted text-muted-foreground";
                     return (
                       <Link
                         key={budget.id}
@@ -474,7 +448,7 @@ export default async function ClientDetailPage({
                           {statusLabel}
                         </span>
                       </Link>
-                    )
+                    );
                   })}
                 </div>
               ) : (
@@ -487,5 +461,5 @@ export default async function ClientDetailPage({
         </div>
       </div>
     </div>
-  )
+  );
 }

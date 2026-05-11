@@ -15,6 +15,7 @@ Alinhar mobile com web (compartilhar tipos e schemas), estabelecer CI próprio, 
 ## Escopo
 
 ### Entra
+
 - Pacote interno `lib/shared/` (ou similar) com tipos e schemas Zod consumidos por web e mobile.
 - Configuração TS estrita no mobile (sem `any`).
 - ESLint próprio para mobile com regras coerentes.
@@ -24,6 +25,7 @@ Alinhar mobile com web (compartilhar tipos e schemas), estabelecer CI próprio, 
 - Smoke tests com Maestro (3 fluxos críticos: login, criar cliente, abrir assistente).
 
 ### Não entra
+
 - App nativo (Swift/Kotlin).
 - Refator visual.
 - Internacionalização.
@@ -31,7 +33,7 @@ Alinhar mobile com web (compartilhar tipos e schemas), estabelecer CI próprio, 
 
 ## Prompt para o agente executor
 
-```markdown
+````markdown
 Você está executando a **Fase 07 — Mobile Alinhado e CI/CD** do Gestão Garden.
 
 **Pré-requisitos:** Fases 01, 02, 05 mergeadas.
@@ -43,12 +45,14 @@ Você está executando a **Fase 07 — Mobile Alinhado e CI/CD** do Gestão Gard
 ### 1. Compartilhar código entre web e mobile
 
 Decidir entre:
+
 - **Opção A (preferida):** workspace pnpm com pacote `packages/shared/`. Migra raiz para monorepo leve.
 - **Opção B (mais simples):** pasta `lib/shared/` na raiz, importada por relative path no mobile (`../lib/shared`). Ajustar `tsconfig` do mobile.
 
 Recomendação: **Opção B** se mobile não tiver dependências conflitantes com web. Caso contrário, A.
 
 Mover para `lib/shared/`:
+
 - `lib/agent/intents/schemas.ts` (depois de Fase 04).
 - `lib/domain/clients/types.ts`, `lib/domain/finance/types.ts`, etc.
 - Helpers de formatação (moeda, data, telefone) que são reusados.
@@ -58,6 +62,7 @@ Web e mobile importam de `@/lib/shared` (web) ou caminho relativo equivalente (m
 ### 2. Mobile com TS estrito
 
 Editar `mobile/tsconfig.json`:
+
 ```json
 {
   "compilerOptions": {
@@ -68,17 +73,20 @@ Editar `mobile/tsconfig.json`:
   }
 }
 ```
+````
 
 Rodar `pnpm --filter mobile tsc --noEmit` (ou no diretório mobile diretamente). Corrigir tudo. Eliminar `any`.
 
 ### 3. ESLint mobile
 
 Mobile já está excluído do ESLint do web. Criar `mobile/eslint.config.mjs` com regras equivalentes:
+
 - `@typescript-eslint/no-explicit-any: error`.
 - `react-native/no-unused-styles`, `react-native/no-inline-styles` (instalar `eslint-plugin-react-native`).
 - `no-console: warn`.
 
 Adicionar script `mobile/package.json`:
+
 ```json
 "lint": "eslint .",
 "typecheck": "tsc --noEmit"
@@ -89,6 +97,7 @@ Adicionar script `mobile/package.json`:
 Conferir que `mobile/src/services/api.ts` (ou equivalente) usa **apenas** `Authorization: Bearer <token>` (sem aliases), conforme Fase 01.
 
 Centralizar criação de cliente HTTP:
+
 ```ts
 // mobile/src/services/http.ts
 const baseUrl = process.env.EXPO_PUBLIC_APP_URL!;
@@ -96,7 +105,11 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
   const token = await obterToken();
   const res = await fetch(`${baseUrl}${path}`, {
     ...init,
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json", ...init?.headers },
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/json",
+      ...init?.headers,
+    },
   });
   if (!res.ok) throw new ApiError(res.status, await res.text());
   return res.json();
@@ -151,6 +164,7 @@ mobile:
 ### 7. EAS Build em release
 
 Configurar EAS:
+
 - `eas.json` (já existe? completar):
   ```json
   {
@@ -172,6 +186,7 @@ Configurar EAS:
   ```
 
 Workflow `.github/workflows/mobile-release.yml`:
+
 ```yaml
 on:
   push:
@@ -190,6 +205,7 @@ jobs:
 ```
 
 Documentar release flow em `docs/release-mobile.md`:
+
 - Bump de versão em `mobile/app.json`.
 - Tag `v1.2.3`.
 - Push tag → EAS builda automaticamente.
@@ -202,10 +218,12 @@ Documentar release flow em `docs/release-mobile.md`:
 - CI mobile verde em PR.
 
 **Entrega:**
+
 - PR draft.
 - Título: `feat(mobile): tipos compartilhados, CI mobile e fluxo EAS de release`.
 
 **Definition of Done:**
+
 - [ ] `lib/shared/` criada e consumida por web e mobile.
 - [ ] Mobile com `strict: true` e zero `any`.
 - [ ] ESLint mobile configurado.
@@ -215,6 +233,7 @@ Documentar release flow em `docs/release-mobile.md`:
 - [ ] Workflow de release em tag `v*`.
 - [ ] `docs/release-mobile.md` criado.
 - [ ] 3 fluxos Maestro criados (rodar não é obrigatório no CI).
+
 ```
 
 ## Definition of Done
@@ -230,3 +249,4 @@ Documentar release flow em `docs/release-mobile.md`:
 - **Tipos compartilhados podem importar deps web (Next, Server)** indiretamente. Cuidado para não puxar Server-only para o mobile. Manter `lib/shared/` puro: só tipos, Zod, helpers sem dependências de runtime.
 - **Expo prebuild em CI demora.** Cachear `~/.npm` e `~/.gradle`.
 - **EAS quota.** Plano gratuito tem limite. Usar com parcimônia, builds production só em tag.
+```

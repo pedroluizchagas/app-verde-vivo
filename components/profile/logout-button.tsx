@@ -1,23 +1,23 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { LogOut } from "lucide-react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
+import { Button } from "@/components/ui/button";
+import { LogOut } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
 
 export function LogoutButton() {
-  const router = useRouter()
-  const supabase = createClient()
+  const router = useRouter();
+  const supabase = createClient();
 
   const handleLogout = async () => {
     try {
-      await supabase.auth.signOut()
-      router.push("/auth/login")
-      router.refresh()
+      await supabase.auth.signOut();
+      router.push("/auth/login");
+      router.refresh();
     } catch (e) {
-      console.error("Erro ao sair:", e)
+      console.error("Erro ao sair:", e);
     }
-  }
+  };
 
   return (
     <Button
@@ -29,5 +29,5 @@ export function LogoutButton() {
       <LogOut className="h-4 w-4 shrink-0" />
       Sair da conta
     </Button>
-  )
+  );
 }

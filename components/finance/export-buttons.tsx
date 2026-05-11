@@ -1,22 +1,28 @@
-"use client"
+"use client";
 
-import { Button } from "@/components/ui/button"
-import { FileDown, FileText } from "lucide-react"
+import { Button } from "@/components/ui/button";
+import { FileDown, FileText } from "lucide-react";
 
 type Tx = {
-  id: string
-  type: "income" | "expense"
-  amount: number
-  transaction_date: string
-  description: string | null
-  status: "paid" | "pending"
-  category?: { name: string | null } | null
-  client?: { name: string | null } | null
-}
+  id: string;
+  type: "income" | "expense";
+  amount: number;
+  transaction_date: string;
+  description?: string | null;
+  status: "paid" | "pending" | string;
+  category?: { name?: string | null } | null;
+  client?: { name?: string | null } | null;
+};
 
-export function ExportButtons({ transactions, fileName = "financeiro" }: { transactions: Tx[]; fileName?: string }) {
+export function ExportButtons({
+  transactions,
+  fileName = "financeiro",
+}: {
+  transactions: Tx[];
+  fileName?: string;
+}) {
   const handleCSV = () => {
-    const headers = ["Tipo", "Valor", "Data", "Status", "Categoria", "Cliente", "Descrição"]
+    const headers = ["Tipo", "Valor", "Data", "Status", "Categoria", "Cliente", "Descrição"];
     const rows = transactions.map((t) => [
       t.type === "income" ? "Receita" : "Despesa",
       String(t.amount).replace(".", ","),
@@ -25,29 +31,29 @@ export function ExportButtons({ transactions, fileName = "financeiro" }: { trans
       t.category?.name || "",
       t.client?.name || "",
       (t.description || "").replace(/\n/g, " "),
-    ])
+    ]);
     const csv = [headers, ...rows]
       .map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(";"))
-      .join("\n")
-    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `${fileName}.csv`
-    a.click()
-    URL.revokeObjectURL(url)
-  }
+      .join("\n");
+    const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${fileName}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
 
   const handlePDF = () => {
-    const w = window.open("", "_blank")
-    if (!w) return
+    const w = window.open("", "_blank");
+    if (!w) return;
     const style = `
       body { font-family: system-ui, sans-serif; padding: 24px; }
       h1 { font-size: 18px; margin-bottom: 12px; }
       table { width: 100%; border-collapse: collapse; }
       th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
       th { background: #f7f7f7; text-align: left; }
-    `
+    `;
     const rows = transactions
       .map(
         (t) => `
@@ -62,7 +68,7 @@ export function ExportButtons({ transactions, fileName = "financeiro" }: { trans
           </tr>
         `,
       )
-      .join("")
+      .join("");
     const html = `
       <html>
         <head>
@@ -88,13 +94,13 @@ export function ExportButtons({ transactions, fileName = "financeiro" }: { trans
           </table>
         </body>
       </html>
-    `
-    w.document.write(html)
-    w.document.close()
-    w.focus()
-    w.print()
-    w.close()
-  }
+    `;
+    w.document.write(html);
+    w.document.close();
+    w.focus();
+    w.print();
+    w.close();
+  };
 
   return (
     <div className="flex gap-2">
@@ -105,5 +111,5 @@ export function ExportButtons({ transactions, fileName = "financeiro" }: { trans
         <FileText className="h-4 w-4" /> Exportar PDF
       </Button>
     </div>
-  )
+  );
 }

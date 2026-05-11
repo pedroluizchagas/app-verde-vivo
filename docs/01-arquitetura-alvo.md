@@ -33,6 +33,7 @@ Estado **alvo** ao final do roadmap. O estado atual está descrito em `00-visao-
 ## Camadas
 
 ### 1. Cliente (web)
+
 - **Next.js 16** App Router, React 19, TypeScript em `strict` real (sem `ignoreBuildErrors`).
 - **Server Components** por padrão. `"use client"` só onde houver interação ou estado.
 - **Páginas finas:** data fetching e cálculos pesados em `lib/`. Página orquestra, não calcula.
@@ -40,17 +41,20 @@ Estado **alvo** ao final do roadmap. O estado atual está descrito em `00-visao-
 - **Forms:** `react-hook-form` + Zod. Mensagens em pt-BR, locale `pt-BR` para datas e moeda.
 
 ### 2. Cliente (mobile)
+
 - **Expo SDK 54+** com React Native, mesma backend.
 - Auth via Bearer JWT. Centralizado em `mobile/src/services/api.ts`.
 - Compartilha **schemas Zod** com web via pacote `lib/shared/` ou symlink — única fonte da verdade para validação.
 
 ### 3. API e domínio
+
 - **API routes** em `app/api/` declaram `runtime = "nodejs"` quando usarem libs Node.
 - Toda rota não-pública passa por `withAuth(handler)` e, quando aplicável, `withRateLimit(handler)`.
 - Lógica de negócio em `lib/domain/<bounded-context>/`. API route = adapter HTTP fino.
 - Padrão de resposta consistente: `{ data, error }` ou códigos HTTP padrão. Nunca vazar stack traces.
 
 ### 4. Dados (Supabase / Postgres)
+
 - **RLS habilitada em todas as tabelas de domínio.** Política `auth.uid() = gardener_id` (ou equivalente) para SELECT/INSERT/UPDATE/DELETE.
 - **Service role** usado apenas em:
   - `/api/auth/callback` (bootstrap do perfil/trial).
@@ -61,6 +65,7 @@ Estado **alvo** ao final do roadmap. O estado atual está descrito em `00-visao-
 - Índices obrigatórios em todas as colunas usadas em `.eq()`, `.in()`, `.order()` de queries quentes.
 
 ### 5. Pagamentos (Stripe)
+
 - **Webhook idempotente:** tabela `stripe_events(event_id PK, type, created_at, processed_at)`. `INSERT ... ON CONFLICT DO NOTHING` no início do handler. Se o insert não criou linha, o evento já foi processado.
 - **Período da assinatura lido do Stripe** (`subscription.current_period_end`). Nunca calculado em JS.
 - **Reconciliação periódica:** cron diário compara `subscriptions` locais com Stripe e corrige drift.
@@ -68,6 +73,7 @@ Estado **alvo** ao final do roadmap. O estado atual está descrito em `00-visao-
 - Eventos tratados: `checkout.session.completed`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_succeeded`, `invoice.payment_failed`.
 
 ### 6. IA (Íris)
+
 - **Pipeline:**
   ```
   input (texto/áudio)
@@ -85,18 +91,21 @@ Estado **alvo** ao final do roadmap. O estado atual está descrito em `00-visao-
 - **Telemetria:** cada execução grava `{ user_id, intent, tokens_in, tokens_out, latency, success, error }` em tabela `agent_invocations`.
 
 ### 7. Segurança
+
 - **Headers:** CSP, HSTS, X-Frame-Options, Referrer-Policy via `next.config.mjs`.
 - **CORS:** explícito por rota (mobile precisa, painel admin não).
 - **Secrets:** apenas em `.env` (local) e em variáveis de ambiente da Vercel/Supabase. Nunca commitados. `.env.example` mantido atualizado.
 - **Auth helpers únicos:** `lib/auth/api.ts` exporta `requireUser(request)` e `requireUserWithPlan(request, plan)`. Todas as rotas usam essas funções; nada de extração de token ad-hoc.
 
 ### 8. Observabilidade
+
 - **Logs estruturados** com `pino` ou similar: `{ level, ts, traceId, userId, route, ...meta }`.
 - **Sentry** (ou equivalente) para erros não tratados e monitoring de performance.
 - **Métricas de negócio:** assinaturas ativas, churn diário, falhas de webhook, intents executadas, custo Groq.
 - **Alertas:** webhook Stripe com falha repetida, taxa de erro 5xx > 1%, latência p95 > 2s.
 
 ### 9. CI/CD
+
 - **GitHub Actions:**
   - `lint` (eslint + tsc --noEmit) em todo PR.
   - `test` (Vitest unit + Playwright E2E em PR para main).

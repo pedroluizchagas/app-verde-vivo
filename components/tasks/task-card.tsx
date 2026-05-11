@@ -1,80 +1,78 @@
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { Calendar, AlertTriangle } from "lucide-react"
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Calendar, AlertTriangle } from "lucide-react";
 
 interface Task {
-  id: string
-  title: string | null
-  status: string
-  importance: string | null
-  tags: string[] | null
-  organized_description: string | null
-  due_date: string | null
-  created_at: string
+  id: string;
+  title?: string | null;
+  status: string;
+  importance?: string | null;
+  tags?: string[] | null;
+  organized_description?: string | null;
+  due_date?: string | null;
+  created_at?: string | null;
 }
 
 export const statusLabels: Record<string, string> = {
   open: "Aberta",
   in_progress: "Em andamento",
   done: "Concluída",
-}
+};
 
 export const statusColors: Record<string, string> = {
   open: "bg-muted text-muted-foreground",
   in_progress: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
   done: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
-}
+};
 
 const statusBorderColors: Record<string, string> = {
   open: "border-l-border",
   in_progress: "border-l-blue-500",
   done: "border-l-emerald-500",
-}
+};
 
 const importanceLabels: Record<string, string> = {
   high: "Alta",
   medium: "Média",
   low: "Baixa",
-}
+};
 
 const importanceBadgeColors: Record<string, string> = {
   high: "bg-destructive/10 text-destructive",
   medium: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   low: "bg-muted text-muted-foreground",
-}
+};
 
 export function TaskCard({ task }: { task: Task }) {
-  const statusLabel = statusLabels[task.status] ?? task.status
-  const statusColor = statusColors[task.status] ?? "bg-muted text-muted-foreground"
-  const borderColor = statusBorderColors[task.status] ?? "border-l-border"
+  const statusLabel = statusLabels[task.status] ?? task.status;
+  const statusColor = statusColors[task.status] ?? "bg-muted text-muted-foreground";
+  const borderColor = statusBorderColors[task.status] ?? "border-l-border";
 
-  const importance = task.importance ?? "medium"
-  const importanceLabel = importanceLabels[importance] ?? "Média"
-  const importanceColor = importanceBadgeColors[importance] ?? "bg-muted text-muted-foreground"
+  const importance = task.importance ?? "medium";
+  const importanceLabel = importanceLabels[importance] ?? "Média";
+  const importanceColor = importanceBadgeColors[importance] ?? "bg-muted text-muted-foreground";
 
-  const tags = Array.isArray(task.tags) ? task.tags.filter(Boolean) : []
-  const visibleTags = tags.slice(0, 3)
-  const extraTags = tags.length - visibleTags.length
+  const tags = Array.isArray(task.tags) ? task.tags.filter(Boolean) : [];
+  const visibleTags = tags.slice(0, 3);
+  const extraTags = tags.length - visibleTags.length;
 
-  const preview = task.organized_description?.trim() || ""
+  const preview = task.organized_description?.trim() || "";
 
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
-  const due = task.due_date ? new Date(`${task.due_date}T12:00:00`) : null
-  const isOverdue = due && due < now && task.status !== "done"
-  const isToday = due && due.getTime() === now.getTime()
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const due = task.due_date ? new Date(`${task.due_date}T12:00:00`) : null;
+  const isOverdue = due && due < now && task.status !== "done";
+  const isToday = due && due.getTime() === now.getTime();
 
-  const dueStr = due
-    ? due.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
-    : null
+  const dueStr = due ? due.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" }) : null;
 
   const dueDateColor = isOverdue
     ? "text-destructive font-semibold"
     : isToday
       ? "text-amber-600 dark:text-amber-400 font-semibold"
-      : "text-muted-foreground"
+      : "text-muted-foreground";
 
-  const isDone = task.status === "done"
+  const isDone = task.status === "done";
 
   return (
     <Link href={`/dashboard/tasks/${task.id}`} className="block">
@@ -163,9 +161,7 @@ export function TaskCard({ task }: { task: Task }) {
                   </span>
                 ))}
                 {extraTags > 0 && (
-                  <span className="text-[10px] text-muted-foreground">
-                    +{extraTags}
-                  </span>
+                  <span className="text-[10px] text-muted-foreground">+{extraTags}</span>
                 )}
               </div>
             </div>
@@ -173,5 +169,5 @@ export function TaskCard({ task }: { task: Task }) {
         </CardContent>
       </Card>
     </Link>
-  )
+  );
 }

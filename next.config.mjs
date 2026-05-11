@@ -1,8 +1,5 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  typescript: {
-    ignoreBuildErrors: true,
-  },
   images: {
     unoptimized: true,
   },
@@ -18,8 +15,8 @@ const nextConfig = {
           { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" },
         ],
       },
-    ]
+    ];
   },
-}
+};
 
-export default nextConfig
+export default nextConfig;

@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { useState } from "react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 
-const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"]
+const DAY_NAMES = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sab"];
 const MONTH_NAMES = [
   "Janeiro",
   "Fevereiro",
@@ -17,30 +17,26 @@ const MONTH_NAMES = [
   "Outubro",
   "Novembro",
   "Dezembro",
-]
+];
 
 export function MiniCalendar() {
-  const today = new Date()
-  const [viewDate, setViewDate] = useState(
-    new Date(today.getFullYear(), today.getMonth(), 1)
-  )
+  const today = new Date();
+  const [viewDate, setViewDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
 
-  const year = viewDate.getFullYear()
-  const month = viewDate.getMonth()
-  const firstDay = new Date(year, month, 1).getDay()
-  const daysInMonth = new Date(year, month + 1, 0).getDate()
+  const year = viewDate.getFullYear();
+  const month = viewDate.getMonth();
+  const firstDay = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
 
-  const prevMonth = () => setViewDate(new Date(year, month - 1, 1))
-  const nextMonth = () => setViewDate(new Date(year, month + 1, 1))
+  const prevMonth = () => setViewDate(new Date(year, month - 1, 1));
+  const nextMonth = () => setViewDate(new Date(year, month + 1, 1));
 
-  const cells: (number | null)[] = []
-  for (let i = 0; i < firstDay; i++) cells.push(null)
-  for (let d = 1; d <= daysInMonth; d++) cells.push(d)
+  const cells: (number | null)[] = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
 
   const isToday = (d: number) =>
-    d === today.getDate() &&
-    month === today.getMonth() &&
-    year === today.getFullYear()
+    d === today.getDate() && month === today.getMonth() && year === today.getFullYear();
 
   return (
     <div>
@@ -90,5 +86,5 @@ export function MiniCalendar() {
         ))}
       </div>
     </div>
-  )
+  );
 }

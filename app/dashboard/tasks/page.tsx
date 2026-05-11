@@ -1,60 +1,52 @@
-import { createClient } from "@/lib/supabase/server"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import {
-  Plus,
-  CheckSquare,
-  CircleDot,
-  CheckCircle2,
-  AlertTriangle,
-  Search,
-} from "lucide-react"
-import { TaskCard } from "@/components/tasks/task-card"
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, CheckSquare, CircleDot, CheckCircle2, AlertTriangle, Search } from "lucide-react";
+import { TaskCard } from "@/components/tasks/task-card";
+import type { Task } from "@/lib/domain/types";
 
 export default async function TasksPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const sp = await searchParams
-  const q = (typeof sp.q === "string" ? sp.q : "").trim()
+  const sp = await searchParams;
+  const q = (typeof sp.q === "string" ? sp.q : "").trim();
 
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   let query = supabase
     .from("tasks")
-    .select(
-      "id, title, importance, tags, organized_description, status, due_date, created_at"
-    )
+    .select("id, title, importance, tags, organized_description, status, due_date, created_at")
     .eq("gardener_id", user!.id)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
 
   if (q) {
-    const like = `%${q}%`
+    const like = `%${q}%`;
     query = query.or(
-      `title.ilike.${like},description.ilike.${like},organized_description.ilike.${like}`
-    )
+      `title.ilike.${like},description.ilike.${like},organized_description.ilike.${like}`,
+    );
   }
 
-  const { data: tasks } = await query
-  const allTasks = (tasks || []) as any[]
+  const { data: tasks } = await query;
+  const allTasks = (tasks ?? []) as Task[];
 
-  const openTasks = allTasks.filter((t) => t.status === "open")
-  const inProgressTasks = allTasks.filter((t) => t.status === "in_progress")
-  const doneTasks = allTasks.filter((t) => t.status === "done")
+  const openTasks = allTasks.filter((t) => t.status === "open");
+  const inProgressTasks = allTasks.filter((t) => t.status === "in_progress");
+  const doneTasks = allTasks.filter((t) => t.status === "done");
 
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
   const overdueTasks = allTasks.filter((t) => {
-    if (!t.due_date || t.status === "done") return false
-    return new Date(`${t.due_date}T12:00:00`) < now
-  })
+    if (!t.due_date || t.status === "done") return false;
+    return new Date(`${t.due_date}T12:00:00`) < now;
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -86,9 +78,7 @@ export default async function TasksPage({
                 <CheckSquare className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {openTasks.length}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{openTasks.length}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               pendente{openTasks.length !== 1 ? "s" : ""}
             </p>
@@ -105,12 +95,8 @@ export default async function TasksPage({
                 <CircleDot className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {inProgressTasks.length}
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              em execução
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{inProgressTasks.length}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">em execução</p>
           </CardContent>
         </Card>
 
@@ -124,12 +110,8 @@ export default async function TasksPage({
                 <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {doneTasks.length}
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              finalizadas
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{doneTasks.length}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">finalizadas</p>
           </CardContent>
         </Card>
 
@@ -148,9 +130,7 @@ export default async function TasksPage({
             >
               {overdueTasks.length}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              com prazo vencido
-            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">com prazo vencido</p>
           </CardContent>
         </Card>
       </div>
@@ -225,9 +205,7 @@ export default async function TasksPage({
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm text-muted-foreground">
-                Nenhuma tarefa aberta.
-              </p>
+              <p className="text-sm text-muted-foreground">Nenhuma tarefa aberta.</p>
             </div>
           )}
         </TabsContent>
@@ -241,9 +219,7 @@ export default async function TasksPage({
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm text-muted-foreground">
-                Nenhuma tarefa em andamento.
-              </p>
+              <p className="text-sm text-muted-foreground">Nenhuma tarefa em andamento.</p>
             </div>
           )}
         </TabsContent>
@@ -257,13 +233,11 @@ export default async function TasksPage({
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center py-16 text-center">
-              <p className="text-sm text-muted-foreground">
-                Nenhuma tarefa concluída.
-              </p>
+              <p className="text-sm text-muted-foreground">Nenhuma tarefa concluída.</p>
             </div>
           )}
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

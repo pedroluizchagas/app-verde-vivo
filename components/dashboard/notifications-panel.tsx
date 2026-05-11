@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { Bell, X } from "lucide-react"
-import { useNotifications } from "./notifications-context"
+import { Bell, X } from "lucide-react";
+import { useNotifications } from "./notifications-context";
 
 export function NotificationsPanel() {
-  const { isOpen, toggle, close } = useNotifications()
+  const { isOpen, toggle, close } = useNotifications();
 
   return (
     /*
@@ -59,5 +59,5 @@ export function NotificationsPanel() {
         </div>
       </div>
     </div>
-  )
+  );
 }

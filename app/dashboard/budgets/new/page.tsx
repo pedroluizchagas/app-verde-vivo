@@ -1,17 +1,21 @@
-import { BudgetForm } from "@/components/budgets/budget-form"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
+import { BudgetForm } from "@/components/budgets/budget-form";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function NewBudgetPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   // Get clients for the dropdown
-  const { data: clients } = await supabase.from("clients").select("id, name").eq("gardener_id", user!.id).order("name")
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("id, name")
+    .eq("gardener_id", user!.id)
+    .order("name");
 
   return (
     <div className="flex flex-col gap-4">
@@ -27,5 +31,5 @@ export default async function NewBudgetPage() {
 
       <BudgetForm clients={clients || []} />
     </div>
-  )
+  );
 }

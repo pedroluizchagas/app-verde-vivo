@@ -19,6 +19,7 @@ Tornar o fluxo de pagamento **confiável e auditável**. Migrar para `supabase/m
 ## Escopo
 
 ### Entra
+
 - Tabela `stripe_events` para idempotência.
 - Refator do webhook para idempotência + uso de `current_period_end` real.
 - Tratamento explícito de mais eventos: `customer.subscription.updated`, `customer.subscription.created`.
@@ -29,6 +30,7 @@ Tornar o fluxo de pagamento **confiável e auditável**. Migrar para `supabase/m
 - Coluna `idempotency_key` em `stripe_events` e validação no checkout para evitar dupla criação de session.
 
 ### Não entra
+
 - Mudança de provedor de pagamento.
 - Suporte a planos anuais (registrar como pendência).
 - Customer Portal redesign (já existe, manter).
@@ -36,7 +38,7 @@ Tornar o fluxo de pagamento **confiável e auditável**. Migrar para `supabase/m
 
 ## Prompt para o agente executor
 
-```markdown
+````markdown
 Você está executando a **Fase 03 — Pagamentos Robustos e Modelo de Dados** do Gestão Garden, conforme `docs/fases/fase-03-pagamentos-dados.md`.
 
 **Pré-requisitos:** Fases 00 e 01 mergeadas. Fase 02 fortemente recomendada antes (typecheck honesto pega bugs de tipo Stripe).
@@ -44,6 +46,7 @@ Você está executando a **Fase 03 — Pagamentos Robustos e Modelo de Dados** d
 **Branch:** `feat/fase-03-pagamentos-dados`.
 
 **Leia antes:**
+
 - `docs/01-arquitetura-alvo.md` (seção Pagamentos)
 - `app/api/subscription/webhook/route.ts`
 - `app/api/subscription/checkout/route.ts`
@@ -84,6 +87,7 @@ alter table public.stripe_events enable row level security;
 
 -- DOWN: drop table public.stripe_events;
 ```
+````
 
 ### 3. Refatorar webhook Stripe
 
@@ -91,6 +95,7 @@ Editar `app/api/subscription/webhook/route.ts`:
 
 - Validar assinatura (já está OK).
 - **Logo após validar**, inserir o evento:
+
   ```ts
   const { data: inserted, error } = await supabase
     .from("stripe_events")
@@ -104,6 +109,7 @@ Editar `app/api/subscription/webhook/route.ts`:
   }
   if (error) throw error;
   ```
+
 - Processar o evento dentro de try/catch.
 - Em sucesso, atualizar `processed_at = now()`.
 - Em falha, gravar `error` e retornar 500 (Stripe retentará, e o INSERT já preveniu duplicação na próxima volta — porque o INSERT inicial só vai falhar se já existir; precisamos tratar caso de re-tentar processamento de evento que falhou). **Estratégia:** se já existe e `processed_at IS NULL`, prosseguir com processamento (re-tentativa); se `processed_at` está setado, retornar 200 (já processado). Implemente essa lógica explícita.
@@ -111,6 +117,7 @@ Editar `app/api/subscription/webhook/route.ts`:
 ### 4. Eventos tratados — usar dados reais do Stripe
 
 Tratar:
+
 - `checkout.session.completed`
 - `customer.subscription.created`
 - `customer.subscription.updated`
@@ -119,6 +126,7 @@ Tratar:
 - `invoice.payment_failed`
 
 Para CADA um, atualizar `subscriptions` lendo:
+
 - `subscription.current_period_end` (Unix → timestamptz). **Nunca calcular em JS.**
 - `subscription.status` (mapear para enum local: `active`, `past_due`, `canceled`, `unpaid`).
 - `subscription.cancel_at_period_end`.
@@ -150,11 +158,10 @@ Criar `app/api/cron/reconcile-subscriptions/route.ts`:
 - Gerar resumo `{ scanned, drift_corrected, errors }`.
 
 Configurar `vercel.json` com cron diário 03:00 UTC:
+
 ```json
 {
-  "crons": [
-    { "path": "/api/cron/reconcile-subscriptions", "schedule": "0 3 * * *" }
-  ]
+  "crons": [{ "path": "/api/cron/reconcile-subscriptions", "schedule": "0 3 * * *" }]
 }
 ```
 
@@ -197,6 +204,7 @@ Inspecionar queries reais antes — se houver outras colunas em `where`/`order` 
 ### 9. Validar trial e plano em middleware
 
 Conferir que após mudanças, o middleware ainda funciona corretamente para usuários:
+
 - Em trial.
 - Com pagamento `active`.
 - Com `past_due`.
@@ -211,16 +219,19 @@ Sem mudanças funcionais — só validar que o webhook agora coloca dados corret
 - `pnpm tsc --noEmit && pnpm lint && pnpm build` passam.
 
 **Restrições:**
+
 - NÃO criar coluna nova em `subscriptions` ou `profiles` sem necessidade. Reutilizar o que existe.
 - NÃO migrar usuários existentes. Mudanças são forward-only.
 - NÃO mexer em rotas fora de `subscription/*` e `cron/*`.
 
 **Entrega:**
+
 - PR draft.
 - Título: `feat(stripe): idempotência, period_end real e reconciliação periódica`.
 - Resumo cobrindo migrações criadas, eventos novos tratados, comportamento do cron.
 
 **Definition of Done — copiar para o PR:**
+
 - [ ] Tabela `stripe_events` criada e usada.
 - [ ] Webhook idempotente (testado disparando evento duplicado).
 - [ ] `current_period_end` lido do Stripe, nunca calculado.
@@ -232,6 +243,7 @@ Sem mudanças funcionais — só validar que o webhook agora coloca dados corret
 - [ ] Subscription "pending órfã" eliminada — checkout não cria mais.
 - [ ] Stripe CLI test: 4 cenários verificados.
 - [ ] CRON_SECRET adicionado ao `.env.example`.
+
 ```
 
 ## Definition of Done
@@ -250,3 +262,4 @@ Sem mudanças funcionais — só validar que o webhook agora coloca dados corret
 - **Migração de RLS pode bloquear acesso legítimo** se a policy estiver mais restritiva do que a anterior. Aplicar em staging antes.
 - **Cron rodando em prod sem CRON_SECRET configurado** = rota aberta. Garantir env antes do deploy.
 - **Eliminação de subscription pending** quebra UI que esperava o registro. Conferir `dashboard/plan` e ajustar.
+```

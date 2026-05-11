@@ -18,6 +18,7 @@ Fechar todos os vetores acima. Centralizar autenticação. Reduzir uso de `servi
 ## Escopo
 
 ### Entra
+
 - Centralização de auth em `lib/auth/api.ts` (`requireUser`, `requireUserWithPlan`, `getOptionalUser`).
 - Proteção de `/api/push/send`.
 - Remoção (ou hard-protect) de `/api/auth-debug`.
@@ -27,6 +28,7 @@ Fechar todos os vetores acima. Centralizar autenticação. Reduzir uso de `servi
 - Documentação dos pontos onde service-role permanece e por quê.
 
 ### Não entra
+
 - Idempotência de webhook Stripe (Fase 03).
 - Período hardcoded de assinatura (Fase 03).
 - Guardrails do prompt da Íris (Fase 04).
@@ -42,6 +44,7 @@ Você está executando a **Fase 01 — Segurança Crítica** do Gestão Garden, 
 **Branch:** `feat/fase-01-seguranca-critica` a partir de main.
 
 **Leia antes de começar:**
+
 - `docs/00-visao-tecnica.md` (princípios)
 - `docs/01-arquitetura-alvo.md` (camadas alvo, especialmente Auth e Segurança)
 - `docs/03-padroes-e-convencoes.md` (regras de código)
@@ -52,6 +55,7 @@ Você está executando a **Fase 01 — Segurança Crítica** do Gestão Garden, 
 ### 1. Centralizar autenticação em `lib/auth/api.ts`
 
 Criar módulo único com:
+
 - `extractBearerToken(request: NextRequest): string | null` — só `Authorization: Bearer <token>`. Remover suporte a `x-access-token`, `x-supabase-access-token`, `x-authorization` (reduz superfície). Atualizar mobile se usar variantes.
 - `getSupabaseFromRequest(request)`: retorna cliente Supabase (com cookies OU bearer), nunca service-role.
 - `requireUser(request)`: retorna `{ supabase, user }` ou lança `Response(401)`.
@@ -65,6 +69,7 @@ Substituir todos os usos espalhados (`getSupabaseAndUserFromApiRequest`, extraç
 Estado atual: aceita `userIds[]` arbitrários sem auth.
 
 Mudar para:
+
 - `requireUser(request)` no início.
 - Restrição de domínio: `userIds` só pode conter o `user.id` autenticado, OU se for chamada interna (cron/webhook), exigir header `X-Internal-Token` validado contra env `INTERNAL_API_TOKEN`.
 - Validar payload com Zod (mensagem, dados, tamanho máximo).
@@ -73,6 +78,7 @@ Mudar para:
 ### 3. Remover ou proteger `/api/auth-debug`
 
 Opção preferida: **deletar** o arquivo. Se houver caso de uso real (raro), envolver em:
+
 - `if (process.env.NODE_ENV !== "development") return new Response("Not Found", { status: 404 });`
 - Adicionalmente, exigir `requireUser` e retornar apenas dados do próprio usuário.
 
@@ -90,6 +96,7 @@ Para cada arquivo que usa `createServiceRoleClient()`:
 Antes de substituir, verificar que as policies RLS permitem as operações necessárias (SELECT/UPDATE em `subscriptions` e `profiles` quando `gardener_id = auth.uid()`). Se a policy estiver insuficiente, criar migração nova em `supabase/migrations/` para complementar.
 
 Após a fase, deve restar service-role apenas em:
+
 - `app/auth/callback/route.ts`
 - `app/api/subscription/webhook/route.ts`
 
@@ -101,16 +108,18 @@ Adotar **Upstash Ratelimit** (`@upstash/ratelimit` + `@upstash/redis`):
 
 - `pnpm add @upstash/ratelimit @upstash/redis`
 - Adicionar envs em `.env.example`:
-  ```
-  UPSTASH_REDIS_REST_URL=
-  UPSTASH_REDIS_REST_TOKEN=
-  ```
+```
+
+UPSTASH_REDIS_REST_URL=
+UPSTASH_REDIS_REST_TOKEN=
+
+````
 - Criar `lib/rate-limit.ts` exportando limiters nomeados:
-  - `assistantLimiter`: 30 req / 1 min por user.
-  - `transcribeLimiter`: 10 req / 5 min por user.
-  - `checkoutLimiter`: 5 req / 1 min por user.
-  - `pushLimiter`: 60 req / 1 min por user.
-  - `webhookLimiter`: 1000 req / 1 min por IP (proteção mínima de webhook).
+- `assistantLimiter`: 30 req / 1 min por user.
+- `transcribeLimiter`: 10 req / 5 min por user.
+- `checkoutLimiter`: 5 req / 1 min por user.
+- `pushLimiter`: 60 req / 1 min por user.
+- `webhookLimiter`: 1000 req / 1 min por IP (proteção mínima de webhook).
 - Aplicar em cada rota correspondente. Em ausência de envs Upstash (dev), no-op com warning no console.
 - Resposta de rate limit: `429` com header `Retry-After`.
 
@@ -119,20 +128,21 @@ Adotar **Upstash Ratelimit** (`@upstash/ratelimit` + `@upstash/redis`):
 Atualizar `next.config.mjs` para incluir:
 ```js
 async headers() {
-  return [
-    {
-      source: "/(.*)",
-      headers: [
-        { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-        { key: "X-Frame-Options", value: "DENY" },
-        { key: "X-Content-Type-Options", value: "nosniff" },
-        { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-        { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" },
-      ],
-    },
-  ];
+return [
+  {
+    source: "/(.*)",
+    headers: [
+      { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
+      { key: "X-Frame-Options", value: "DENY" },
+      { key: "X-Content-Type-Options", value: "nosniff" },
+      { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+      { key: "Permissions-Policy", value: "camera=(), microphone=(self), geolocation=()" },
+    ],
+  },
+];
 }
-```
+````
+
 CSP fica para Fase 06 (precisa de inventário de origens). NÃO adicionar CSP nesta fase.
 
 NÃO mexer em `typescript.ignoreBuildErrors` aqui — é Fase 02.
@@ -154,17 +164,20 @@ NÃO mexer em `typescript.ignoreBuildErrors` aqui — é Fase 02.
 - Conferir que `mobile/` ainda funciona com Bearer (testar login + uma tela autenticada).
 
 **Restrições:**
+
 - NÃO mexer em lógica de webhook Stripe (idempotência, period_end) — é Fase 03.
 - NÃO eliminar `any` proativamente — é Fase 02. Se um `any` aparecer no caminho da refatoração, ok corrigir, mas não fazer caça sistemática.
 - NÃO mexer no orquestrador da Íris — é Fase 04.
 
 **Entrega:**
+
 - PR draft seguindo `docs/04-checklist-pr.md`.
 - Título: `feat(seguranca): centralizar auth, restringir service-role e adicionar rate limit`.
 - Resumo no PR cobrindo cada uma das 8 tarefas.
 - Lista explícita de "rotas que mudaram" e "envs novas".
 
 **Definition of Done — copiar para o PR:**
+
 - [ ] `lib/auth/api.ts` é o único ponto de entrada de auth em API routes.
 - [ ] `getSupabaseAndUserFromApiRequest` e helpers antigos deletados.
 - [ ] `/api/push/send` exige auth e valida `userIds`.
@@ -175,6 +188,7 @@ NÃO mexer em `typescript.ignoreBuildErrors` aqui — é Fase 02.
 - [ ] `.env.example` atualizado com envs do Upstash.
 - [ ] Mobile testado e funcionando com Bearer.
 - [ ] Lint, TS, build passam.
+
 ```
 
 ## Definition of Done
@@ -194,3 +208,4 @@ NÃO mexer em `typescript.ignoreBuildErrors` aqui — é Fase 02.
 - **RLS pode estar incompleta** em `subscriptions` e `profiles` para o caso de UPDATE. Ao migrar fora de service-role, testar cada operação. Se faltar policy, criar migração.
 - **Upstash em ambiente sem envs.** Ratelimit deve degradar para no-op com aviso, nunca quebrar a app.
 - **Lock-out acidental.** Em ambientes de teste/staging, o rate limit pode atrapalhar QA. Permitir override por env `RATE_LIMIT_DISABLED=true` (apenas em não-produção).
+```

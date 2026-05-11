@@ -1,45 +1,53 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { Textarea } from "@/components/ui/textarea"
-import { Wrench } from "lucide-react"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Wrench } from "lucide-react";
+import { cn, extrairMensagemErro } from "@/lib/utils";
 
 const MONTH_ABBR = [
-  "Jan","Fev","Mar","Abr","Mai","Jun",
-  "Jul","Ago","Set","Out","Nov","Dez",
-]
+  "Jan",
+  "Fev",
+  "Mar",
+  "Abr",
+  "Mai",
+  "Jun",
+  "Jul",
+  "Ago",
+  "Set",
+  "Out",
+  "Nov",
+  "Dez",
+];
 
 function MonthSelector({
   value,
   onChange,
   disabled,
 }: {
-  value: number[]
-  onChange: (v: number[]) => void
-  disabled?: boolean
+  value: number[];
+  onChange: (v: number[]) => void;
+  disabled?: boolean;
 }) {
   const toggle = (idx: number) => {
-    const m = idx + 1
+    const m = idx + 1;
     onChange(
-      value.includes(m)
-        ? value.filter((x) => x !== m)
-        : [...value, m].sort((a, b) => a - b)
-    )
-  }
+      value.includes(m) ? value.filter((x) => x !== m) : [...value, m].sort((a, b) => a - b),
+    );
+  };
   return (
     <div className="grid grid-cols-6 gap-1.5">
       {MONTH_ABBR.map((m, idx) => (
@@ -53,131 +61,130 @@ function MonthSelector({
             value.includes(idx + 1)
               ? "border-primary bg-primary/10 text-primary"
               : "border-border text-muted-foreground hover:border-muted-foreground/40",
-            disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : ""
+            disabled ? "opacity-40 cursor-not-allowed pointer-events-none" : "",
           )}
         >
           {m}
         </button>
       ))}
     </div>
-  )
+  );
 }
 
-function nextPlannedDate(
-  months: number[],
-  weekday: string,
-  weekOfMonth: string
-) {
-  const now = new Date()
-  const cur = now.getMonth() + 1
-  const next =
-    months.length > 0
-      ? months.find((m) => m >= cur) ?? months[0]
-      : null
-  if (!next) return "—"
-  const y = next < cur ? now.getFullYear() + 1 : now.getFullYear()
-  const prefWeekday = weekday && weekday !== "none" ? Number(weekday) : 1
-  const prefWeek = weekOfMonth && weekOfMonth !== "none" ? Number(weekOfMonth) : 1
-  const firstOfMonth = new Date(y, next - 1, 1)
-  const firstDow = firstOfMonth.getDay()
-  const offsetToWeekday = (prefWeekday - firstDow + 7) % 7
-  const day = 1 + offsetToWeekday + (prefWeek - 1) * 7
-  return new Date(y, next - 1, day).toLocaleDateString("pt-BR")
+function nextPlannedDate(months: number[], weekday: string, weekOfMonth: string) {
+  const now = new Date();
+  const cur = now.getMonth() + 1;
+  const next = months.length > 0 ? (months.find((m) => m >= cur) ?? months[0]) : null;
+  if (!next) return "—";
+  const y = next < cur ? now.getFullYear() + 1 : now.getFullYear();
+  const prefWeekday = weekday && weekday !== "none" ? Number(weekday) : 1;
+  const prefWeek = weekOfMonth && weekOfMonth !== "none" ? Number(weekOfMonth) : 1;
+  const firstOfMonth = new Date(y, next - 1, 1);
+  const firstDow = firstOfMonth.getDay();
+  const offsetToWeekday = (prefWeekday - firstDow + 7) % 7;
+  const day = 1 + offsetToWeekday + (prefWeek - 1) * 7;
+  return new Date(y, next - 1, day).toLocaleDateString("pt-BR");
 }
 
-export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
-  const router = useRouter()
-  const supabase = createClient()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+interface PlanoInicial {
+  id?: string;
+  title?: string;
+  client_id?: string;
+  service_id?: string | null;
+  default_labor_cost?: number;
+  preferred_weekday?: number;
+  preferred_week_of_month?: number;
+  billing_day?: number;
+  status?: string;
+  default_description?: string;
+}
 
-  const [title, setTitle] = useState(initialPlan?.title || "")
-  const [clientId, setClientId] = useState<string>(
-    initialPlan?.client_id || ""
-  )
+export function MaintenancePlanForm({ initialPlan }: { initialPlan?: PlanoInicial }) {
+  const router = useRouter();
+  const supabase = createClient();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const [title, setTitle] = useState(initialPlan?.title || "");
+  const [clientId, setClientId] = useState<string>(initialPlan?.client_id || "");
   const [defaultLabor, setDefaultLabor] = useState<string>(
     typeof initialPlan?.default_labor_cost === "number"
       ? String(initialPlan.default_labor_cost)
-      : ""
-  )
+      : "",
+  );
   const [weekday, setWeekday] = useState<string>(
-    typeof initialPlan?.preferred_weekday === "number"
-      ? String(initialPlan.preferred_weekday)
-      : ""
-  )
+    typeof initialPlan?.preferred_weekday === "number" ? String(initialPlan.preferred_weekday) : "",
+  );
   const [weekOfMonth, setWeekOfMonth] = useState<string>(
     typeof initialPlan?.preferred_week_of_month === "number"
       ? String(initialPlan.preferred_week_of_month)
-      : ""
-  )
+      : "",
+  );
   const [billingDay, setBillingDay] = useState<string>(
-    typeof initialPlan?.billing_day === "number"
-      ? String(initialPlan.billing_day)
-      : ""
-  )
+    typeof initialPlan?.billing_day === "number" ? String(initialPlan.billing_day) : "",
+  );
   const [status, setStatus] = useState<"active" | "paused">(
-    (initialPlan?.status as any) || "active"
-  )
-  const [description, setDescription] = useState<string>(
-    initialPlan?.default_description || ""
-  )
+    (initialPlan?.status as "active" | "paused" | undefined) || "active",
+  );
+  const [description, setDescription] = useState<string>(initialPlan?.default_description || "");
 
-  const [clients, setClients] = useState<
-    { id: string; name: string; phone?: string | null }[]
-  >([])
-  const [fertMonths, setFertMonths] = useState<number[]>([])
-  const [pestMonths, setPestMonths] = useState<number[]>([])
-  const [enableFert, setEnableFert] = useState<boolean>(false)
-  const [enablePests, setEnablePests] = useState<boolean>(false)
+  const [clients, setClients] = useState<{ id: string; name: string; phone?: string | null }[]>([]);
+  const [fertMonths, setFertMonths] = useState<number[]>([]);
+  const [pestMonths, setPestMonths] = useState<number[]>([]);
+  const [enableFert, setEnableFert] = useState<boolean>(false);
+  const [enablePests, setEnablePests] = useState<boolean>(false);
 
   useState(() => {
-    ;(async () => {
+    void (async () => {
       try {
         const {
           data: { user },
-        } = await supabase.auth.getUser()
-        if (!user) return
+        } = await supabase.auth.getUser();
+        if (!user) return;
         const { data: cs } = await supabase
           .from("clients")
           .select("id, name, phone")
           .eq("gardener_id", user.id)
-          .order("name")
-        setClients(cs || [])
+          .order("name");
+        setClients(cs || []);
         if (initialPlan?.id) {
           const { data: tmpl } = await supabase
             .from("plan_executions")
             .select("id, details, cycle")
             .eq("plan_id", initialPlan.id)
             .eq("cycle", "template")
-            .maybeSingle()
-          const schedule = (tmpl as any)?.details?.schedule || null
+            .maybeSingle();
+          const detalhesTmpl = (
+            tmpl as { details?: { schedule?: Record<string, unknown> | null } | null } | null
+          )?.details;
+          const schedule = (detalhesTmpl?.schedule ?? null) as {
+            fertilization_months?: number[];
+            pests_months?: number[];
+          } | null;
           if (schedule) {
             if (Array.isArray(schedule.fertilization_months))
-              setFertMonths(schedule.fertilization_months)
-            if (Array.isArray(schedule.pests_months))
-              setPestMonths(schedule.pests_months)
-            setEnableFert(Boolean((schedule.fertilization_months || []).length))
-            setEnablePests(Boolean((schedule.pests_months || []).length))
+              setFertMonths(schedule.fertilization_months);
+            if (Array.isArray(schedule.pests_months)) setPestMonths(schedule.pests_months);
+            setEnableFert(Boolean((schedule.fertilization_months || []).length));
+            setEnablePests(Boolean((schedule.pests_months || []).length));
           }
         }
       } catch {}
-    })()
-  })
+    })();
+  });
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error("Não autenticado")
-      if (!title || !clientId) throw new Error("Preencha título e cliente")
-      const preservedServiceId = initialPlan?.id
-        ? (initialPlan?.service_id ?? null)
-        : null
-      const payload: any = {
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+      if (!title || !clientId) throw new Error("Preencha título e cliente");
+      const preservedServiceId = initialPlan?.id ? (initialPlan?.service_id ?? null) : null;
+      const payload = {
         gardener_id: user.id,
         client_id: clientId,
         service_id: preservedServiceId,
@@ -185,60 +192,56 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
         default_description: description || null,
         default_labor_cost: defaultLabor ? Number(defaultLabor) : 0,
         materials_markup_pct: 0,
-        preferred_weekday:
-          weekday && weekday !== "none" ? Number(weekday) : null,
-        preferred_week_of_month:
-          weekOfMonth && weekOfMonth !== "none" ? Number(weekOfMonth) : null,
+        preferred_weekday: weekday && weekday !== "none" ? Number(weekday) : null,
+        preferred_week_of_month: weekOfMonth && weekOfMonth !== "none" ? Number(weekOfMonth) : null,
         window_days: 7,
         billing_day: billingDay ? Number(billingDay) : null,
         status,
-      }
+      };
       const schedule = {
         fertilization_months: enableFert ? fertMonths : [],
         pests_months: enablePests ? pestMonths : [],
         weeds_months: [],
-      }
+      };
 
       if (initialPlan?.id) {
         const { error: updateError } = await supabase
           .from("maintenance_plans")
           .update(payload)
-          .eq("id", initialPlan.id)
-        if (updateError) throw updateError
+          .eq("id", initialPlan.id);
+        if (updateError) throw updateError;
         const { data: tmpl } = await supabase
           .from("plan_executions")
           .select("id, cycle")
           .eq("plan_id", initialPlan.id)
           .eq("cycle", "template")
-          .maybeSingle()
+          .maybeSingle();
         if (tmpl?.id) {
           const { error: uerr } = await supabase
             .from("plan_executions")
             .update({ details: { schedule } })
-            .eq("id", tmpl.id)
-          if (uerr) throw uerr
+            .eq("id", tmpl.id);
+          if (uerr) throw uerr;
         } else {
-          const { error: ierr } = await supabase
-            .from("plan_executions")
-            .insert([
-              {
-                plan_id: initialPlan.id,
-                cycle: "template",
-                status: "open",
-                details: { schedule },
-              },
-            ])
-          if (ierr) throw ierr
+          const { error: ierr } = await supabase.from("plan_executions").insert([
+            {
+              plan_id: initialPlan.id,
+              cycle: "template",
+              status: "open",
+              details: { schedule },
+            },
+          ]);
+          if (ierr) throw ierr;
         }
-        router.push(`/dashboard/maintenance/${initialPlan.id}`)
-        router.refresh()
+        router.push(`/dashboard/maintenance/${initialPlan.id}`);
+        router.refresh();
       } else {
         const { data: inserted, error: insertError } = await supabase
           .from("maintenance_plans")
           .insert(payload)
           .select("id")
-          .single()
-        if (insertError) throw insertError
+          .single();
+        if (insertError) throw insertError;
         if (inserted?.id) {
           await supabase.from("plan_executions").insert([
             {
@@ -247,24 +250,23 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
               status: "open",
               details: { schedule },
             },
-          ])
+          ]);
         }
-        router.push(`/dashboard/maintenance/${inserted?.id ?? ""}`)
-        router.refresh()
+        router.push(`/dashboard/maintenance/${inserted?.id ?? ""}`);
+        router.refresh();
       }
-    } catch (err: any) {
-      setError(err?.message || "Erro ao salvar plano")
-      setIsLoading(false)
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao salvar plano"));
+      setIsLoading(false);
     }
-  }
+  };
 
-  const selectedClient = clients.find((c) => c.id === clientId)
+  const selectedClient = clients.find((c) => c.id === clientId);
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Card className="py-0">
         <CardContent className="p-5 flex flex-col gap-5">
-
           {/* Identificação */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
@@ -292,7 +294,7 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
                     "h-11 rounded-xl border-2 text-[13px] font-semibold transition-all",
                     status === "active"
                       ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                      : "border-border text-muted-foreground hover:border-muted-foreground/40"
+                      : "border-border text-muted-foreground hover:border-muted-foreground/40",
                   )}
                 >
                   Ativo
@@ -304,7 +306,7 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
                     "h-11 rounded-xl border-2 text-[13px] font-semibold transition-all",
                     status === "paused"
                       ? "border-amber-500 bg-amber-500/10 text-amber-600 dark:text-amber-400"
-                      : "border-border text-muted-foreground hover:border-muted-foreground/40"
+                      : "border-border text-muted-foreground hover:border-muted-foreground/40",
                   )}
                 >
                   Pausado
@@ -319,10 +321,7 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
               <Label htmlFor="plan-client" className="text-[12px] font-medium">
                 Cliente
               </Label>
-              <Select
-                value={clientId}
-                onValueChange={(v) => setClientId(v)}
-              >
+              <Select value={clientId} onValueChange={(v) => setClientId(v)}>
                 <SelectTrigger id="plan-client" className="h-11">
                   <SelectValue placeholder="Selecionar cliente" />
                 </SelectTrigger>
@@ -338,9 +337,7 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
 
             {selectedClient?.phone && (
               <div className="flex flex-col gap-1.5">
-                <Label className="text-[12px] font-medium">
-                  WhatsApp do cliente
-                </Label>
+                <Label className="text-[12px] font-medium">WhatsApp do cliente</Label>
                 <Input
                   value={selectedClient.phone}
                   readOnly
@@ -375,14 +372,9 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="plan-billing"
-                  className="text-[12px] font-medium"
-                >
+                <Label htmlFor="plan-billing" className="text-[12px] font-medium">
                   Dia de vencimento{" "}
-                  <span className="text-muted-foreground font-normal">
-                    (opcional)
-                  </span>
+                  <span className="text-muted-foreground font-normal">(opcional)</span>
                 </Label>
                 <Input
                   id="plan-billing"
@@ -408,16 +400,10 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
             </p>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="plan-weekday"
-                  className="text-[12px] font-medium"
-                >
+                <Label htmlFor="plan-weekday" className="text-[12px] font-medium">
                   Dia da semana
                 </Label>
-                <Select
-                  value={weekday || "none"}
-                  onValueChange={(v) => setWeekday(v)}
-                >
+                <Select value={weekday || "none"} onValueChange={(v) => setWeekday(v)}>
                   <SelectTrigger id="plan-weekday" className="h-11">
                     <SelectValue placeholder="Opcional" />
                   </SelectTrigger>
@@ -435,16 +421,10 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
               </div>
 
               <div className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="plan-week"
-                  className="text-[12px] font-medium"
-                >
+                <Label htmlFor="plan-week" className="text-[12px] font-medium">
                   Semana do mês
                 </Label>
-                <Select
-                  value={weekOfMonth || "none"}
-                  onValueChange={(v) => setWeekOfMonth(v)}
-                >
+                <Select value={weekOfMonth || "none"} onValueChange={(v) => setWeekOfMonth(v)}>
                   <SelectTrigger id="plan-week" className="h-11">
                     <SelectValue placeholder="Opcional" />
                   </SelectTrigger>
@@ -466,9 +446,7 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[13px] font-semibold">
-                    Planejamento de adubação
-                  </p>
+                  <p className="text-[13px] font-semibold">Planejamento de adubação</p>
                   <p className="text-[11px] text-muted-foreground">
                     Selecione os meses em que a adubação deve ser realizada
                   </p>
@@ -480,17 +458,13 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
                     "h-8 px-3 rounded-xl border-2 text-[12px] font-semibold transition-all shrink-0",
                     enableFert
                       ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                      : "border-border text-muted-foreground"
+                      : "border-border text-muted-foreground",
                   )}
                 >
                   {enableFert ? "Habilitado" : "Habilitar"}
                 </button>
               </div>
-              <MonthSelector
-                value={fertMonths}
-                onChange={setFertMonths}
-                disabled={!enableFert}
-              />
+              <MonthSelector value={fertMonths} onChange={setFertMonths} disabled={!enableFert} />
               {enableFert && fertMonths.length > 0 && (
                 <p className="text-[11px] text-muted-foreground">
                   Próxima:{" "}
@@ -505,9 +479,7 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
             <div className="flex flex-col gap-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-[13px] font-semibold">
-                    Controle de pragas
-                  </p>
+                  <p className="text-[13px] font-semibold">Controle de pragas</p>
                   <p className="text-[11px] text-muted-foreground">
                     Selecione os meses para controle preventivo de pragas
                   </p>
@@ -519,17 +491,13 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
                     "h-8 px-3 rounded-xl border-2 text-[12px] font-semibold transition-all shrink-0",
                     enablePests
                       ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-                      : "border-border text-muted-foreground"
+                      : "border-border text-muted-foreground",
                   )}
                 >
                   {enablePests ? "Habilitado" : "Habilitar"}
                 </button>
               </div>
-              <MonthSelector
-                value={pestMonths}
-                onChange={setPestMonths}
-                disabled={!enablePests}
-              />
+              <MonthSelector value={pestMonths} onChange={setPestMonths} disabled={!enablePests} />
               {enablePests && pestMonths.length > 0 && (
                 <p className="text-[11px] text-muted-foreground">
                   Próxima:{" "}
@@ -543,14 +511,9 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
 
           {/* Descrição do jardim */}
           <div className="border-t border-border/60 pt-4 flex flex-col gap-1.5">
-            <Label
-              htmlFor="plan-description"
-              className="text-[12px] font-medium"
-            >
+            <Label htmlFor="plan-description" className="text-[12px] font-medium">
               Descrição do jardim{" "}
-              <span className="text-muted-foreground font-normal">
-                (opcional)
-              </span>
+              <span className="text-muted-foreground font-normal">(opcional)</span>
             </Label>
             <Textarea
               id="plan-description"
@@ -563,9 +526,7 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
           </div>
 
           {error && (
-            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
+            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
           )}
 
           {/* Ações */}
@@ -597,5 +558,5 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
         </CardContent>
       </Card>
     </form>
-  )
+  );
 }

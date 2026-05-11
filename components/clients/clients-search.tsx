@@ -1,27 +1,27 @@
-"use client"
+"use client";
 
-import { useRouter, useSearchParams } from "next/navigation"
-import { useCallback } from "react"
-import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
+import { useRouter, useSearchParams } from "next/navigation";
+import { useCallback } from "react";
+import { Input } from "@/components/ui/input";
+import { Search } from "lucide-react";
 
 export function ClientsSearch() {
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const router = useRouter();
+  const searchParams = useSearchParams();
 
   const handleSearch = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
-      const value = e.target.value
-      const params = new URLSearchParams(searchParams.toString())
+      const value = e.target.value;
+      const params = new URLSearchParams(searchParams.toString());
       if (value) {
-        params.set("q", value)
+        params.set("q", value);
       } else {
-        params.delete("q")
+        params.delete("q");
       }
-      router.replace(`/dashboard/clients?${params.toString()}`)
+      router.replace(`/dashboard/clients?${params.toString()}`);
     },
-    [router, searchParams]
-  )
+    [router, searchParams],
+  );
 
   return (
     <div className="relative">
@@ -33,5 +33,5 @@ export function ClientsSearch() {
         onChange={handleSearch}
       />
     </div>
-  )
+  );
 }

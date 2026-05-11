@@ -1,50 +1,50 @@
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface Note {
-  id: string
-  title: string | null
-  importance: string | null
-  tags: string[] | null
-  organized_content: string | null
-  created_at: string
+  id: string;
+  title: string | null;
+  importance: string | null;
+  tags: string[] | null;
+  organized_content: string | null;
+  created_at: string;
 }
 
 export const importanceLabels: Record<string, string> = {
   high: "Alta",
   medium: "Média",
   low: "Baixa",
-}
+};
 
 export const importanceBadgeColors: Record<string, string> = {
   high: "bg-destructive/10 text-destructive",
   medium: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   low: "bg-muted text-muted-foreground",
-}
+};
 
 export const importanceBorderColors: Record<string, string> = {
   high: "border-l-destructive",
   medium: "border-l-amber-500",
   low: "border-l-border",
-}
+};
 
 export function NoteCard({ note }: { note: Note }) {
-  const importance = note.importance ?? "medium"
-  const borderColor = importanceBorderColors[importance] ?? "border-l-border"
-  const badgeColor = importanceBadgeColors[importance] ?? "bg-muted text-muted-foreground"
-  const badgeLabel = importanceLabels[importance] ?? "Média"
+  const importance = note.importance ?? "medium";
+  const borderColor = importanceBorderColors[importance] ?? "border-l-border";
+  const badgeColor = importanceBadgeColors[importance] ?? "bg-muted text-muted-foreground";
+  const badgeLabel = importanceLabels[importance] ?? "Média";
 
-  const preview = note.organized_content?.trim() || ""
+  const preview = note.organized_content?.trim() || "";
 
-  const tags = Array.isArray(note.tags) ? note.tags.filter(Boolean) : []
-  const visibleTags = tags.slice(0, 3)
-  const extraTags = tags.length - visibleTags.length
+  const tags = Array.isArray(note.tags) ? note.tags.filter(Boolean) : [];
+  const visibleTags = tags.slice(0, 3);
+  const extraTags = tags.length - visibleTags.length;
 
   const dateStr = new Date(note.created_at).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  })
+  });
 
   return (
     <Link href={`/dashboard/notes/${note.id}`} className="block">
@@ -95,5 +95,5 @@ export function NoteCard({ note }: { note: Note }) {
         </CardContent>
       </Card>
     </Link>
-  )
+  );
 }

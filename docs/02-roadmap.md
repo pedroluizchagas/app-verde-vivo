@@ -12,17 +12,17 @@ Plano de execução para sair do estado atual (v0/MVP frágil) até o estado-alv
 
 ## Visão geral
 
-| Fase | Tema | Estimativa | Bloqueia produção? | Depende de |
-|---|---|---|---|---|
-| **00** | Preparação e rebrand para Gestão Garden | 0.5 dia | Não | — |
-| **01** | Segurança crítica | 2 dias | **Sim** | 00 |
-| **02** | Qualidade de código e tipagem | 2 dias | Não | 00 |
-| **03** | Pagamentos robustos e modelo de dados | 3 dias | **Sim** | 01 |
-| **04** | IA (Íris): guardrails e confirmação | 2 dias | Parcial | 01, 02 |
-| **05** | Testes automatizados | 3 dias | Não | 02, 03 |
-| **06** | Observabilidade e operação | 2 dias | Não | 02 |
-| **07** | Mobile alinhado e CI/CD | 2 dias | Não | 02, 05 |
-| **08** | Performance e escala | 2 dias | Não | 02, 03 |
+| Fase   | Tema                                    | Estimativa | Bloqueia produção? | Depende de |
+| ------ | --------------------------------------- | ---------- | ------------------ | ---------- |
+| **00** | Preparação e rebrand para Gestão Garden | 0.5 dia    | Não                | —          |
+| **01** | Segurança crítica                       | 2 dias     | **Sim**            | 00         |
+| **02** | Qualidade de código e tipagem           | 2 dias     | Não                | 00         |
+| **03** | Pagamentos robustos e modelo de dados   | 3 dias     | **Sim**            | 01         |
+| **04** | IA (Íris): guardrails e confirmação     | 2 dias     | Parcial            | 01, 02     |
+| **05** | Testes automatizados                    | 3 dias     | Não                | 02, 03     |
+| **06** | Observabilidade e operação              | 2 dias     | Não                | 02         |
+| **07** | Mobile alinhado e CI/CD                 | 2 dias     | Não                | 02, 05     |
+| **08** | Performance e escala                    | 2 dias     | Não                | 02, 03     |
 
 **Caminho crítico para sair do v0 e cobrar com segurança:** `00 → 01 → 03`. **~5–6 dias de trabalho de agente.**
 
@@ -31,12 +31,14 @@ Plano de execução para sair do estado atual (v0/MVP frágil) até o estado-alv
 ## Definição de "produção pronta"
 
 Um item é considerado **bloqueador de produção** se sua ausência causa:
+
 - Perda financeira (cobrança incorreta, acesso pago sem pagamento).
 - Vazamento de dados entre tenants.
 - Vetor de abuso explorável sem credenciais.
 - Falha silenciosa em fluxo de dinheiro.
 
 Os itens bloqueadores hoje são:
+
 - Webhook Stripe sem idempotência (Fase 03).
 - Período de assinatura hardcoded (Fase 03).
 - `/api/push/send` sem autenticação (Fase 01).

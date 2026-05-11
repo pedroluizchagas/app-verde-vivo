@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,24 +14,27 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
+} from "@/components/ui/alert-dialog";
 
 export function DeleteTransactionButton({ transactionId }: { transactionId: string }) {
-  const [isDeleting, setIsDeleting] = useState(false)
-  const router = useRouter()
-  const supabase = createClient()
+  const [isDeleting, setIsDeleting] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
 
   const handleDelete = async () => {
-    setIsDeleting(true)
+    setIsDeleting(true);
     try {
-      const { error } = await supabase.from("financial_transactions").delete().eq("id", transactionId)
-      if (error) throw error
-      router.refresh()
+      const { error } = await supabase
+        .from("financial_transactions")
+        .delete()
+        .eq("id", transactionId);
+      if (error) throw error;
+      router.refresh();
     } catch (e) {
-      console.error("Error deleting transaction", e)
-      setIsDeleting(false)
+      console.error("Error deleting transaction", e);
+      setIsDeleting(false);
     }
-  }
+  };
 
   return (
     <AlertDialog>
@@ -54,5 +57,5 @@ export function DeleteTransactionButton({ transactionId }: { transactionId: stri
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

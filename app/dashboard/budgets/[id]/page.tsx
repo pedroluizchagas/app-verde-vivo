@@ -1,58 +1,53 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound, redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import {
-  ArrowLeft,
-  Edit,
-  User,
-  Phone,
-  MapPin,
-  Calendar,
-  Clock,
-  DollarSign,
-} from "lucide-react"
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { DeleteBudgetButton } from "@/components/budgets/delete-budget-button"
-import { statusLabels, statusColors } from "@/components/budgets/budget-card"
+import { createClient } from "@/lib/supabase/server";
+import { notFound, redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Edit, User, Phone, MapPin, Calendar, Clock, DollarSign } from "lucide-react";
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { DeleteBudgetButton } from "@/components/budgets/delete-budget-button";
+import { statusLabels, statusColors } from "@/components/budgets/budget-card";
+import type { Budget, ClienteResumo } from "@/lib/domain/types";
 
-export default async function BudgetDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
+type BudgetDetalhado = Budget & { created_at: string };
+
+export default async function BudgetDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
   if (id === "new") {
-    redirect("/dashboard/budgets/new")
+    redirect("/dashboard/budgets/new");
   }
 
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  const { data: budget } = await supabase
+  const { data: budgetRaw } = await supabase
     .from("budgets")
     .select("*, client:clients(id, name, phone, address)")
     .eq("id", id)
     .eq("gardener_id", user!.id)
-    .single()
+    .single();
 
-  if (!budget) {
-    notFound()
+  if (!budgetRaw) {
+    notFound();
   }
 
+  const budget = budgetRaw as BudgetDetalhado;
+  const cliente: ClienteResumo | null = Array.isArray(budget.client)
+    ? ((budget.client[0] as ClienteResumo | undefined) ?? null)
+    : ((budget.client as ClienteResumo | null) ?? null);
+
   const fmt = (v: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-  const total = Number(budget.total_amount || 0)
-  const statusLabel = statusLabels[budget.status] ?? budget.status
-  const statusColor = statusColors[budget.status] ?? "bg-muted text-muted-foreground"
+  const total = Number(budget.total_amount ?? 0);
+  const statusLabel = statusLabels[budget.status] ?? budget.status;
+  const statusColor = statusColors[budget.status] ?? "bg-muted text-muted-foreground";
 
-  const now = new Date()
-  const validUntil = budget.valid_until ? new Date(budget.valid_until) : null
-  const isExpired = validUntil && validUntil < now && budget.status === "pending"
+  const now = new Date();
+  const validUntil = budget.valid_until ? new Date(budget.valid_until) : null;
+  const isExpired = validUntil && validUntil < now && budget.status === "pending";
 
   const validStr = validUntil
     ? validUntil.toLocaleDateString("pt-BR", {
@@ -60,13 +55,13 @@ export default async function BudgetDetailPage({
         month: "long",
         year: "numeric",
       })
-    : null
+    : null;
 
   const createdStr = new Date(budget.created_at).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
-  })
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -126,10 +121,10 @@ export default async function BudgetDetailPage({
                 <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[13px] font-bold leading-tight capitalize">
-              {createdStr}
-            </p>
-            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-1 inline-block ${statusColor}`}>
+            <p className="text-[13px] font-bold leading-tight capitalize">{createdStr}</p>
+            <span
+              className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-1 inline-block ${statusColor}`}
+            >
               {statusLabel}
             </span>
           </CardContent>
@@ -153,9 +148,7 @@ export default async function BudgetDetailPage({
                   {validStr}
                 </p>
                 {isExpired && (
-                  <p className="text-[10px] text-destructive mt-0.5 font-medium">
-                    Expirado
-                  </p>
+                  <p className="text-[10px] text-destructive mt-0.5 font-medium">Expirado</p>
                 )}
               </>
             ) : (
@@ -195,9 +188,7 @@ export default async function BudgetDetailPage({
                   size="sm"
                   className="h-8 rounded-lg text-[12px] mt-3"
                 >
-                  <Link href={`/dashboard/budgets/${id}/edit`}>
-                    Adicionar descrição
-                  </Link>
+                  <Link href={`/dashboard/budgets/${id}/edit`}>Adicionar descrição</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -207,7 +198,7 @@ export default async function BudgetDetailPage({
         {/* Coluna direita */}
         <div className="flex flex-col gap-4">
           {/* Cliente */}
-          {budget.client && (
+          {cliente && (
             <Card className="py-0">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
@@ -218,7 +209,7 @@ export default async function BudgetDetailPage({
                     <h2 className="text-[14px] font-semibold">Cliente</h2>
                   </div>
                   <Link
-                    href={`/dashboard/clients/${(budget.client as any).id}`}
+                    href={`/dashboard/clients/${cliente.id}`}
                     className="text-[11px] text-primary hover:underline font-medium"
                   >
                     Ver perfil
@@ -227,7 +218,7 @@ export default async function BudgetDetailPage({
 
                 <div className="flex flex-col divide-y divide-border/60">
                   <Link
-                    href={`/dashboard/clients/${(budget.client as any).id}`}
+                    href={`/dashboard/clients/${cliente.id}`}
                     className="flex items-center gap-3 py-2.5 hover:bg-accent/50 rounded-lg px-2 -mx-2 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
@@ -235,14 +226,14 @@ export default async function BudgetDetailPage({
                         Nome
                       </p>
                       <p className="text-[13px] font-medium text-primary truncate">
-                        {budget.client.name}
+                        {cliente.name}
                       </p>
                     </div>
                   </Link>
 
-                  {(budget.client as any).phone && (
+                  {cliente.phone && (
                     <a
-                      href={`tel:${(budget.client as any).phone}`}
+                      href={`tel:${cliente.phone}`}
                       className="flex items-center gap-3 py-2.5 hover:bg-accent/50 rounded-lg px-2 -mx-2 transition-colors"
                     >
                       <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -253,13 +244,13 @@ export default async function BudgetDetailPage({
                           Telefone
                         </p>
                         <p className="text-[13px] font-medium text-primary truncate">
-                          {(budget.client as any).phone}
+                          {cliente.phone}
                         </p>
                       </div>
                     </a>
                   )}
 
-                  {(budget.client as any).address && (
+                  {cliente.address && (
                     <div className="flex items-start gap-3 py-2.5">
                       <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
                         <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
@@ -268,9 +259,7 @@ export default async function BudgetDetailPage({
                         <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground leading-none mb-0.5">
                           Endereço
                         </p>
-                        <p className="text-[13px] font-medium leading-snug">
-                          {(budget.client as any).address}
-                        </p>
+                        <p className="text-[13px] font-medium leading-snug">{cliente.address}</p>
                       </div>
                     </div>
                   )}
@@ -302,7 +291,7 @@ export default async function BudgetDetailPage({
                     className="h-9 rounded-lg text-[13px] w-full justify-start gap-2"
                   >
                     <Link
-                      href={`/dashboard/work-orders/new${budget.client ? `?client=${(budget.client as any).id}` : ""}`}
+                      href={`/dashboard/work-orders/new${cliente ? `?client=${cliente.id}` : ""}`}
                     >
                       Gerar OS
                     </Link>
@@ -314,5 +303,5 @@ export default async function BudgetDetailPage({
         </div>
       </div>
     </div>
-  )
+  );
 }

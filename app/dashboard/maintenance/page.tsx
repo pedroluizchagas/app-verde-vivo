@@ -1,7 +1,7 @@
-import { createClient } from "@/lib/supabase/server"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Plus,
   Wrench,
@@ -11,78 +11,93 @@ import {
   Droplets,
   Sun,
   Calendar,
-} from "lucide-react"
+} from "lucide-react";
+import type { MaintenancePlan, PlanExecution, MaintenanceTemplate } from "@/lib/domain/types";
 
-const NOW_MS = Date.now()
+type PlanoLista = Pick<
+  MaintenancePlan,
+  | "id"
+  | "title"
+  | "status"
+  | "default_description"
+  | "preferred_weekday"
+  | "preferred_week_of_month"
+> & { client?: { name?: string | null } | { name?: string | null }[] | null };
+
+type ExecucaoLista = Pick<PlanExecution, "id" | "plan_id" | "status" | "created_at">;
+
+const NOW_MS = Date.now();
 
 const statusLabels: Record<string, string> = {
   active: "Ativo",
   paused: "Pausado",
   cancelled: "Cancelado",
-}
+};
 
 const statusColors: Record<string, string> = {
   active: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   paused: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   cancelled: "bg-muted text-muted-foreground",
-}
+};
 
 const statusBorderColors: Record<string, string> = {
   active: "border-l-emerald-500",
   paused: "border-l-amber-500",
   cancelled: "border-l-border",
-}
+};
 
 export default async function MaintenancePage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  const { data: plans } = await supabase
+  const { data: plansRaw } = await supabase
     .from("maintenance_plans")
     .select(
-      "id, title, status, default_description, preferred_weekday, preferred_week_of_month, client:clients(name)"
+      "id, title, status, default_description, preferred_weekday, preferred_week_of_month, client:clients(name)",
     )
     .eq("gardener_id", user!.id)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
 
-  let latestExecs: any[] = []
-  let templates: Record<string, any> = {}
+  const plans = (plansRaw ?? []) as PlanoLista[];
 
-  if (plans && plans.length > 0) {
-    const ids = plans.map((p: any) => p.id)
+  let latestExecs: ExecucaoLista[] = [];
+  const templates: Record<string, MaintenanceTemplate> = {};
+
+  if (plans.length > 0) {
+    const ids = plans.map((p) => p.id);
 
     const { data: execs } = await supabase
       .from("plan_executions")
       .select("id, plan_id, status, created_at")
       .in("plan_id", ids)
       .eq("status", "done")
-      .order("created_at", { ascending: false })
-    latestExecs = execs || []
+      .order("created_at", { ascending: false });
+    latestExecs = (execs ?? []) as ExecucaoLista[];
 
     const { data: tmpls } = await supabase
       .from("plan_executions")
       .select("plan_id, details, cycle")
       .in("plan_id", ids)
-      .eq("cycle", "template")
-    for (const t of tmpls || []) {
-      templates[String((t as any).plan_id)] = t
+      .eq("cycle", "template");
+    for (const t of (tmpls ?? []) as MaintenanceTemplate[]) {
+      templates[String(t.plan_id)] = t;
     }
   }
 
-  const allPlans = plans || []
-  const activePlans = allPlans.filter((p: any) => p.status === "active")
+  const allPlans = plans;
+  const activePlans = allPlans.filter((p) => p.status === "active");
 
   // Conta planos com alerta (mais de 25 dias sem manutenção)
-  const alertCount = allPlans.filter((p: any) => {
-    const last = latestExecs.find((e: any) => e.plan_id === p.id)
-    const lastDate = last ? new Date(String(last.created_at)) : null
+  const alertCount = allPlans.filter((p) => {
+    const last = latestExecs.find((e) => e.plan_id === p.id);
+    const lastDate = last ? new Date(String(last.created_at)) : null;
     const daysSince = lastDate
       ? Math.floor((NOW_MS - lastDate.getTime()) / (1000 * 60 * 60 * 24))
-      : null
-    return typeof daysSince === "number" ? daysSince > 25 : true
-  }).length
+      : null;
+    return typeof daysSince === "number" ? daysSince > 25 : true;
+  }).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -115,9 +130,7 @@ export default async function MaintenancePage() {
                 <Wrench className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {allPlans.length}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{allPlans.length}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               plano{allPlans.length !== 1 ? "s" : ""}
             </p>
@@ -137,9 +150,7 @@ export default async function MaintenancePage() {
             <p className="text-[22px] font-bold leading-tight text-emerald-600 dark:text-emerald-400">
               {activePlans.length}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              em andamento
-            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">em andamento</p>
           </CardContent>
         </Card>
 
@@ -158,9 +169,7 @@ export default async function MaintenancePage() {
             >
               {alertCount}
             </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              sem manutenção
-            </p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">sem manutenção</p>
           </CardContent>
         </Card>
       </div>
@@ -168,72 +177,55 @@ export default async function MaintenancePage() {
       {/* Lista de planos */}
       {allPlans.length > 0 ? (
         <div className="flex flex-col gap-2">
-          {allPlans.map((p: any) => {
-            const last = latestExecs.find((e: any) => e.plan_id === p.id)
-            const lastDate = last ? new Date(String(last.created_at)) : null
+          {allPlans.map((p) => {
+            const last = latestExecs.find((e) => e.plan_id === p.id);
+            const lastDate = last?.created_at ? new Date(last.created_at) : null;
             const daysSince = lastDate
-              ? Math.floor(
-                  (NOW_MS - lastDate.getTime()) / (1000 * 60 * 60 * 24)
-                )
-              : null
-            const showAlert =
-              typeof daysSince === "number" ? daysSince > 25 : true
+              ? Math.floor((NOW_MS - lastDate.getTime()) / (1000 * 60 * 60 * 24))
+              : null;
+            const showAlert = typeof daysSince === "number" ? daysSince > 25 : true;
 
-            const desc = String(p.default_description || "")
-            const hasSunFull = /sol\s*pleno/i.test(desc)
-            const hasSunPartial = /meia\s*sombra/i.test(desc)
-            const waterMatch = desc.match(/rega\s*(\d+)x/i)
-            const waterFreq = waterMatch ? waterMatch[1] : null
+            const desc = String(p.default_description ?? "");
+            const hasSunFull = /sol\s*pleno/i.test(desc);
+            const hasSunPartial = /meia\s*sombra/i.test(desc);
+            const waterMatch = desc.match(/rega\s*(\d+)x/i);
+            const waterFreq = waterMatch ? waterMatch[1] : null;
 
-            const tmpl = templates[p.id]
-            const schedule = (tmpl as any)?.details?.schedule || null
-            const months: number[] = Array.isArray(
-              schedule?.fertilization_months
-            )
+            const tmpl = templates[p.id];
+            const schedule = (tmpl?.details?.schedule ?? null) as {
+              fertilization_months?: number[];
+            } | null;
+            const months: number[] = Array.isArray(schedule?.fertilization_months)
               ? schedule.fertilization_months
-              : []
-            const now = new Date()
-            const cur = now.getMonth() + 1
-            const prefWeekday =
-              typeof p.preferred_weekday === "number" ? p.preferred_weekday : 1
+              : [];
+            const now = new Date();
+            const cur = now.getMonth() + 1;
+            const prefWeekday = typeof p.preferred_weekday === "number" ? p.preferred_weekday : 1;
             const prefWeek =
-              typeof p.preferred_week_of_month === "number"
-                ? p.preferred_week_of_month
-                : 1
+              typeof p.preferred_week_of_month === "number" ? p.preferred_week_of_month : 1;
 
             const baseDate = (() => {
-              const first = new Date(now.getFullYear(), now.getMonth(), 1)
-              const firstDow = first.getDay()
-              const offset = (prefWeekday - firstDow + 7) % 7
-              const day = 1 + offset + (prefWeek - 1) * 7
-              return new Date(now.getFullYear(), now.getMonth(), day)
-            })()
+              const first = new Date(now.getFullYear(), now.getMonth(), 1);
+              const firstDow = first.getDay();
+              const offset = (prefWeekday - firstDow + 7) % 7;
+              const day = 1 + offset + (prefWeek - 1) * 7;
+              return new Date(now.getFullYear(), now.getMonth(), day);
+            })();
 
             const nextFertMonth =
-              months.length > 0
-                ? months.find((m: number) => m >= cur) ?? months[0]
-                : null
+              months.length > 0 ? (months.find((m: number) => m >= cur) ?? months[0]) : null;
             const nextDate = (() => {
-              if (!nextFertMonth) return null
-              const y =
-                nextFertMonth < cur
-                  ? now.getFullYear() + 1
-                  : now.getFullYear()
-              return new Date(y, nextFertMonth - 1, baseDate.getDate())
-            })()
+              if (!nextFertMonth) return null;
+              const y = nextFertMonth < cur ? now.getFullYear() + 1 : now.getFullYear();
+              return new Date(y, nextFertMonth - 1, baseDate.getDate());
+            })();
 
-            const borderColor =
-              statusBorderColors[p.status] ?? "border-l-border"
-            const statusColor =
-              statusColors[p.status] ?? "bg-muted text-muted-foreground"
-            const statusLabel = statusLabels[p.status] ?? p.status
+            const borderColor = statusBorderColors[p.status] ?? "border-l-border";
+            const statusColor = statusColors[p.status] ?? "bg-muted text-muted-foreground";
+            const statusLabel = statusLabels[p.status] ?? p.status;
 
             return (
-              <Link
-                key={p.id}
-                href={`/dashboard/maintenance/${p.id}`}
-                className="block"
-              >
+              <Link key={p.id} href={`/dashboard/maintenance/${p.id}`} className="block">
                 <Card
                   className={`py-0 border-l-4 ${borderColor} transition-all hover:shadow-md hover:-translate-y-px active:scale-[0.99]`}
                 >
@@ -253,14 +245,19 @@ export default async function MaintenancePage() {
                         </div>
 
                         {/* Cliente */}
-                        {p.client?.name && (
-                          <div className="flex items-center gap-1 mb-1.5">
-                            <User className="h-3 w-3 text-muted-foreground shrink-0" />
-                            <span className="text-[12px] text-muted-foreground truncate">
-                              {p.client.name}
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const clienteNome = Array.isArray(p.client)
+                            ? (p.client[0]?.name ?? null)
+                            : (p.client?.name ?? null);
+                          return clienteNome ? (
+                            <div className="flex items-center gap-1 mb-1.5">
+                              <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-[12px] text-muted-foreground truncate">
+                                {clienteNome}
+                              </span>
+                            </div>
+                          ) : null;
+                        })()}
 
                         {/* Chips de ambiente */}
                         {(hasSunFull || hasSunPartial || waterFreq) && (
@@ -294,16 +291,14 @@ export default async function MaintenancePage() {
                           <div className="flex items-center gap-1.5">
                             <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
                             <span className="text-[11px] text-muted-foreground">
-                              Próxima adubação:{" "}
-                              {nextDate.toLocaleDateString("pt-BR")}
+                              Próxima adubação: {nextDate.toLocaleDateString("pt-BR")}
                             </span>
                           </div>
                         ) : lastDate ? (
                           <div className="flex items-center gap-1.5">
                             <Calendar className="h-3 w-3 text-muted-foreground shrink-0" />
                             <span className="text-[11px] text-muted-foreground">
-                              Última manutenção:{" "}
-                              {lastDate.toLocaleDateString("pt-BR")}
+                              Última manutenção: {lastDate.toLocaleDateString("pt-BR")}
                             </span>
                           </div>
                         ) : null}
@@ -312,7 +307,7 @@ export default async function MaintenancePage() {
                   </CardContent>
                 </Card>
               </Link>
-            )
+            );
           })}
         </div>
       ) : (
@@ -332,5 +327,5 @@ export default async function MaintenancePage() {
         </div>
       )}
     </div>
-  )
+  );
 }

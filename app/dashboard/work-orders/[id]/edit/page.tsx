@@ -1,38 +1,75 @@
-import { createClient } from "@/lib/supabase/server"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import { WorkOrderEditForm } from "@/components/work-orders/work-order-edit-form"
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import { WorkOrderEditForm } from "@/components/work-orders/work-order-edit-form";
 
 export default async function EditWorkOrderPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+  const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
   const { data: order } = await supabase
     .from("service_orders")
     .select("*, client:clients(id, name), appointment:appointments(id, title)")
     .eq("gardener_id", user!.id)
     .eq("id", id)
-    .maybeSingle()
+    .maybeSingle();
+  interface OrderItemRaw {
+    id: string;
+    product_id: string;
+    quantity: number;
+    unit_cost: number;
+    unit_price: number;
+    unit?: string | null;
+    product?:
+      | { name?: string | null; unit?: string | null }
+      | { name?: string | null; unit?: string | null }[]
+      | null;
+  }
   const { data: itemsRaw } = await supabase
     .from("service_order_items")
     .select("id, product_id, quantity, unit_cost, unit_price, unit, product:products(name, unit)")
-    .eq("order_id", id)
-  const items = (itemsRaw || []).map((it: any) => ({
+    .eq("order_id", id);
+  const items = ((itemsRaw ?? []) as OrderItemRaw[]).map((it) => ({
     ...it,
-    product: Array.isArray(it.product) ? it.product[0] : it.product,
-  }))
-  const { data: clients } = await supabase.from("clients").select("id, name").eq("gardener_id", user!.id).order("name")
-  const { data: appointments } = await supabase.from("appointments").select("id, title").eq("gardener_id", user!.id).order("scheduled_date", { ascending: false }).limit(50)
-  const { data: products } = await supabase.from("products").select("id, name, unit, cost").eq("gardener_id", user!.id).order("name")
+    product: Array.isArray(it.product) ? (it.product[0] ?? null) : (it.product ?? null),
+  }));
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("id, name")
+    .eq("gardener_id", user!.id)
+    .order("name");
+  const { data: appointments } = await supabase
+    .from("appointments")
+    .select("id, title")
+    .eq("gardener_id", user!.id)
+    .order("scheduled_date", { ascending: false })
+    .limit(50);
+  const { data: products } = await supabase
+    .from("products")
+    .select("id, name, unit, cost")
+    .eq("gardener_id", user!.id)
+    .order("name");
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center gap-3">
-        <Button asChild variant="ghost" size="icon"><Link href={`/dashboard/work-orders/${id}`}><ArrowLeft className="h-5 w-5" /></Link></Button>
+        <Button asChild variant="ghost" size="icon">
+          <Link href={`/dashboard/work-orders/${id}`}>
+            <ArrowLeft className="h-5 w-5" />
+          </Link>
+        </Button>
         <h1 className="text-2xl font-bold tracking-tight">Editar OS</h1>
       </div>
-      <WorkOrderEditForm order={order} items={items || []} clients={clients || []} appointments={appointments || []} products={products || []} />
+      <WorkOrderEditForm
+        order={order}
+        items={items || []}
+        clients={clients || []}
+        appointments={appointments || []}
+        products={products || []}
+      />
     </div>
-  )
+  );
 }

@@ -49,12 +49,12 @@ Para o app mobile (`/mobile`), seguir as instruções específicas no diretório
 
 ## Scripts
 
-| Comando      | Descrição                                                             |
-| ------------ | --------------------------------------------------------------------- |
-| `pnpm dev`   | Sobe o Next em modo dev (`--hostname 0.0.0.0 --webpack`).             |
-| `pnpm build` | Build de produção (`next build`).                                     |
-| `pnpm start` | Sobe o build de produção (`next start`).                              |
-| `pnpm lint`  | Roda ESLint em todo o projeto.                                        |
+| Comando      | Descrição                                                 |
+| ------------ | --------------------------------------------------------- |
+| `pnpm dev`   | Sobe o Next em modo dev (`--hostname 0.0.0.0 --webpack`). |
+| `pnpm build` | Build de produção (`next build`).                         |
+| `pnpm start` | Sobe o build de produção (`next start`).                  |
+| `pnpm lint`  | Roda ESLint em todo o projeto.                            |
 
 ## Como contribuir
 

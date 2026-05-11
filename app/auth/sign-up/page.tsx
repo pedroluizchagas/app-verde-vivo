@@ -1,63 +1,63 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { createClient } from "@/lib/supabase/client"
-import Link from "next/link"
-import { useRouter } from "next/navigation"
-import { useState } from "react"
-import { ArrowRight, Check, Eye, EyeOff } from "lucide-react"
+import type React from "react";
+import { createClient } from "@/lib/supabase/client";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { ArrowRight, Check, Eye, EyeOff } from "lucide-react";
 
 export default function SignUpPage() {
-  const [fullName, setFullName] = useState("")
-  const [phone, setPhone] = useState("")
-  const [cpfCnpj, setCpfCnpj] = useState("")
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [repeatPassword, setRepeatPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [showRepeat, setShowRepeat] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const router = useRouter()
+  const [fullName, setFullName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [cpfCnpj, setCpfCnpj] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [repeatPassword, setRepeatPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showRepeat, setShowRepeat] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const router = useRouter();
 
   function formatCpfCnpj(value: string): string {
-    const digits = value.replace(/\D/g, "").slice(0, 14)
+    const digits = value.replace(/\D/g, "").slice(0, 14);
     if (digits.length <= 11) {
       return digits
         .replace(/(\d{3})(\d)/, "$1.$2")
         .replace(/(\d{3})(\d)/, "$1.$2")
-        .replace(/(\d{3})(\d{1,2})$/, "$1-$2")
+        .replace(/(\d{3})(\d{1,2})$/, "$1-$2");
     }
     return digits
       .replace(/(\d{2})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d)/, "$1.$2")
       .replace(/(\d{3})(\d)/, "$1/$2")
-      .replace(/(\d{4})(\d{1,2})$/, "$1-$2")
+      .replace(/(\d{4})(\d{1,2})$/, "$1-$2");
   }
 
   const handleSignUp = async (e: React.FormEvent) => {
-    e.preventDefault()
-    const supabase = createClient()
-    setIsLoading(true)
-    setError(null)
+    e.preventDefault();
+    const supabase = createClient();
+    setIsLoading(true);
+    setError(null);
 
     if (password !== repeatPassword) {
-      setError("As senhas nao coincidem")
-      setIsLoading(false)
-      return
+      setError("As senhas nao coincidem");
+      setIsLoading(false);
+      return;
     }
 
     if (password.length < 6) {
-      setError("A senha deve ter pelo menos 6 caracteres")
-      setIsLoading(false)
-      return
+      setError("A senha deve ter pelo menos 6 caracteres");
+      setIsLoading(false);
+      return;
     }
 
-    const cpfDigits = cpfCnpj.replace(/\D/g, "")
+    const cpfDigits = cpfCnpj.replace(/\D/g, "");
     if (cpfDigits.length !== 11 && cpfDigits.length !== 14) {
-      setError("Informe um CPF (11 digitos) ou CNPJ (14 digitos) valido.")
-      setIsLoading(false)
-      return
+      setError("Informe um CPF (11 digitos) ou CNPJ (14 digitos) valido.");
+      setIsLoading(false);
+      return;
     }
 
     try {
@@ -73,15 +73,15 @@ export default function SignUpPage() {
             role: "gardener",
           },
         },
-      })
-      if (error) throw error
-      router.push("/auth/sign-up-success")
+      });
+      if (error) throw error;
+      router.push("/auth/sign-up-success");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "Erro ao criar conta")
+      setError(error instanceof Error ? error.message : "Erro ao criar conta");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <div className="min-h-svh flex" style={{ background: "#070708", color: "#f0f0f0" }}>
@@ -96,28 +96,42 @@ export default function SignUpPage() {
         />
         <div
           className="absolute -top-40 -left-40 w-[600px] h-[600px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(34,197,94,0.10) 0%, transparent 65%)", filter: "blur(2px)" }}
+          style={{
+            background: "radial-gradient(circle, rgba(34,197,94,0.10) 0%, transparent 65%)",
+            filter: "blur(2px)",
+          }}
         />
         <div
           className="absolute bottom-0 right-0 w-[500px] h-[500px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(15,138,65,0.08) 0%, transparent 65%)", filter: "blur(2px)" }}
+          style={{
+            background: "radial-gradient(circle, rgba(15,138,65,0.08) 0%, transparent 65%)",
+            filter: "blur(2px)",
+          }}
         />
       </div>
 
       {/* ── Left panel (desktop only) ── */}
-      <div className="hidden lg:flex lg:w-[46%] flex-col justify-between p-12 relative"
-        style={{ borderRight: "1px solid rgba(255,255,255,0.06)" }}>
+      <div
+        className="hidden lg:flex lg:w-[46%] flex-col justify-between p-12 relative"
+        style={{ borderRight: "1px solid rgba(255,255,255,0.06)" }}
+      >
         <Link href="/">
           <img src="/img/iris.png" alt="Iris" className="h-10 w-auto" />
         </Link>
 
         <div>
-          <p
-            className="text-3xl font-bold leading-tight mb-8"
-            style={{ color: "#f9fafb" }}
-          >
-            Gerencie seu negocio<br />de jardinagem com<br />
-            <span style={{ background: "linear-gradient(90deg,#16a34a,#4ade80)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent" }}>
+          <p className="text-3xl font-bold leading-tight mb-8" style={{ color: "#f9fafb" }}>
+            Gerencie seu negocio
+            <br />
+            de jardinagem com
+            <br />
+            <span
+              style={{
+                background: "linear-gradient(90deg,#16a34a,#4ade80)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+              }}
+            >
               inteligencia artificial
             </span>
           </p>
@@ -132,11 +146,17 @@ export default function SignUpPage() {
               <li key={item} className="flex items-start gap-3">
                 <span
                   className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
-                  style={{ background: "rgba(34,197,94,0.15)", border: "1px solid rgba(34,197,94,0.30)" }}
+                  style={{
+                    background: "rgba(34,197,94,0.15)",
+                    border: "1px solid rgba(34,197,94,0.30)",
+                  }}
                 >
                   <Check className="h-3 w-3 text-green-400" />
                 </span>
-                <span className="text-sm leading-relaxed" style={{ color: "rgba(255,255,255,0.55)" }}>
+                <span
+                  className="text-sm leading-relaxed"
+                  style={{ color: "rgba(255,255,255,0.55)" }}
+                >
                   {item}
                 </span>
               </li>
@@ -236,7 +256,11 @@ export default function SignUpPage() {
             {error && (
               <div
                 className="rounded-xl px-4 py-3 text-sm"
-                style={{ background: "rgba(239,68,68,0.10)", border: "1px solid rgba(239,68,68,0.25)", color: "#fca5a5" }}
+                style={{
+                  background: "rgba(239,68,68,0.10)",
+                  border: "1px solid rgba(239,68,68,0.25)",
+                  color: "#fca5a5",
+                }}
               >
                 {error}
               </div>
@@ -252,22 +276,29 @@ export default function SignUpPage() {
                 boxShadow: "0 0 24px rgba(34,197,94,0.22)",
               }}
             >
-              {isLoading ? "Criando conta..." : (
-                <>Criar minha conta <ArrowRight className="h-4 w-4" /></>
+              {isLoading ? (
+                "Criando conta..."
+              ) : (
+                <>
+                  Criar minha conta <ArrowRight className="h-4 w-4" />
+                </>
               )}
             </button>
           </form>
 
           <p className="mt-6 text-center text-sm" style={{ color: "rgba(255,255,255,0.35)" }}>
             Ja tem uma conta?{" "}
-            <Link href="/auth/login" className="font-medium text-green-400 hover:text-green-300 transition-colors">
+            <Link
+              href="/auth/login"
+              className="font-medium text-green-400 hover:text-green-300 transition-colors"
+            >
               Entrar
             </Link>
           </p>
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 /* ── Helpers ── */
@@ -277,7 +308,7 @@ function AuthLabel({ children }: { children: React.ReactNode }) {
     <label className="block text-xs font-medium mb-1.5" style={{ color: "rgba(255,255,255,0.50)" }}>
       {children}
     </label>
-  )
+  );
 }
 
 function AuthInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
@@ -291,15 +322,15 @@ function AuthInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
         color: "#f9fafb",
       }}
       onFocus={(e) => {
-        e.currentTarget.style.border = "1px solid rgba(34,197,94,0.50)"
-        props.onFocus?.(e)
+        e.currentTarget.style.border = "1px solid rgba(34,197,94,0.50)";
+        props.onFocus?.(e);
       }}
       onBlur={(e) => {
-        e.currentTarget.style.border = "1px solid rgba(255,255,255,0.10)"
-        props.onBlur?.(e)
+        e.currentTarget.style.border = "1px solid rgba(255,255,255,0.10)";
+        props.onBlur?.(e);
       }}
     />
-  )
+  );
 }
 
 function AuthPasswordInput({
@@ -309,11 +340,11 @@ function AuthPasswordInput({
   show,
   onToggle,
 }: {
-  value: string
-  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void
-  placeholder?: string
-  show: boolean
-  onToggle: () => void
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  placeholder?: string;
+  show: boolean;
+  onToggle: () => void;
 }) {
   return (
     <div className="relative">
@@ -329,8 +360,12 @@ function AuthPasswordInput({
           border: "1px solid rgba(255,255,255,0.10)",
           color: "#f9fafb",
         }}
-        onFocus={(e) => { e.currentTarget.style.border = "1px solid rgba(34,197,94,0.50)" }}
-        onBlur={(e) => { e.currentTarget.style.border = "1px solid rgba(255,255,255,0.10)" }}
+        onFocus={(e) => {
+          e.currentTarget.style.border = "1px solid rgba(34,197,94,0.50)";
+        }}
+        onBlur={(e) => {
+          e.currentTarget.style.border = "1px solid rgba(255,255,255,0.10)";
+        }}
       />
       <button
         type="button"
@@ -342,5 +377,5 @@ function AuthPasswordInput({
         {show ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
       </button>
     </div>
-  )
+  );
 }

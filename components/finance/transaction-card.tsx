@@ -1,56 +1,49 @@
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { ArrowUpRight, ArrowDownRight } from "lucide-react"
-import { DeleteTransactionButton } from "@/components/finance/delete-transaction-button"
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { DeleteTransactionButton } from "@/components/finance/delete-transaction-button";
 
 interface TransactionCardProps {
   transaction: {
-    id: string
-    type: "income" | "expense"
-    amount: number
-    transaction_date: string
-    description: string | null
-    status: "paid" | "pending"
-    category?: { name: string | null } | null
-    client?: { name: string | null } | null
-  }
+    id: string;
+    type: "income" | "expense";
+    amount: number;
+    transaction_date: string;
+    description?: string | null;
+    status: "paid" | "pending" | string;
+    category?: { name?: string | null } | null;
+    client?: { name?: string | null } | null;
+  };
 }
 
 const currency = (value: number) =>
   new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(value)
+  }).format(value);
 
 export function TransactionCard({ transaction }: TransactionCardProps) {
-  const isIncome = transaction.type === "income"
+  const isIncome = transaction.type === "income";
 
-  const dateStr = new Date(
-    `${transaction.transaction_date}T12:00:00`
-  ).toLocaleDateString("pt-BR", {
+  const dateStr = new Date(`${transaction.transaction_date}T12:00:00`).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "short",
     year: "numeric",
-  })
+  });
 
   const statusColor =
     transaction.status === "paid"
       ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
-      : "bg-amber-500/10 text-amber-600 dark:text-amber-400"
-  const statusLabel = transaction.status === "paid" ? "Pago" : "Pendente"
+      : "bg-amber-500/10 text-amber-600 dark:text-amber-400";
+  const statusLabel = transaction.status === "paid" ? "Pago" : "Pendente";
 
   const amountColor = isIncome
     ? "text-emerald-600 dark:text-emerald-400"
-    : "text-red-500 dark:text-red-400"
+    : "text-red-500 dark:text-red-400";
 
-  const borderColor = isIncome ? "border-l-emerald-500" : "border-l-red-400"
+  const borderColor = isIncome ? "border-l-emerald-500" : "border-l-red-400";
 
-  const meta = [
-    transaction.category?.name,
-    transaction.client?.name,
-  ]
-    .filter(Boolean)
-    .join(" · ")
+  const meta = [transaction.category?.name, transaction.client?.name].filter(Boolean).join(" · ");
 
   return (
     <Link href={`/dashboard/finance/transactions/${transaction.id}`}>
@@ -62,9 +55,7 @@ export function TransactionCard({ transaction }: TransactionCardProps) {
             {/* Ícone de tipo */}
             <div
               className={`h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
-                isIncome
-                  ? "bg-emerald-500/10"
-                  : "bg-red-500/10"
+                isIncome ? "bg-emerald-500/10" : "bg-red-500/10"
               }`}
             >
               {isIncome ? (
@@ -80,14 +71,8 @@ export function TransactionCard({ transaction }: TransactionCardProps) {
                 {transaction.description || "(sem descrição)"}
               </p>
               <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 mt-0.5">
-                {meta && (
-                  <span className="text-[11px] text-muted-foreground truncate">
-                    {meta}
-                  </span>
-                )}
-                <span className="text-[11px] text-muted-foreground">
-                  {dateStr}
-                </span>
+                {meta && <span className="text-[11px] text-muted-foreground truncate">{meta}</span>}
+                <span className="text-[11px] text-muted-foreground">{dateStr}</span>
                 <span
                   className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full ${statusColor}`}
                 >
@@ -110,5 +95,5 @@ export function TransactionCard({ transaction }: TransactionCardProps) {
         </CardContent>
       </Card>
     </Link>
-  )
+  );
 }

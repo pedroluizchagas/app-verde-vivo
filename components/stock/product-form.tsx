@@ -1,56 +1,56 @@
-"use client"
+"use client";
 
-import type React from "react"
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Card, CardContent } from "@/components/ui/card"
-import { Package } from "lucide-react"
-import { cn } from "@/lib/utils"
+import type React from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { Package } from "lucide-react";
+import { cn, extrairMensagemErro } from "@/lib/utils";
 
-const PRESET_UNITS = ["un", "kg", "L", "m", "m²", "saco", "cx"]
+const PRESET_UNITS = ["un", "kg", "L", "m", "m²", "saco", "cx"];
 
 export function ProductForm() {
-  const router = useRouter()
-  const supabase = createClient()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const router = useRouter();
+  const supabase = createClient();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const [name, setName] = useState("")
-  const [unit, setUnit] = useState("un")
-  const [isCustomUnit, setIsCustomUnit] = useState(false)
-  const [customUnit, setCustomUnit] = useState("")
-  const [cost, setCost] = useState("")
-  const [supplier, setSupplier] = useState("")
-  const [minStock, setMinStock] = useState("")
+  const [name, setName] = useState("");
+  const [unit, setUnit] = useState("un");
+  const [isCustomUnit, setIsCustomUnit] = useState(false);
+  const [customUnit, setCustomUnit] = useState("");
+  const [cost, setCost] = useState("");
+  const [supplier, setSupplier] = useState("");
+  const [minStock, setMinStock] = useState("");
 
-  const effectiveUnit = isCustomUnit ? customUnit.trim() : unit
+  const effectiveUnit = isCustomUnit ? customUnit.trim() : unit;
 
   const handleUnitSelect = (u: string) => {
-    setUnit(u)
-    setIsCustomUnit(false)
-    setCustomUnit("")
-  }
+    setUnit(u);
+    setIsCustomUnit(false);
+    setCustomUnit("");
+  };
 
   const handleCustomUnit = () => {
-    setIsCustomUnit(true)
-    setUnit("")
-  }
+    setIsCustomUnit(true);
+    setUnit("");
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
     try {
       const {
         data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error("Não autenticado")
-      if (!effectiveUnit) throw new Error("Informe a unidade de medida")
-      if (!name.trim()) throw new Error("Informe o nome do produto")
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Não autenticado");
+      if (!effectiveUnit) throw new Error("Informe a unidade de medida");
+      if (!name.trim()) throw new Error("Informe o nome do produto");
 
       const { error: insertError } = await supabase.from("products").insert({
         gardener_id: user.id,
@@ -59,21 +59,20 @@ export function ProductForm() {
         cost: Number(cost) || 0,
         supplier: supplier.trim() || null,
         min_stock: Number(minStock) || 0,
-      })
-      if (insertError) throw insertError
-      router.push("/dashboard/stock")
-      router.refresh()
-    } catch (err: any) {
-      setError(err?.message || "Erro ao criar produto")
-      setIsLoading(false)
+      });
+      if (insertError) throw insertError;
+      router.push("/dashboard/stock");
+      router.refresh();
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao criar produto"));
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
       <Card className="py-0">
         <CardContent className="p-5 flex flex-col gap-5">
-
           {/* Identificação */}
           <div className="flex flex-col gap-3">
             <div className="flex flex-col gap-1.5">
@@ -92,10 +91,7 @@ export function ProductForm() {
 
             <div className="flex flex-col gap-1.5">
               <Label htmlFor="supplier" className="text-[12px] font-medium">
-                Fornecedor{" "}
-                <span className="text-muted-foreground font-normal">
-                  (opcional)
-                </span>
+                Fornecedor <span className="text-muted-foreground font-normal">(opcional)</span>
               </Label>
               <Input
                 id="supplier"
@@ -109,9 +105,7 @@ export function ProductForm() {
 
           {/* Unidade de medida */}
           <div className="border-t border-border/60 pt-4 flex flex-col gap-1.5">
-            <Label className="text-[12px] font-medium">
-              Unidade de medida
-            </Label>
+            <Label className="text-[12px] font-medium">Unidade de medida</Label>
             <div className="flex flex-wrap gap-2">
               {PRESET_UNITS.map((u) => (
                 <button
@@ -122,7 +116,7 @@ export function ProductForm() {
                     "px-3 h-9 rounded-xl border-2 text-[13px] font-semibold transition-all",
                     !isCustomUnit && unit === u
                       ? "border-primary bg-primary/10 text-primary"
-                      : "border-border text-muted-foreground hover:border-muted-foreground/40"
+                      : "border-border text-muted-foreground hover:border-muted-foreground/40",
                   )}
                 >
                   {u}
@@ -135,7 +129,7 @@ export function ProductForm() {
                   "px-3 h-9 rounded-xl border-2 text-[13px] font-semibold transition-all",
                   isCustomUnit
                     ? "border-primary bg-primary/10 text-primary"
-                    : "border-border text-muted-foreground hover:border-muted-foreground/40"
+                    : "border-border text-muted-foreground hover:border-muted-foreground/40",
                 )}
               >
                 Outra...
@@ -156,9 +150,7 @@ export function ProductForm() {
             {effectiveUnit && (
               <p className="text-[11px] text-muted-foreground mt-0.5">
                 Unidade selecionada:{" "}
-                <span className="font-semibold text-foreground">
-                  {effectiveUnit}
-                </span>
+                <span className="font-semibold text-foreground">{effectiveUnit}</span>
               </p>
             )}
           </div>
@@ -217,9 +209,7 @@ export function ProductForm() {
           </div>
 
           {error && (
-            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-              {error}
-            </div>
+            <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
           )}
 
           {/* Ações */}
@@ -251,5 +241,5 @@ export function ProductForm() {
         </CardContent>
       </Card>
     </form>
-  )
+  );
 }

@@ -1,58 +1,53 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { ArrowLeft, Edit, Sparkles } from "lucide-react"
-import { DeleteNoteButton } from "@/components/notes/delete-note-button"
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { ArrowLeft, Edit, Sparkles } from "lucide-react";
+import { DeleteNoteButton } from "@/components/notes/delete-note-button";
 import {
   importanceLabels,
   importanceBadgeColors,
   importanceBorderColors,
-} from "@/components/notes/note-card"
+} from "@/components/notes/note-card";
 
-export default async function NoteDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
+export default async function NoteDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: note } = await supabase
     .from("notes")
     .select("*")
     .eq("gardener_id", user!.id)
     .eq("id", id)
-    .maybeSingle()
+    .maybeSingle();
 
   if (!note) {
-    notFound()
+    notFound();
   }
 
-  const importance = note.importance ?? "medium"
-  const borderColor = importanceBorderColors[importance] ?? "border-l-border"
-  const badgeColor =
-    importanceBadgeColors[importance] ?? "bg-muted text-muted-foreground"
-  const badgeLabel = importanceLabels[importance] ?? "Média"
+  const importance = note.importance ?? "medium";
+  const borderColor = importanceBorderColors[importance] ?? "border-l-border";
+  const badgeColor = importanceBadgeColors[importance] ?? "bg-muted text-muted-foreground";
+  const badgeLabel = importanceLabels[importance] ?? "Média";
 
-  const tags = Array.isArray(note.tags) ? note.tags.filter(Boolean) : []
+  const tags = Array.isArray(note.tags) ? note.tags.filter(Boolean) : [];
 
   const dateStr = new Date(note.created_at).toLocaleDateString("pt-BR", {
     weekday: "long",
     day: "2-digit",
     month: "long",
     year: "numeric",
-  })
+  });
 
   const timeStr = new Date(note.created_at).toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
-  })
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -106,9 +101,7 @@ export default async function NoteDetailPage({
           <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-3">
             Conteúdo
           </p>
-          <p className="text-[14px] leading-relaxed whitespace-pre-wrap">
-            {note.content}
-          </p>
+          <p className="text-[14px] leading-relaxed whitespace-pre-wrap">{note.content}</p>
         </CardContent>
       </Card>
 
@@ -129,5 +122,5 @@ export default async function NoteDetailPage({
         </Card>
       )}
     </div>
-  )
+  );
 }

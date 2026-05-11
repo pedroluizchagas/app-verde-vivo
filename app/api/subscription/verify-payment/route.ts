@@ -1,44 +1,49 @@
-import { NextResponse } from "next/server"
-import { authErrorResponse, requireUser } from "@/lib/auth/api"
-import { listActiveStripeSubscriptions } from "@/lib/stripe/client"
+import { NextResponse } from "next/server";
+import { authErrorResponse, requireUser } from "@/lib/auth/api";
+import { listActiveStripeSubscriptions } from "@/lib/stripe/client";
+import { obterPeriodoSubscription } from "@/lib/types/stripe";
 
-export const runtime = "nodejs"
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   try {
-    const { supabase, user } = await requireUser(request)
+    const { supabase, user } = await requireUser(request);
 
     // RLS protege: SELECT/UPDATE só atingem linhas onde auth.uid() = id/user_id.
     const { data: profile } = await supabase
       .from("profiles")
       .select("stripe_customer_id, plan")
       .eq("id", user.id)
-      .maybeSingle()
+      .maybeSingle();
 
     if (profile?.plan) {
-      return NextResponse.json({ activated: true, plan: profile.plan, alreadyActive: true })
+      return NextResponse.json({ activated: true, plan: profile.plan, alreadyActive: true });
     }
 
-    const stripeCustomerId = (profile as { stripe_customer_id?: string | null } | null)?.stripe_customer_id
+    const stripeCustomerId = (profile as { stripe_customer_id?: string | null } | null)
+      ?.stripe_customer_id;
     if (!stripeCustomerId) {
       return NextResponse.json(
         {
           error: "stripe_customer_not_found",
           message: "Nenhum registro de pagamento encontrado. Inicie uma nova assinatura.",
         },
-        { status: 404 }
-      )
+        { status: 404 },
+      );
     }
 
-    let activeStripeSubs: Awaited<ReturnType<typeof listActiveStripeSubscriptions>>
+    let activeStripeSubs: Awaited<ReturnType<typeof listActiveStripeSubscriptions>>;
     try {
-      activeStripeSubs = await listActiveStripeSubscriptions(stripeCustomerId)
+      activeStripeSubs = await listActiveStripeSubscriptions(stripeCustomerId);
     } catch (err) {
-      console.error("[verify-payment] Erro ao consultar Stripe:", err)
+      console.error("[verify-payment] Erro ao consultar Stripe:", err);
       return NextResponse.json(
-        { error: "stripe_error", message: "Erro ao consultar pagamento. Tente novamente em alguns instantes." },
-        { status: 500 }
-      )
+        {
+          error: "stripe_error",
+          message: "Erro ao consultar pagamento. Tente novamente em alguns instantes.",
+        },
+        { status: 500 },
+      );
     }
 
     if (activeStripeSubs.length === 0) {
@@ -46,24 +51,24 @@ export async function POST(request: Request) {
         activated: false,
         message:
           "Nenhuma assinatura ativa encontrada no Stripe. O pagamento pode ainda estar sendo processado — aguarde alguns minutos e tente novamente.",
-      })
+      });
     }
 
-    const stripeSub = activeStripeSubs[0]
+    const stripeSub = activeStripeSubs[0];
 
-    let targetSubId: string | undefined
-    let plan: string | undefined
+    let targetSubId: string | undefined;
+    let plan: string | undefined;
 
     const { data: subByStripeId } = await supabase
       .from("subscriptions")
       .select("id, plan")
       .eq("user_id", user.id)
       .eq("stripe_subscription_id", stripeSub.id)
-      .maybeSingle()
+      .maybeSingle();
 
     if (subByStripeId) {
-      targetSubId = subByStripeId.id
-      plan = subByStripeId.plan
+      targetSubId = subByStripeId.id;
+      plan = subByStripeId.plan;
     } else {
       const { data: pendingSub } = await supabase
         .from("subscriptions")
@@ -72,11 +77,11 @@ export async function POST(request: Request) {
         .in("status", ["pending", "overdue"])
         .order("created_at", { ascending: false })
         .limit(1)
-        .maybeSingle()
+        .maybeSingle();
 
       if (pendingSub) {
-        targetSubId = pendingSub.id
-        plan = pendingSub.plan
+        targetSubId = pendingSub.id;
+        plan = pendingSub.plan;
       }
     }
 
@@ -86,17 +91,20 @@ export async function POST(request: Request) {
           error: "subscription_not_found",
           message: "Assinatura nao encontrada no banco de dados. Entre em contato com o suporte.",
         },
-        { status: 404 }
-      )
+        { status: 404 },
+      );
     }
 
-    const now = new Date()
-    const periodStart = stripeSub.current_period_start
-      ? new Date(stripeSub.current_period_start * 1000)
-      : now
-    const periodEnd = stripeSub.current_period_end
-      ? new Date(stripeSub.current_period_end * 1000)
-      : (() => { const d = new Date(now); d.setMonth(d.getMonth() + 1); return d })()
+    const now = new Date();
+    const periodo = obterPeriodoSubscription(stripeSub);
+    const periodStart = periodo.start ? new Date(periodo.start * 1000) : now;
+    const periodEnd = periodo.end
+      ? new Date(periodo.end * 1000)
+      : (() => {
+          const d = new Date(now);
+          d.setMonth(d.getMonth() + 1);
+          return d;
+        })();
 
     await supabase
       .from("subscriptions")
@@ -107,14 +115,14 @@ export async function POST(request: Request) {
         current_period_end: periodEnd.toISOString(),
         updated_at: now.toISOString(),
       })
-      .eq("id", targetSubId)
+      .eq("id", targetSubId);
 
-    await supabase.from("profiles").update({ plan }).eq("id", user.id)
+    await supabase.from("profiles").update({ plan }).eq("id", user.id);
 
-    return NextResponse.json({ activated: true, plan })
+    return NextResponse.json({ activated: true, plan });
   } catch (err) {
-    const authResponse = authErrorResponse(err)
-    if (authResponse) return authResponse
-    throw err
+    const authResponse = authErrorResponse(err);
+    if (authResponse) return authResponse;
+    throw err;
   }
 }

@@ -1,25 +1,26 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { ClientForm } from "@/components/clients/client-form"
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { ClientForm } from "@/components/clients/client-form";
 
-export default async function EditClientPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
-  const supabase = await createClient()
+export default async function EditClientPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  const { data: client } = await supabase.from("clients").select("*").eq("id", id).eq("gardener_id", user!.id).single()
+  const { data: client } = await supabase
+    .from("clients")
+    .select("*")
+    .eq("id", id)
+    .eq("gardener_id", user!.id)
+    .single();
 
   if (!client) {
-    notFound()
+    notFound();
   }
 
   return (
@@ -39,5 +40,5 @@ export default async function EditClientPage({
 
       <ClientForm client={client} />
     </div>
-  )
+  );
 }

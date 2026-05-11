@@ -1,26 +1,32 @@
-import { MovementForm } from "@/components/stock/movement-form"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
+import { MovementForm } from "@/components/stock/movement-form";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 
-export default async function NewMovementPage({ searchParams }: { searchParams: Promise<{ appointment?: string }> }) {
-  const { appointment } = await searchParams
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default async function NewMovementPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ appointment?: string }>;
+}) {
+  const { appointment } = await searchParams;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: products } = await supabase
     .from("products")
     .select("id, name, unit, cost")
     .eq("gardener_id", user!.id)
-    .order("name")
+    .order("name");
 
   const { data: appointments } = await supabase
     .from("appointments")
     .select("id, title")
     .eq("gardener_id", user!.id)
     .order("scheduled_date", { ascending: false })
-    .limit(50)
+    .limit(50);
 
   return (
     <div className="flex flex-col gap-4">
@@ -34,7 +40,11 @@ export default async function NewMovementPage({ searchParams }: { searchParams: 
         <h1 className="text-2xl font-bold tracking-tight">Nova movimentação</h1>
       </div>
 
-      <MovementForm products={products || []} appointments={appointments || []} defaultAppointmentId={appointment || null} />
+      <MovementForm
+        products={products || []}
+        appointments={appointments || []}
+        defaultAppointmentId={appointment || null}
+      />
     </div>
-  )
+  );
 }

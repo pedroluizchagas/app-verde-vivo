@@ -1,7 +1,7 @@
-"use client"
+"use client";
 
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   Phone,
   Sun,
@@ -10,7 +10,7 @@ import {
   Calendar,
   CalendarDays,
   ExternalLink,
-} from "lucide-react"
+} from "lucide-react";
 
 const AVATAR_COLORS = [
   "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
@@ -19,10 +19,10 @@ const AVATAR_COLORS = [
   "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   "bg-rose-500/15 text-rose-600 dark:text-rose-400",
   "bg-teal-500/15 text-teal-600 dark:text-teal-400",
-]
+];
 
 function getAvatarColor(name: string) {
-  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
+  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 }
 
 const WEEKDAY_LABELS = [
@@ -33,63 +33,71 @@ const WEEKDAY_LABELS = [
   "Quinta-feira",
   "Sexta-feira",
   "Sábado",
-]
+];
 
-const WEEK_LABELS = ["1ª semana", "2ª semana", "3ª semana", "4ª semana"]
+const WEEK_LABELS = ["1ª semana", "2ª semana", "3ª semana", "4ª semana"];
+
+interface PlanoHeader {
+  default_description?: string | null;
+  default_labor_cost?: number | null;
+  billing_day?: number | null;
+  preferred_weekday?: number | null;
+  preferred_week_of_month?: number | null;
+}
+
+interface ClienteHeader {
+  id?: string | null;
+  name?: string | null;
+  phone?: string | null;
+}
 
 export function MaintenancePlanHeaderCard({
   plan,
   client,
 }: {
-  plan: any
-  client?: any
+  plan: PlanoHeader;
+  client?: ClienteHeader | null;
 }) {
-  const clientName = String(client?.name || "Cliente")
-  const clientPhone = String(client?.phone || "")
-  const clientId = client?.id || null
+  const clientName = String(client?.name || "Cliente");
+  const clientPhone = String(client?.phone || "");
+  const clientId = client?.id || null;
 
   const initials = clientName
     .split(" ")
     .slice(0, 2)
     .map((w: string) => w.charAt(0).toUpperCase())
-    .join("")
-  const avatarColor = getAvatarColor(clientName)
+    .join("");
+  const avatarColor = getAvatarColor(clientName);
 
-  const desc = String(plan?.default_description || "")
-  const hasSunFull = /sol\s*pleno/i.test(desc)
-  const hasSunPartial = /meia\s*sombra/i.test(desc)
-  const waterMatch = desc.match(/rega\s*(\d+)x/i)
-  const waterFreq = waterMatch ? waterMatch[1] : null
+  const desc = String(plan?.default_description || "");
+  const hasSunFull = /sol\s*pleno/i.test(desc);
+  const hasSunPartial = /meia\s*sombra/i.test(desc);
+  const waterMatch = desc.match(/rega\s*(\d+)x/i);
+  const waterFreq = waterMatch ? waterMatch[1] : null;
 
   const laborCost =
-    typeof plan?.default_labor_cost === "number" &&
-    plan.default_labor_cost > 0
+    typeof plan?.default_labor_cost === "number" && plan.default_labor_cost > 0
       ? new Intl.NumberFormat("pt-BR", {
           style: "currency",
           currency: "BRL",
         }).format(plan.default_labor_cost)
-      : null
+      : null;
 
   const billingDay =
-    typeof plan?.billing_day === "number" && plan.billing_day > 0
-      ? plan.billing_day
-      : null
+    typeof plan?.billing_day === "number" && plan.billing_day > 0 ? plan.billing_day : null;
 
   const prefWeekday =
     typeof plan?.preferred_weekday === "number"
-      ? WEEKDAY_LABELS[plan.preferred_weekday] ?? null
-      : null
+      ? (WEEKDAY_LABELS[plan.preferred_weekday] ?? null)
+      : null;
 
   const prefWeek =
-    typeof plan?.preferred_week_of_month === "number" &&
-    plan.preferred_week_of_month >= 1
-      ? WEEK_LABELS[plan.preferred_week_of_month - 1] ?? null
-      : null
+    typeof plan?.preferred_week_of_month === "number" && plan.preferred_week_of_month >= 1
+      ? (WEEK_LABELS[plan.preferred_week_of_month - 1] ?? null)
+      : null;
 
   const scheduleLabel =
-    prefWeekday && prefWeek
-      ? `${prefWeek} — ${prefWeekday}`
-      : prefWeekday || prefWeek || null
+    prefWeekday && prefWeek ? `${prefWeek} — ${prefWeekday}` : prefWeekday || prefWeek || null;
 
   return (
     <Card className="py-0">
@@ -102,9 +110,7 @@ export function MaintenancePlanHeaderCard({
             {initials}
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-bold text-[16px] leading-tight truncate">
-              {clientName}
-            </p>
+            <p className="font-bold text-[16px] leading-tight truncate">{clientName}</p>
             {clientPhone && (
               <a
                 href={`tel:${clientPhone}`}
@@ -140,9 +146,7 @@ export function MaintenancePlanHeaderCard({
                   <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground leading-none mb-0.5">
                     Valor mensal
                   </p>
-                  <p className="text-[13px] font-bold text-primary leading-tight">
-                    {laborCost}
-                  </p>
+                  <p className="text-[13px] font-bold text-primary leading-tight">{laborCost}</p>
                 </div>
               </div>
             )}
@@ -155,9 +159,7 @@ export function MaintenancePlanHeaderCard({
                   <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground leading-none mb-0.5">
                     Vencimento
                   </p>
-                  <p className="text-[13px] font-semibold leading-tight">
-                    Dia {billingDay}
-                  </p>
+                  <p className="text-[13px] font-semibold leading-tight">Dia {billingDay}</p>
                 </div>
               </div>
             )}
@@ -170,9 +172,7 @@ export function MaintenancePlanHeaderCard({
                   <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground leading-none mb-0.5">
                     Agendamento
                   </p>
-                  <p className="text-[12px] font-semibold leading-tight">
-                    {scheduleLabel}
-                  </p>
+                  <p className="text-[12px] font-semibold leading-tight">{scheduleLabel}</p>
                 </div>
               </div>
             )}
@@ -198,14 +198,10 @@ export function MaintenancePlanHeaderCard({
                 )}
               </div>
             )}
-            {desc && (
-              <p className="text-[12px] text-muted-foreground leading-relaxed">
-                {desc}
-              </p>
-            )}
+            {desc && <p className="text-[12px] text-muted-foreground leading-relaxed">{desc}</p>}
           </div>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

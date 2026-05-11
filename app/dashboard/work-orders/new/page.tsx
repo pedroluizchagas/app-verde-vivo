@@ -1,68 +1,105 @@
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
-import { WorkOrderForm } from "@/components/work-orders/work-order-form"
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { WorkOrderForm } from "@/components/work-orders/work-order-form";
 
-export default async function NewWorkOrderPage({ searchParams }: { searchParams: Promise<{ appointment?: string }> }) {
-  const { appointment } = await searchParams
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default async function NewWorkOrderPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ appointment?: string }>;
+}) {
+  const { appointment } = await searchParams;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: clients } = await supabase
     .from("clients")
     .select("id, name")
     .eq("gardener_id", user!.id)
-    .order("name")
+    .order("name");
 
   const { data: appointments } = await supabase
     .from("appointments")
     .select("id, title, client_id, scheduled_date, labor_cost")
     .eq("gardener_id", user!.id)
     .order("scheduled_date", { ascending: false })
-    .limit(50)
+    .limit(50);
 
   const { data: products } = await supabase
     .from("products")
     .select("id, name, unit, cost")
     .eq("gardener_id", user!.id)
-    .order("name")
+    .order("name");
 
-  let defaultClientId: string | null = null
-  let defaultTitle: string | null = null
-  let defaultLaborCost = 0
-  let defaultMarkupPct = 0
-  let defaultItems: { product_id: string; quantity: number; unit_cost: number; unit_price: number }[] = []
+  interface AppointmentEmbutido {
+    id: string;
+    title: string | null;
+    client_id: string | null;
+    scheduled_date: string;
+    labor_cost: number | null;
+  }
+  type ProdutoMov = { cost?: number | null; unit?: string | null };
+  interface MaterialUsado {
+    product_id: string;
+    quantity: number;
+    unit_cost: number | null;
+    product?: ProdutoMov | ProdutoMov[] | null;
+  }
+
+  let defaultClientId: string | null = null;
+  let defaultTitle: string | null = null;
+  let defaultLaborCost = 0;
+  let defaultMarkupPct = 0;
+  let defaultItems: {
+    product_id: string;
+    quantity: number;
+    unit_cost: number;
+    unit_price: number;
+    unit: string;
+  }[] = [];
 
   const { data: prefs } = await supabase
     .from("user_preferences")
     .select("default_product_margin_pct")
     .eq("gardener_id", user!.id)
-    .maybeSingle()
-  defaultMarkupPct = Number((prefs as any)?.default_product_margin_pct ?? 0)
+    .maybeSingle();
+  const prefsTyped = prefs as { default_product_margin_pct?: number | null } | null;
+  defaultMarkupPct = Number(prefsTyped?.default_product_margin_pct ?? 0);
 
   if (appointment) {
-    const { data: ap } = await supabase
+    const { data: apRaw } = await supabase
       .from("appointments")
       .select("id, title, client_id, scheduled_date, labor_cost")
       .eq("id", appointment)
       .eq("gardener_id", user!.id)
-      .maybeSingle()
+      .maybeSingle();
+    const ap = apRaw as AppointmentEmbutido | null;
     if (ap) {
-      defaultClientId = (ap as any).client_id || null
-      defaultTitle = (ap as any).title || null
-      defaultLaborCost = Number((ap as any).labor_cost || 0)
+      defaultClientId = ap.client_id ?? null;
+      defaultTitle = ap.title ?? null;
+      defaultLaborCost = Number(ap.labor_cost ?? 0);
       const { data: usedMaterials } = await supabase
         .from("product_movements")
         .select("product_id, quantity, unit_cost, product:products(cost, unit)")
         .eq("gardener_id", user!.id)
         .eq("appointment_id", ap.id)
-        .eq("type", "out")
-      defaultItems = (usedMaterials || []).map((m: any) => {
-        const base = Number(m.unit_cost ?? m.product?.cost ?? 0)
-        const price = base * (1 + (Number(defaultMarkupPct) > 0 ? Number(defaultMarkupPct) / 100 : 0))
-        return { product_id: String(m.product_id), quantity: Number(m.quantity), unit_cost: base, unit_price: price, unit: String(m.product?.unit || "un") }
-      })
+        .eq("type", "out");
+      defaultItems = ((usedMaterials ?? []) as MaterialUsado[]).map((m) => {
+        const produto = Array.isArray(m.product) ? m.product[0] : m.product;
+        const base = Number(m.unit_cost ?? produto?.cost ?? 0);
+        const price =
+          base * (1 + (Number(defaultMarkupPct) > 0 ? Number(defaultMarkupPct) / 100 : 0));
+        return {
+          product_id: String(m.product_id),
+          quantity: Number(m.quantity),
+          unit_cost: base,
+          unit_price: price,
+          unit: String(produto?.unit ?? "un"),
+        };
+      });
     }
   }
 
@@ -90,5 +127,5 @@ export default async function NewWorkOrderPage({ searchParams }: { searchParams:
         defaultItems={defaultItems}
       />
     </div>
-  )
+  );
 }

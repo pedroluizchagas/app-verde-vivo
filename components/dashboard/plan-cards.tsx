@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Check, X, Sparkles, Loader2, AlertCircle, Clock, CheckCircle2 } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Check, X, Sparkles, Loader2, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
+import { cn, extrairMensagemErro } from "@/lib/utils";
 
-type Plan = "basic" | "plus"
+type Plan = "basic" | "plus";
 
 const PLANS = [
   {
@@ -14,8 +14,7 @@ const PLANS = [
     name: "Basico",
     price: "R$ 47,90",
     period: "/mes",
-    description:
-      "Gerencie sua empresa de jardinagem com todas as ferramentas essenciais.",
+    description: "Gerencie sua empresa de jardinagem com todas as ferramentas essenciais.",
     features: [
       "Clientes ilimitados",
       "Agenda e agendamentos",
@@ -33,8 +32,7 @@ const PLANS = [
     name: "Plus",
     price: "R$ 77,90",
     period: "/mes",
-    description:
-      "Tudo do Basico mais o poder da inteligencia artificial no seu dia a dia.",
+    description: "Tudo do Basico mais o poder da inteligencia artificial no seu dia a dia.",
     features: [
       "Tudo do plano Basico",
       "Assistente Iris com IA",
@@ -46,7 +44,7 @@ const PLANS = [
     notIncluded: [],
     highlight: true,
   },
-] as const
+] as const;
 
 const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.ReactNode }> = {
   active: {
@@ -69,113 +67,118 @@ const STATUS_LABELS: Record<string, { label: string; color: string; icon: React.
     color: "text-muted-foreground bg-muted border-border",
     icon: <X className="h-3.5 w-3.5" />,
   },
-}
+};
 
 interface Subscription {
-  id: string
-  plan: string
-  status: string
-  current_period_start: string | null
-  current_period_end: string | null
-  created_at: string
+  id: string;
+  plan: string;
+  status: string;
+  current_period_start: string | null;
+  current_period_end: string | null;
+  created_at: string;
 }
 
 interface PlanCardsProps {
-  currentPlan: string | null
-  subscription: Subscription | null
-  trialDaysLeft?: number
-  trialEndsAt?: string | null
+  currentPlan: string | null;
+  subscription: Subscription | null;
+  trialDaysLeft?: number;
+  trialEndsAt?: string | null;
 }
 
-export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialEndsAt }: PlanCardsProps) {
-  const [loading, setLoading] = useState<Plan | null>(null)
-  const [reopenLoading, setReopenLoading] = useState(false)
-  const [verifyLoading, setVerifyLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+export function PlanCards({
+  currentPlan,
+  subscription,
+  trialDaysLeft = 0,
+  trialEndsAt,
+}: PlanCardsProps) {
+  const [loading, setLoading] = useState<Plan | null>(null);
+  const [reopenLoading, setReopenLoading] = useState(false);
+  const [verifyLoading, setVerifyLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   async function handleSubscribe(plan: Plan) {
-    if (loading !== null || reopenLoading) return
-    setLoading(plan)
-    setError(null)
+    if (loading !== null || reopenLoading) return;
+    setLoading(plan);
+    setError(null);
     try {
       const res = await fetch("/api/subscription/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ plan }),
-      })
-      const data = await res.json()
+      });
+      const data = await res.json();
       if (!res.ok) {
-        setError(data.message ?? data.error ?? "Erro ao iniciar assinatura")
-        return
+        setError(data.message ?? data.error ?? "Erro ao iniciar assinatura");
+        return;
       }
       if (data.paymentUrl) {
-        window.location.href = data.paymentUrl
+        window.location.href = data.paymentUrl;
       } else {
-        setError("Link de pagamento nao disponivel. Tente novamente.")
+        setError("Link de pagamento nao disponivel. Tente novamente.");
       }
-    } catch (err: any) {
-      setError(err?.message ?? "Erro ao iniciar assinatura")
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao iniciar assinatura"));
     } finally {
-      setLoading(null)
+      setLoading(null);
     }
   }
 
   async function handleVerifyPayment() {
-    if (verifyLoading || loading !== null || reopenLoading) return
-    setVerifyLoading(true)
-    setError(null)
+    if (verifyLoading || loading !== null || reopenLoading) return;
+    setVerifyLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/api/subscription/verify-payment", { method: "POST" })
-      const data = await res.json()
+      const res = await fetch("/api/subscription/verify-payment", { method: "POST" });
+      const data = await res.json();
       if (!res.ok) {
-        setError(data.message ?? data.error ?? "Erro ao verificar pagamento")
-        return
+        setError(data.message ?? data.error ?? "Erro ao verificar pagamento");
+        return;
       }
       if (data.activated) {
-        window.location.reload()
+        window.location.reload();
       } else {
-        setError(data.message ?? "Pagamento nao encontrado. Aguarde alguns minutos e tente novamente.")
+        setError(
+          data.message ?? "Pagamento nao encontrado. Aguarde alguns minutos e tente novamente.",
+        );
       }
-    } catch (err: any) {
-      setError(err?.message ?? "Erro ao verificar pagamento")
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao verificar pagamento"));
     } finally {
-      setVerifyLoading(false)
+      setVerifyLoading(false);
     }
   }
 
   async function handleReopenPayment() {
-    if (loading !== null || reopenLoading) return
-    setReopenLoading(true)
-    setError(null)
+    if (loading !== null || reopenLoading) return;
+    setReopenLoading(true);
+    setError(null);
     try {
-      const res = await fetch("/api/subscription/reopen-payment", { method: "POST" })
-      const data = await res.json()
+      const res = await fetch("/api/subscription/reopen-payment", { method: "POST" });
+      const data = await res.json();
       if (!res.ok) {
-        setError(data.message ?? data.error ?? "Erro ao recuperar link de pagamento")
-        return
+        setError(data.message ?? data.error ?? "Erro ao recuperar link de pagamento");
+        return;
       }
       if (data.paymentUrl) {
-        window.location.href = data.paymentUrl
+        window.location.href = data.paymentUrl;
       } else {
-        setError("Link de pagamento nao disponivel. Tente iniciar uma nova assinatura.")
+        setError("Link de pagamento nao disponivel. Tente iniciar uma nova assinatura.");
       }
-    } catch (err: any) {
-      setError(err?.message ?? "Erro ao recuperar link de pagamento")
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao recuperar link de pagamento"));
     } finally {
-      setReopenLoading(false)
+      setReopenLoading(false);
     }
   }
 
-  const statusInfo = subscription ? STATUS_LABELS[subscription.status] : null
+  const statusInfo = subscription ? STATUS_LABELS[subscription.status] : null;
   const periodEnd = subscription?.current_period_end
     ? new Date(subscription.current_period_end).toLocaleDateString("pt-BR")
-    : null
+    : null;
 
-  const trialActive = !currentPlan && trialDaysLeft > 0
-  const trialExpired = !currentPlan && trialDaysLeft === 0 && !!trialEndsAt
-  const trialEndDate = trialEndsAt
-    ? new Date(trialEndsAt).toLocaleDateString("pt-BR")
-    : null
+  const trialActive = !currentPlan && trialDaysLeft > 0;
+  const trialExpired = !currentPlan && trialDaysLeft === 0 && !!trialEndsAt;
+  const trialEndDate = trialEndsAt ? new Date(trialEndsAt).toLocaleDateString("pt-BR") : null;
 
   return (
     <div className="flex flex-col gap-6">
@@ -185,12 +188,11 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
           <Clock className="h-4 w-4 text-amber-500 mt-0.5 shrink-0" />
           <div>
             <span className="font-semibold text-amber-600">
-              Periodo de teste: {trialDaysLeft} {trialDaysLeft === 1 ? "dia restante" : "dias restantes"}
+              Periodo de teste: {trialDaysLeft}{" "}
+              {trialDaysLeft === 1 ? "dia restante" : "dias restantes"}
             </span>
             {trialEndDate && (
-              <span className="text-amber-600/70 font-normal ml-1">
-                · Expira em {trialEndDate}
-              </span>
+              <span className="text-amber-600/70 font-normal ml-1">· Expira em {trialEndDate}</span>
             )}
             <p className="text-muted-foreground mt-0.5 text-[13px]">
               Assine um plano para continuar usando o Iris apos o periodo de teste.
@@ -204,9 +206,7 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
         <div className="flex items-start gap-3 px-4 py-3 rounded-xl border border-red-500/30 bg-red-500/8 text-sm">
           <AlertCircle className="h-4 w-4 text-red-500 mt-0.5 shrink-0" />
           <div>
-            <span className="font-semibold text-red-600">
-              Seu periodo de teste encerrou
-            </span>
+            <span className="font-semibold text-red-600">Seu periodo de teste encerrou</span>
             <p className="text-muted-foreground mt-0.5 text-[13px]">
               Escolha um plano abaixo para reativar seu acesso ao Iris.
             </p>
@@ -218,7 +218,7 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
         <div
           className={cn(
             "flex flex-col gap-2 px-4 py-3 rounded-xl border text-sm font-medium",
-            statusInfo.color
+            statusInfo.color,
           )}
         >
           <div className="flex items-center gap-3">
@@ -289,8 +289,8 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
       {/* Cards de plano */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
         {PLANS.map((plan) => {
-          const isCurrent = currentPlan === plan.id
-          const isAnyLoading = loading !== null || reopenLoading
+          const isCurrent = currentPlan === plan.id;
+          const isAnyLoading = loading !== null || reopenLoading;
 
           return (
             <Card
@@ -298,7 +298,7 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
               className={cn(
                 "relative flex flex-col",
                 plan.highlight && !isCurrent && "border-primary ring-1 ring-primary/30",
-                isCurrent && "border-emerald-500 ring-1 ring-emerald-500/30"
+                isCurrent && "border-emerald-500 ring-1 ring-emerald-500/30",
               )}
             >
               {plan.highlight && !isCurrent && (
@@ -318,18 +318,14 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
 
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-base">
-                  {plan.id === "plus" && (
-                    <Sparkles className="h-4 w-4 text-primary" />
-                  )}
+                  {plan.id === "plus" && <Sparkles className="h-4 w-4 text-primary" />}
                   {plan.name}
                 </CardTitle>
                 <div className="flex items-baseline gap-1 mt-1">
                   <span className="text-3xl font-bold tracking-tight">{plan.price}</span>
                   <span className="text-sm text-muted-foreground">{plan.period}</span>
                 </div>
-                <CardDescription className="mt-1 text-[13px]">
-                  {plan.description}
-                </CardDescription>
+                <CardDescription className="mt-1 text-[13px]">{plan.description}</CardDescription>
               </CardHeader>
 
               <CardContent className="flex flex-col gap-4 flex-1">
@@ -372,15 +368,15 @@ export function PlanCards({ currentPlan, subscription, trialDaysLeft = 0, trialE
                 </Button>
               </CardContent>
             </Card>
-          )
+          );
         })}
       </div>
 
       {/* Nota sobre pagamento */}
       <p className="text-[12px] text-muted-foreground text-center">
-        Pagamento seguro via{" "}
-        <span className="font-medium text-foreground/60">Stripe</span> — cartao de credito ou debito. Cancele a qualquer momento.
+        Pagamento seguro via <span className="font-medium text-foreground/60">Stripe</span> — cartao
+        de credito ou debito. Cancele a qualquer momento.
       </p>
     </div>
-  )
+  );
 }

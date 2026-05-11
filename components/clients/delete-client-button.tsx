@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,35 +14,35 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Trash2 } from "lucide-react"
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 export function DeleteClientButton({
   clientId,
   clientName,
 }: {
-  clientId: string
-  clientName: string
+  clientId: string;
+  clientName: string;
 }) {
-  const router = useRouter()
-  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
-    setIsDeleting(true)
-    const supabase = createClient()
+    setIsDeleting(true);
+    const supabase = createClient();
 
     try {
-      const { error } = await supabase.from("clients").delete().eq("id", clientId)
+      const { error } = await supabase.from("clients").delete().eq("id", clientId);
 
-      if (error) throw error
+      if (error) throw error;
 
-      router.push("/dashboard/clients")
-      router.refresh()
+      router.push("/dashboard/clients");
+      router.refresh();
     } catch (error) {
-      console.error("Error deleting client:", error)
-      setIsDeleting(false)
+      console.error("Error deleting client:", error);
+      setIsDeleting(false);
     }
-  }
+  };
 
   return (
     <AlertDialog>
@@ -56,8 +56,8 @@ export function DeleteClientButton({
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir cliente?</AlertDialogTitle>
           <AlertDialogDescription>
-            Tem certeza que deseja excluir {clientName}? Esta ação não pode ser desfeita e todos os agendamentos e
-            orçamentos relacionados também serão excluídos.
+            Tem certeza que deseja excluir {clientName}? Esta ação não pode ser desfeita e todos os
+            agendamentos e orçamentos relacionados também serão excluídos.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -72,5 +72,5 @@ export function DeleteClientButton({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

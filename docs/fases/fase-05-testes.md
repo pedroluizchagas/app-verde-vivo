@@ -11,6 +11,7 @@ Estabelecer fundação de testes com Vitest (unit/integration) e Playwright (E2E
 ## Escopo
 
 ### Entra
+
 - Setup Vitest + `@testing-library/react` para componentes/utilitários.
 - Setup Playwright para E2E web.
 - Suite mínima cobrindo:
@@ -26,6 +27,7 @@ Estabelecer fundação de testes com Vitest (unit/integration) e Playwright (E2E
 - Coverage report (não falha por threshold inicialmente).
 
 ### Não entra
+
 - Testes para mobile (Detox/Maestro fica para Fase 07).
 - Cobertura > 80%.
 - Testes de carga.
@@ -40,16 +42,18 @@ Você está executando a **Fase 05 — Testes Automatizados** do Gestão Garden.
 **Branch:** `feat/fase-05-testes`.
 
 **Leia antes:**
+
 - `docs/03-padroes-e-convencoes.md`
 - Estrutura de `lib/` e `app/api/`
 
 **Tarefas:**
 
 ### 1. Setup Vitest
+```
 
-```
 pnpm add -D vitest @vitest/coverage-v8 @testing-library/react @testing-library/jest-dom jsdom
-```
+
+````
 
 Criar `vitest.config.ts`:
 ```ts
@@ -69,14 +73,16 @@ export default defineConfig({
     alias: { "@": path.resolve(__dirname, ".") },
   },
 });
-```
+````
 
 `tests/unit/setup.ts`:
+
 ```ts
 import "@testing-library/jest-dom/vitest";
 ```
 
 Scripts em `package.json`:
+
 ```json
 "test": "vitest run",
 "test:watch": "vitest",
@@ -104,6 +110,7 @@ pnpm exec playwright install --with-deps chromium
 ```
 
 `playwright.config.ts`:
+
 ```ts
 import { defineConfig } from "@playwright/test";
 
@@ -117,15 +124,18 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   projects: [{ name: "chromium", use: { ...devices.desktop_chromium } }],
-  webServer: process.env.CI ? undefined : {
-    command: "pnpm dev",
-    port: 3000,
-    reuseExistingServer: true,
-  },
+  webServer: process.env.CI
+    ? undefined
+    : {
+        command: "pnpm dev",
+        port: 3000,
+        reuseExistingServer: true,
+      },
 });
 ```
 
 Scripts:
+
 ```json
 "test:e2e": "playwright test",
 "test:e2e:ui": "playwright test --ui"
@@ -140,6 +150,7 @@ Criar:
 - `tests/e2e/clients.spec.ts` — criar cliente, listar, editar, deletar.
 
 Para E2E precisa de:
+
 - Conta Supabase de teste (envs em `.env.test.local`).
 - Stripe em modo test.
 - Helper `tests/e2e/helpers/auth.ts` que cria usuário via Supabase admin e injeta sessão.
@@ -206,14 +217,17 @@ Documentar quais secrets configurar no GitHub.
 - README atualizado com seção "Testes".
 
 **Restrições:**
+
 - NÃO atingir cobertura artificial. 30% bem direcionado é melhor que 80% inflado.
 - NÃO criar testes de mobile (Fase 07).
 
 **Entrega:**
+
 - PR draft.
 - Título: `feat(testes): suite Vitest, Playwright E2E e CI no GitHub Actions`.
 
 **Definition of Done — copiar para o PR:**
+
 - [ ] Vitest configurado, ≥6 arquivos de teste unit/integration.
 - [ ] Playwright configurado, ≥3 specs E2E.
 - [ ] `pnpm test` e `pnpm test:e2e` rodam localmente.
@@ -221,6 +235,7 @@ Documentar quais secrets configurar no GitHub.
 - [ ] Job E2E para PRs em main.
 - [ ] README com seção de testes (como rodar, como adicionar).
 - [ ] Coverage report gerando em `coverage/` (não enforçar threshold ainda).
+
 ```
 
 ## Definition of Done
@@ -235,3 +250,4 @@ Documentar quais secrets configurar no GitHub.
 - **E2E flakiness.** Stripe checkout não é determinístico em CI. Considerar mockar o redirect e validar apenas a chamada à API.
 - **Secrets em CI.** Setup inicial demora. Documentar em detalhe quais envs configurar.
 - **Tempo de build cresce.** Aceitável até ~5min. Acima disso, paralelizar.
+```

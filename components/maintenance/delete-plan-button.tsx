@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,26 +14,26 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Trash2 } from "lucide-react"
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 export function DeletePlanButton({ planId }: { planId: string }) {
-  const router = useRouter()
-  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
-    setIsDeleting(true)
-    const supabase = createClient()
+    setIsDeleting(true);
+    const supabase = createClient();
     try {
-      const { error } = await supabase.from("maintenance_plans").delete().eq("id", planId)
-      if (error) throw error
-      router.push("/dashboard/maintenance")
-      router.refresh()
+      const { error } = await supabase.from("maintenance_plans").delete().eq("id", planId);
+      if (error) throw error;
+      router.push("/dashboard/maintenance");
+      router.refresh();
     } catch (error) {
-      console.error("Erro ao excluir plano:", error)
-      setIsDeleting(false)
+      console.error("Erro ao excluir plano:", error);
+      setIsDeleting(false);
     }
-  }
+  };
 
   return (
     <AlertDialog>
@@ -47,7 +47,8 @@ export function DeletePlanButton({ planId }: { planId: string }) {
         <AlertDialogHeader>
           <AlertDialogTitle>Excluir plano?</AlertDialogTitle>
           <AlertDialogDescription>
-            Esta ação não pode ser desfeita. O histórico e execuções vinculadas ao plano serão removidos.
+            Esta ação não pode ser desfeita. O histórico e execuções vinculadas ao plano serão
+            removidos.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -62,6 +63,5 @@ export function DeletePlanButton({ planId }: { planId: string }) {
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }
-
