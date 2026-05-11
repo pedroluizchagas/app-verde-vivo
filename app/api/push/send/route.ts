@@ -49,7 +49,11 @@ export async function POST(request: Request) {
     }
 
     const internal = isInternalCall(request);
-    let tokens: string[] = (parsed.data.tokens ?? []).map((t) => String(t));
+    // Tokens explicitos enviados pelo client. No fluxo autenticado eles SAO
+    // filtrados contra device_tokens do proprio user mais abaixo; aqui apenas
+    // normalizamos para string.
+    const tokensInformados: string[] = (parsed.data.tokens ?? []).map((t) => String(t));
+    let tokens: string[] = internal ? [...tokensInformados] : [];
 
     if (internal) {
       // Chamada interna (cron/webhook server-to-server) identificada por X-Internal-Token.
@@ -93,7 +97,25 @@ export async function POST(request: Request) {
       const expoTokens = (devs ?? [])
         .map((p: { token?: string | null }) => String(p?.token ?? ""))
         .filter((t) => t && Expo.isExpoPushToken(t));
-      tokens = [...tokens, ...expoTokens];
+
+      // Hardening: tokens informados pelo client SO sao usados se pertencerem
+      // ao proprio user em device_tokens. Isso impede que um user logado tente
+      // enviar push para um token de terceiro passando-o em `tokens[]`.
+      let tokensValidados: string[] = [];
+      if (tokensInformados.length > 0) {
+        const { data: owned } = await auth.supabase
+          .from("device_tokens")
+          .select("token")
+          .eq("gardener_id", auth.user.id)
+          .in("token", tokensInformados);
+        const ownedSet = new Set(
+          (owned ?? []).map((d: { token?: string | null }) => String(d?.token ?? "")),
+        );
+        tokensValidados = tokensInformados.filter((t) => ownedSet.has(t));
+      }
+
+      // Tokens validados se SOMAM aos buscados via device_tokens (nao substituem).
+      tokens = [...tokensValidados, ...expoTokens];
 
       if (expoTokens.length === 0) {
         const { data: profile } = await auth.supabase

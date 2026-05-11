@@ -1,11 +1,46 @@
 import { NextResponse } from "next/server";
 import { createServiceRoleClient } from "@/lib/supabase/server";
-import { constructStripeWebhookEvent, retrieveStripeSubscription } from "@/lib/stripe/client";
+import { constructStripeWebhookEvent } from "@/lib/stripe/client";
 import { enforceRateLimit, getClientIp } from "@/lib/rate-limit";
 import { obterSubscriptionIdDeInvoice } from "@/lib/types/stripe";
+import { sincronizarAssinaturaDoStripe } from "@/lib/stripe/sync";
 import type Stripe from "stripe";
 
 export const runtime = "nodejs";
+
+// Eventos que delegam a sincronizacao para `lib/stripe/sync.ts`.
+// Demais tipos sao registrados em stripe_events para auditoria mas nao executam logica.
+const EVENTOS_TRATADOS = new Set([
+  "checkout.session.completed",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "invoice.payment_succeeded",
+  "invoice.payment_failed",
+]);
+
+function extrairSubscriptionId(event: Stripe.Event): string | null {
+  switch (event.type) {
+    case "checkout.session.completed": {
+      const session = event.data.object as Stripe.Checkout.Session;
+      if (typeof session.subscription === "string") return session.subscription;
+      return session.subscription?.id ?? null;
+    }
+    case "customer.subscription.created":
+    case "customer.subscription.updated":
+    case "customer.subscription.deleted": {
+      const sub = event.data.object as Stripe.Subscription;
+      return sub.id;
+    }
+    case "invoice.payment_succeeded":
+    case "invoice.payment_failed": {
+      const invoice = event.data.object as Stripe.Invoice;
+      return obterSubscriptionIdDeInvoice(invoice) ?? null;
+    }
+    default:
+      return null;
+  }
+}
 
 export async function POST(request: Request) {
   // Proteção mínima de webhook: rate limit por IP antes da validação de assinatura,
@@ -35,157 +70,56 @@ export async function POST(request: Request) {
   // no contexto da requisição (chamada server-to-server), RLS não se aplica.
   const admin = createServiceRoleClient();
 
-  // checkout.session.completed
-  // - Associa o stripe_subscription_id ao registro pendente
-  // - Ativa a assinatura imediatamente, eliminando a race condition com invoice.payment_succeeded
-  if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session;
-    const subscriptionDbId = session.metadata?.subscription_db_id;
-    const stripeSubscriptionId =
-      typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
+  // Idempotencia: tenta inserir o evento. Se ja existe e foi processado,
+  // retorna 200 imediatamente; se existe mas falhou antes, tenta novamente.
+  const { error: insertErr } = await admin
+    .from("stripe_events")
+    .insert({ event_id: event.id, type: event.type, payload: event as unknown as object });
 
-    if (subscriptionDbId && stripeSubscriptionId) {
-      const { data: sub } = await admin
-        .from("subscriptions")
-        .select("id, user_id, plan")
-        .eq("id", subscriptionDbId)
-        .maybeSingle();
-
-      if (sub) {
-        const now = new Date();
-        const periodEnd = new Date(now);
-        periodEnd.setMonth(periodEnd.getMonth() + 1);
-
-        await admin
-          .from("subscriptions")
-          .update({
-            stripe_subscription_id: stripeSubscriptionId,
-            status: "active",
-            current_period_start: now.toISOString(),
-            current_period_end: periodEnd.toISOString(),
-            updated_at: now.toISOString(),
-          })
-          .eq("id", sub.id);
-
-        await admin.from("profiles").update({ plan: sub.plan }).eq("id", sub.user_id);
-      }
+  if (insertErr?.code === "23505") {
+    const { data: existing } = await admin
+      .from("stripe_events")
+      .select("processed_at")
+      .eq("event_id", event.id)
+      .maybeSingle();
+    if (existing?.processed_at) {
+      return NextResponse.json({ ok: true, deduplicated: true });
     }
+    // Existe mas nao foi processado: prosseguir com a tentativa.
+  } else if (insertErr) {
+    console.error("[webhook] erro ao registrar evento Stripe:", insertErr.message);
+    return NextResponse.json({ error: "event_store_failed" }, { status: 500 });
   }
 
-  // invoice.payment_succeeded
-  // - Ativa/renova a assinatura com datas reais do periodo de cobranca
-  // - Fallback via metadados do Stripe cobre casos onde o evento chega antes do checkout.session.completed
-  if (event.type === "invoice.payment_succeeded") {
-    const invoice = event.data.object as Stripe.Invoice;
-    const stripeSubscriptionId = obterSubscriptionIdDeInvoice(invoice);
+  try {
+    if (EVENTOS_TRATADOS.has(event.type)) {
+      const subscriptionId = extrairSubscriptionId(event);
+      if (subscriptionId) {
+        // `customer.subscription.deleted` carrega o objeto Subscription completo no payload;
+        // demais eventos podem trazer apenas o id. A sync busca via Stripe quando necessario.
+        const stripeSubscription =
+          event.type === "customer.subscription.deleted" ||
+          event.type === "customer.subscription.updated" ||
+          event.type === "customer.subscription.created"
+            ? (event.data.object as Stripe.Subscription)
+            : undefined;
 
-    if (!stripeSubscriptionId) return NextResponse.json({ ok: true });
-
-    let sub: { id: string; user_id: string; plan: string } | null = null;
-
-    const { data: subByStripeId } = await admin
-      .from("subscriptions")
-      .select("id, user_id, plan")
-      .eq("stripe_subscription_id", stripeSubscriptionId)
-      .maybeSingle();
-
-    sub = subByStripeId ?? null;
-
-    // Fallback: recupera metadados da assinatura no Stripe para encontrar o registro no banco
-    if (!sub) {
-      try {
-        const stripeSub = await retrieveStripeSubscription(stripeSubscriptionId);
-        const subscriptionDbId = stripeSub.metadata?.subscription_db_id;
-
-        if (subscriptionDbId) {
-          const { data: subByDbId } = await admin
-            .from("subscriptions")
-            .select("id, user_id, plan")
-            .eq("id", subscriptionDbId)
-            .maybeSingle();
-
-          if (subByDbId) {
-            sub = subByDbId;
-            await admin
-              .from("subscriptions")
-              .update({
-                stripe_subscription_id: stripeSubscriptionId,
-                updated_at: new Date().toISOString(),
-              })
-              .eq("id", sub.id);
-          }
-        }
-      } catch (err) {
-        console.error("[webhook] Erro ao buscar assinatura Stripe para fallback:", err);
+        await sincronizarAssinaturaDoStripe(admin, subscriptionId, { stripeSubscription });
       }
     }
 
-    if (!sub) return NextResponse.json({ ok: true });
-
-    const periodStart = invoice.period_start ? new Date(invoice.period_start * 1000) : new Date();
-    const periodEnd = invoice.period_end
-      ? new Date(invoice.period_end * 1000)
-      : (() => {
-          const d = new Date(periodStart);
-          d.setMonth(d.getMonth() + 1);
-          return d;
-        })();
-
     await admin
-      .from("subscriptions")
-      .update({
-        status: "active",
-        current_period_start: periodStart.toISOString(),
-        current_period_end: periodEnd.toISOString(),
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", sub.id);
+      .from("stripe_events")
+      .update({ processed_at: new Date().toISOString(), error: null })
+      .eq("event_id", event.id);
 
-    await admin.from("profiles").update({ plan: sub.plan }).eq("id", sub.user_id);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : "erro desconhecido";
+    console.error(`[webhook] Erro processando ${event.type}:`, message);
+    await admin.from("stripe_events").update({ error: message }).eq("event_id", event.id);
+    // Retorna 500 para que o Stripe re-tente; o INSERT inicial nao ira recriar a linha,
+    // mas como processed_at continua null, o re-tentativa entra pelo caminho normal.
+    return NextResponse.json({ error: "processing_failed" }, { status: 500 });
   }
-
-  // invoice.payment_failed
-  // - Marca assinatura como inadimplente
-  if (event.type === "invoice.payment_failed") {
-    const invoice = event.data.object as Stripe.Invoice;
-    const stripeSubscriptionId = obterSubscriptionIdDeInvoice(invoice);
-
-    if (!stripeSubscriptionId) return NextResponse.json({ ok: true });
-
-    const { data: sub } = await admin
-      .from("subscriptions")
-      .select("id")
-      .eq("stripe_subscription_id", stripeSubscriptionId)
-      .maybeSingle();
-
-    if (!sub) return NextResponse.json({ ok: true });
-
-    await admin
-      .from("subscriptions")
-      .update({ status: "overdue", updated_at: new Date().toISOString() })
-      .eq("id", sub.id);
-  }
-
-  // customer.subscription.deleted
-  // - Cancela a assinatura e remove o plano do perfil
-  if (event.type === "customer.subscription.deleted") {
-    const stripeSub = event.data.object as Stripe.Subscription;
-
-    const { data: sub } = await admin
-      .from("subscriptions")
-      .select("id, user_id")
-      .eq("stripe_subscription_id", stripeSub.id)
-      .maybeSingle();
-
-    if (!sub) return NextResponse.json({ ok: true });
-
-    await admin
-      .from("subscriptions")
-      .update({ status: "cancelled", updated_at: new Date().toISOString() })
-      .eq("id", sub.id);
-
-    await admin.from("profiles").update({ plan: null }).eq("id", sub.user_id);
-  }
-
-  return NextResponse.json({ ok: true });
 }

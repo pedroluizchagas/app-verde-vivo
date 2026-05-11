@@ -1,0 +1,51 @@
+-- Baseline da Fase 03.
+--
+-- Esta migracao NAO executa DDL. Ela serve apenas como marco
+-- documentando que os arquivos abaixo, antes em `scripts/` e agora
+-- preservados em `scripts/legacy-migrations/`, ja foram aplicados em
+-- producao na ordem em que aparecem listados.
+--
+-- A partir de agora, toda nova migracao deve ser criada em
+-- `supabase/migrations/` no formato `YYYYMMDDHHMMSS_descricao.sql`,
+-- compativel com o Supabase CLI.
+--
+-- Legado (NAO re-aplicar): scripts/legacy-migrations/
+--   001_create_tables.sql
+--   002_create_profile_trigger.sql
+--   003_create_finance_tables.sql
+--   004_create_inventory_tables.sql
+--   007_drop_team_chat.sql
+--   008_add_labor_cost.sql
+--   009_create_notes.sql
+--   009_partner_credits.sql
+--   010_create_tasks.sql
+--   010_user_preferences.sql
+--   011_financial_categories_kind.sql
+--   012_create_maintenance.sql
+--   013_create_service_orders.sql
+--   014_create_service_order_items.sql
+--   015_alter_service_order_items_add_unit.sql
+--   016_alter_profiles_brand.sql
+--   017_alter_appointments_client_optional.sql
+--   017_alter_profiles_push.sql
+--   018_alter_appointments_add_type_location_all_day.sql
+--   018_create_device_tokens.sql
+--   019_alter_appointments_add_end_date.sql
+--   019_secure_device_tokens.sql
+--   020_alter_plan_executions_add_details.sql
+--   021_alter_clients_add_avatar.sql
+--   022_alter_profiles_brand_subtitle_fit.sql
+--   023_subscriptions.sql
+--   024_add_cpf_cnpj_to_profiles.sql
+--   025_add_payment_link_to_subscriptions.sql
+--   026_add_trial_ends_at_to_profiles.sql
+--   027_migrate_asaas_to_stripe.sql
+--   028_harden_supabase_security.sql
+--   029_disable_pg_graphql_and_restrict_trigger_functions.sql
+--   030_remove_unused_pg_graphql_and_harden_default_table_privileges.sql
+--   031_optimize_rls_auth_initplan.sql
+--   032_fix_device_tokens_conflict.sql
+--   033_subscriptions_owner_policies.sql
+--
+-- DOWN: noop (arquivo de marco, nao executa DDL).
+select 1;

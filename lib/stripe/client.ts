@@ -37,36 +37,34 @@ export async function getOrCreateStripeCustomer(
 
 /**
  * Cria uma Checkout Session do Stripe para assinar um plano.
- * O subscriptionDbId e passado nos metadados para o webhook conseguir
- * associar o pagamento ao registro correto no banco.
+ * O user_id e passado nos metadados (tanto da session quanto da subscription)
+ * para o webhook localizar/criar o registro local via lib/stripe/sync.ts.
+ *
+ * Aceita um idempotencyKey opcional do client: protege contra duplo clique
+ * e contra retentativas que gerariam multiplas sessions de checkout.
  */
 export async function createStripeCheckoutSession(params: {
   stripeCustomerId: string;
   priceId: string;
   userId: string;
-  subscriptionDbId: string;
   successUrl: string;
   cancelUrl: string;
+  idempotencyKey?: string;
 }): Promise<{ url: string; sessionId: string }> {
   const stripe = getStripe();
 
-  const session = await stripe.checkout.sessions.create({
-    customer: params.stripeCustomerId,
-    mode: "subscription",
-    line_items: [{ price: params.priceId, quantity: 1 }],
-    success_url: params.successUrl,
-    cancel_url: params.cancelUrl,
-    metadata: {
-      user_id: params.userId,
-      subscription_db_id: params.subscriptionDbId,
+  const session = await stripe.checkout.sessions.create(
+    {
+      customer: params.stripeCustomerId,
+      mode: "subscription",
+      line_items: [{ price: params.priceId, quantity: 1 }],
+      success_url: params.successUrl,
+      cancel_url: params.cancelUrl,
+      metadata: { user_id: params.userId },
+      subscription_data: { metadata: { user_id: params.userId } },
     },
-    subscription_data: {
-      metadata: {
-        user_id: params.userId,
-        subscription_db_id: params.subscriptionDbId,
-      },
-    },
-  });
+    params.idempotencyKey ? { idempotencyKey: params.idempotencyKey } : undefined,
+  );
 
   if (!session.url) throw new Error("Stripe nao retornou URL de checkout");
   return { url: session.url, sessionId: session.id };
