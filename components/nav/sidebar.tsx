@@ -171,7 +171,6 @@ export function Sidebar({
             <div className="flex items-center gap-2.5 flex-1 min-w-0">
               <div className="h-8 w-8 rounded-lg bg-primary/20 flex items-center justify-center shrink-0 overflow-hidden">
                 {profile?.watermark_base64 ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={profile.watermark_base64}
                     alt="Logo"

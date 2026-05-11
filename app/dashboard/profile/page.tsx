@@ -48,7 +48,6 @@ export default async function ProfilePage() {
           <div className="flex items-center gap-4">
             {/* Avatar */}
             <div className="h-16 w-16 rounded-full border-2 border-border bg-muted overflow-hidden shrink-0">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={profile?.avatar_url || "/placeholder-user.jpg"}
                 alt="Avatar"

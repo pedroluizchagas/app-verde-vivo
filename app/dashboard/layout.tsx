@@ -34,9 +34,7 @@ export default async function DashboardLayout({ children }: { children: React.Re
     .eq("id", user!.id)
     .maybeSingle();
 
-  const profile = profileRaw as
-    | (ProfileRow & { avatar_url?: string | null })
-    | null;
+  const profile = profileRaw as (ProfileRow & { avatar_url?: string | null }) | null;
 
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "";

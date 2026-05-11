@@ -44,7 +44,7 @@ export function QuickActionForm({ planId }: { planId: string }) {
   const [photos, setPhotos] = useState<string[]>([]);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       try {
         type PlanoLista = {
           default_labor_cost: number;
@@ -86,6 +86,8 @@ export function QuickActionForm({ planId }: { planId: string }) {
         if (d && Array.isArray(d.pests)) setPests(d.pests);
       } catch {}
     })();
+    // supabase é cliente singleton; reagir só a planId.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId]);
 
   const totals = useMemo(() => {
@@ -166,18 +168,16 @@ export function QuickActionForm({ planId }: { planId: string }) {
         photos,
       };
 
-      const { error } = await supabase
-        .from("plan_executions")
-        .insert([
-          {
-            plan_id: planId,
-            cycle,
-            status: "done",
-            notes: noteText,
-            final_amount: totals.total,
-            details: payloadDetails,
-          },
-        ]);
+      const { error } = await supabase.from("plan_executions").insert([
+        {
+          plan_id: planId,
+          cycle,
+          status: "done",
+          notes: noteText,
+          final_amount: totals.total,
+          details: payloadDetails,
+        },
+      ]);
       if (error) throw error;
 
       setOk(true);

@@ -27,7 +27,7 @@ export function BrandForm() {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -52,6 +52,8 @@ export function BrandForm() {
       setWatermarkFit(profile?.watermark_fit ?? "contain");
       setLoading(false);
     })();
+    // supabase é cliente singleton estável; rodar uma vez ao montar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -178,7 +180,6 @@ export function BrandForm() {
         {previewUrl ? (
           <div className="flex flex-col gap-3">
             <div className="relative rounded-xl border border-border overflow-hidden">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={previewUrl}
                 alt="Prévia do ícone"
@@ -215,7 +216,6 @@ export function BrandForm() {
               <div className="flex items-center gap-3">
                 {/* Preview circular */}
                 <div className="h-10 w-10 rounded-lg bg-primary/20 flex items-center justify-center shrink-0 overflow-hidden border border-border">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={previewUrl}
                     alt="Preview sidebar"

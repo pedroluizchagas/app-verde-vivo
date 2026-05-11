@@ -63,9 +63,7 @@ export function ExportMaintenanceICSButton({ planId }: { planId: string }) {
       let start: Date | null = null;
       let end: Date | null = null;
       const title = `Manutenção: ${String(plan.title)}`;
-      const cliente = Array.isArray(plan.client)
-        ? (plan.client[0] ?? null)
-        : (plan.client ?? null);
+      const cliente = Array.isArray(plan.client) ? (plan.client[0] ?? null) : (plan.client ?? null);
       const location = String(cliente?.address ?? "");
 
       if (exec?.appointment_id) {

@@ -16,7 +16,12 @@ import type { MaintenancePlan, PlanExecution, MaintenanceTemplate } from "@/lib/
 
 type PlanoLista = Pick<
   MaintenancePlan,
-  "id" | "title" | "status" | "default_description" | "preferred_weekday" | "preferred_week_of_month"
+  | "id"
+  | "title"
+  | "status"
+  | "default_description"
+  | "preferred_weekday"
+  | "preferred_week_of_month"
 > & { client?: { name?: string | null } | { name?: string | null }[] | null };
 
 type ExecucaoLista = Pick<PlanExecution, "id" | "plan_id" | "status" | "created_at">;
@@ -187,9 +192,9 @@ export default async function MaintenancePage() {
             const waterFreq = waterMatch ? waterMatch[1] : null;
 
             const tmpl = templates[p.id];
-            const schedule = (tmpl?.details?.schedule ?? null) as
-              | { fertilization_months?: number[] }
-              | null;
+            const schedule = (tmpl?.details?.schedule ?? null) as {
+              fertilization_months?: number[];
+            } | null;
             const months: number[] = Array.isArray(schedule?.fertilization_months)
               ? schedule.fertilization_months
               : [];

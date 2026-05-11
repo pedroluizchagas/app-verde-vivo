@@ -69,7 +69,9 @@ export function WorkOrderServiceNoteRich({
     return { materials, labor, discount, total };
   })();
   const nsu = String(order?.id || "").slice(0, 8);
-  const cliente = Array.isArray(order?.client) ? (order.client[0] ?? null) : (order?.client ?? null);
+  const cliente = Array.isArray(order?.client)
+    ? (order.client[0] ?? null)
+    : (order?.client ?? null);
 
   const buildImage = async () => {
     const bw = 360;

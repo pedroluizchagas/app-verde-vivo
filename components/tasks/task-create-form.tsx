@@ -79,7 +79,10 @@ export function TaskCreateForm() {
             </div>
             <div>
               <Label>Prioridade</Label>
-              <Select value={importance} onValueChange={(v) => setImportance(v as "low" | "medium" | "high")}>
+              <Select
+                value={importance}
+                onValueChange={(v) => setImportance(v as "low" | "medium" | "high")}
+              >
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>

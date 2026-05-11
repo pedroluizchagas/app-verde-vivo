@@ -54,9 +54,8 @@ export function calcularKpisDashboard(input: ResultadosKpisInput): DashboardKpis
   const monthResult = input.monthIncome - input.monthExpense;
   const prevMonthResult = input.prevMonthIncome - input.prevMonthExpense;
 
-  const activeClientsCount = new Set(
-    input.recentAppointments.map(extrairClienteId).filter(Boolean),
-  ).size;
+  const activeClientsCount = new Set(input.recentAppointments.map(extrairClienteId).filter(Boolean))
+    .size;
   const prev30ActiveCount = new Set(input.prev30Appointments.map(extrairClienteId).filter(Boolean))
     .size;
 

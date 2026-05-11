@@ -110,12 +110,12 @@ export default async function StockPage() {
     lastExpense = ((expenseCandidates ?? []) as DespesaCandidata[])[0] ?? null;
   }
 
-  const recentMovementsNorm: MovementNormalizado[] = (
-    (recentMovements ?? []) as MovementRow[]
-  ).map((m) => ({
-    ...m,
-    product: Array.isArray(m.product) ? (m.product[0] ?? null) : (m.product ?? null),
-  }));
+  const recentMovementsNorm: MovementNormalizado[] = ((recentMovements ?? []) as MovementRow[]).map(
+    (m) => ({
+      ...m,
+      product: Array.isArray(m.product) ? (m.product[0] ?? null) : (m.product ?? null),
+    }),
+  );
 
   return (
     <div className="flex flex-col gap-4">

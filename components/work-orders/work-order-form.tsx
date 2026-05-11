@@ -66,7 +66,13 @@ export function WorkOrderForm({
   const [markupPct] = useState<number>(defaultMarkupPct || 0);
   const [discount, setDiscount] = useState<number>(0);
   const [items, setItems] = useState<
-    { product_id: string; quantity: number; unit_cost: number; unit_price: number; unit?: string }[]
+    {
+      product_id: string;
+      quantity: number;
+      unit_cost: number;
+      unit_price: number;
+      unit?: string;
+    }[]
   >(defaultItems);
   const [newProductId, setNewProductId] = useState<string | null>(null);
   const [newQuantity, setNewQuantity] = useState<number>(1);

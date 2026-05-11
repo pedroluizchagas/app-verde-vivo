@@ -37,7 +37,7 @@ export function CpfCnpjForm() {
   const [value, setValue] = useState("");
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       const {
         data: { user },
       } = await supabase.auth.getUser();
@@ -55,6 +55,8 @@ export function CpfCnpjForm() {
       setValue(raw ? formatCpfCnpj(raw) : "");
       setLoading(false);
     })();
+    // supabase é cliente singleton estável; rodar uma vez ao montar.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

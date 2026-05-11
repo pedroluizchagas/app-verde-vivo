@@ -57,9 +57,7 @@ export function UpcomingAppointmentsCard({ appointments }: Props) {
                   });
               const isCompleted = a.status === "completed";
               const title = a.title || (a.type ? TYPE_LABELS[a.type] : null) || "Compromisso";
-              const cliente = Array.isArray(a.client)
-                ? (a.client[0] ?? null)
-                : (a.client ?? null);
+              const cliente = Array.isArray(a.client) ? (a.client[0] ?? null) : (a.client ?? null);
               const clientName = cliente?.name ?? "";
 
               return (

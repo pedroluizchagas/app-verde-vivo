@@ -122,7 +122,7 @@ export function CategorySeedButton() {
   // Auto-seed on first load if no categories exist for the user
   useEffect(() => {
     let mounted = true;
-    (async () => {
+    void (async () => {
       try {
         const {
           data: { user },
@@ -143,6 +143,8 @@ export function CategorySeedButton() {
     return () => {
       mounted = false;
     };
+    // supabase é singleton; `seed` é estável (definido no escopo do componente).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

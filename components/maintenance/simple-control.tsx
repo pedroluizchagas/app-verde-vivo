@@ -66,7 +66,7 @@ export function MaintenanceSimpleControl({
   const Icon = config.icon;
 
   useEffect(() => {
-    (async () => {
+    void (async () => {
       try {
         const { data: plan } = await supabase
           .from("maintenance_plans")
@@ -82,7 +82,9 @@ export function MaintenanceSimpleControl({
             .eq("plan_id", planId)
             .eq("cycle", "template")
             .maybeSingle();
-          const detalhesTmpl = (tmpl as { details?: { schedule?: Record<string, unknown> | null } | null } | null)?.details;
+          const detalhesTmpl = (
+            tmpl as { details?: { schedule?: Record<string, unknown> | null } | null } | null
+          )?.details;
           const schedule = (detalhesTmpl?.schedule ?? null) as {
             fertilization_months?: number[];
             pests_months?: number[];
@@ -119,6 +121,8 @@ export function MaintenanceSimpleControl({
         setNextDate(d.toLocaleDateString("pt-BR"));
       } catch {}
     })();
+    // supabase é singleton; `type` é prop estável dentro do mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [planId]);
 
   const markDone = async () => {

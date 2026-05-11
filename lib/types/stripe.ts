@@ -11,11 +11,13 @@ import type Stripe from "stripe";
 
 type ComCamposLegado<T> = T & Record<string, unknown>;
 
-export function obterPeriodoSubscription(
-  sub: Stripe.Subscription,
-): { start?: number; end?: number } {
+export function obterPeriodoSubscription(sub: Stripe.Subscription): {
+  start?: number;
+  end?: number;
+} {
   const compat = sub as ComCamposLegado<Stripe.Subscription>;
-  const start = typeof compat.current_period_start === "number" ? compat.current_period_start : undefined;
+  const start =
+    typeof compat.current_period_start === "number" ? compat.current_period_start : undefined;
   const end = typeof compat.current_period_end === "number" ? compat.current_period_end : undefined;
   return { start, end };
 }

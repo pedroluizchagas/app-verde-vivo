@@ -55,9 +55,7 @@ export function AppointmentForm({ clients, orders, appointment }: AppointmentFor
   const [status, setStatus] = useState(appointment?.status || "scheduled");
   const [type, setType] = useState(appointment?.type || "service");
   const [location, setLocation] = useState(appointment?.location || "");
-  const [allDay, setAllDay] = useState(
-    Boolean(appointment?.all_day) || Boolean(allDayFromQuery),
-  );
+  const [allDay, setAllDay] = useState(Boolean(appointment?.all_day) || Boolean(allDayFromQuery));
 
   useEffect(() => {
     if (!planIdFromQuery) return;
@@ -70,10 +68,7 @@ export function AppointmentForm({ clients, orders, appointment }: AppointmentFor
       .then(({ data: planRaw }) => {
         type PlanoEmbutido = {
           client_id?: string;
-          client?:
-            | { id?: string; address?: string }
-            | { id?: string; address?: string }[]
-            | null;
+          client?: { id?: string; address?: string } | { id?: string; address?: string }[] | null;
         };
         const plan = planRaw as PlanoEmbutido | null;
         if (!plan) return;

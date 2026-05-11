@@ -12,7 +12,9 @@
     "lint": "eslint .",
     "start": "next start",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "check": "pnpm lint && pnpm typecheck && pnpm format:check"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",

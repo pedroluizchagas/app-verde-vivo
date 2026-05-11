@@ -26,7 +26,6 @@ export function DashboardHeader({ fullName, avatarUrl, email }: Props) {
           href="/dashboard/profile"
           className="flex items-center gap-2.5 bg-card rounded-full py-1.5 pl-1.5 pr-4 border border-border shadow-sm hover:bg-accent transition-colors"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={avatarUrl || "/placeholder-user.jpg"}
             alt="Avatar"

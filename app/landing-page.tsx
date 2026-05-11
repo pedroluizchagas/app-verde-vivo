@@ -610,7 +610,6 @@ function DashboardMockup() {
   const [mockLightMode, setMockLightMode] = useState(false);
 
   /* ── Tokens de tema do mockup (shadow do T global) ── */
-  // eslint-disable-next-line @typescript-eslint/no-shadow
   const T = mockLightMode
     ? {
         bg: "#ffffff",

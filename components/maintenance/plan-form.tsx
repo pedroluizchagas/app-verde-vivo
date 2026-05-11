@@ -135,7 +135,7 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: PlanoInicia
   const [enablePests, setEnablePests] = useState<boolean>(false);
 
   useState(() => {
-    (async () => {
+    void (async () => {
       try {
         const {
           data: { user },
@@ -154,7 +154,9 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: PlanoInicia
             .eq("plan_id", initialPlan.id)
             .eq("cycle", "template")
             .maybeSingle();
-          const detalhesTmpl = (tmpl as { details?: { schedule?: Record<string, unknown> | null } | null } | null)?.details;
+          const detalhesTmpl = (
+            tmpl as { details?: { schedule?: Record<string, unknown> | null } | null } | null
+          )?.details;
           const schedule = (detalhesTmpl?.schedule ?? null) as {
             fertilization_months?: number[];
             pests_months?: number[];

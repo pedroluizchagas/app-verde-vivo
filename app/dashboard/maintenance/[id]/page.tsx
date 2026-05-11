@@ -159,7 +159,9 @@ export default async function MaintenanceDetailPage({
               <MaintenanceServiceNoteRich
                 planTitle={String(plan.title)}
                 client={planClient}
-                execution={lastDone as Parameters<typeof MaintenanceServiceNoteRich>[0]["execution"]}
+                execution={
+                  lastDone as Parameters<typeof MaintenanceServiceNoteRich>[0]["execution"]
+                }
               />
             ) : lastDone.notes ? (
               <div className="rounded-lg bg-muted p-3 text-[13px] whitespace-pre-wrap">

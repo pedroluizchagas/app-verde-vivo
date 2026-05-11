@@ -27,7 +27,10 @@ interface OrderItemRow {
   unit_cost: number;
   unit_price: number;
   unit?: string | null;
-  product?: { name?: string | null; unit?: string | null } | { name?: string | null; unit?: string | null }[] | null;
+  product?:
+    | { name?: string | null; unit?: string | null }
+    | { name?: string | null; unit?: string | null }[]
+    | null;
 }
 
 interface AppointmentEmbutido {
@@ -115,10 +118,7 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
   const extraCharges = Number(order.extra_charges ?? 0);
   const discount = Number(order.discount ?? 0);
 
-  const materialsBase = items.reduce(
-    (s, it) => s + Number(it.unit_cost) * Number(it.quantity),
-    0,
-  );
+  const materialsBase = items.reduce((s, it) => s + Number(it.unit_cost) * Number(it.quantity), 0);
   const materialsPrice = items.reduce(
     (s, it) => s + Number(it.unit_price) * Number(it.quantity),
     0,
