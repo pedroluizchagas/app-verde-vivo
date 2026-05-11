@@ -1,52 +1,52 @@
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { User, Clock } from "lucide-react"
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { User, Clock } from "lucide-react";
 
 interface Budget {
-  id: string
-  title: string
-  description: string | null
-  total_amount: number
-  status: string
-  valid_until: string | null
-  created_at: string
-  client: { name: string } | null
+  id: string;
+  title: string;
+  description: string | null;
+  total_amount: number;
+  status: string;
+  valid_until: string | null;
+  created_at: string;
+  client: { name: string } | null;
 }
 
 export const statusLabels: Record<string, string> = {
   pending: "Pendente",
   approved: "Aprovado",
   rejected: "Rejeitado",
-}
+};
 
 export const statusColors: Record<string, string> = {
   pending: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   approved: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   rejected: "bg-destructive/10 text-destructive",
-}
+};
 
 const statusBorderColors: Record<string, string> = {
   pending: "border-l-amber-500",
   approved: "border-l-emerald-500",
   rejected: "border-l-red-400",
-}
+};
 
 const fmt = (v: number) =>
-  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
+  new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
 export function BudgetCard({ budget }: { budget: Budget }) {
-  const statusLabel = statusLabels[budget.status] ?? budget.status
-  const statusColor = statusColors[budget.status] ?? "bg-muted text-muted-foreground"
-  const borderColor = statusBorderColors[budget.status] ?? "border-l-border"
-  const total = Number(budget.total_amount || 0)
+  const statusLabel = statusLabels[budget.status] ?? budget.status;
+  const statusColor = statusColors[budget.status] ?? "bg-muted text-muted-foreground";
+  const borderColor = statusBorderColors[budget.status] ?? "border-l-border";
+  const total = Number(budget.total_amount || 0);
 
-  const now = new Date()
-  const validUntil = budget.valid_until ? new Date(budget.valid_until) : null
-  const isExpired = validUntil && validUntil < now && budget.status === "pending"
+  const now = new Date();
+  const validUntil = budget.valid_until ? new Date(budget.valid_until) : null;
+  const isExpired = validUntil && validUntil < now && budget.status === "pending";
 
   const validStr = validUntil
     ? validUntil.toLocaleDateString("pt-BR", { day: "2-digit", month: "short" })
-    : null
+    : null;
 
   return (
     <Link href={`/dashboard/budgets/${budget.id}`}>
@@ -57,9 +57,7 @@ export function BudgetCard({ budget }: { budget: Budget }) {
           <div className="flex items-start gap-3">
             <div className="flex-1 min-w-0">
               <div className="flex items-start justify-between gap-2 mb-1">
-                <p className="font-semibold text-[14px] leading-tight truncate">
-                  {budget.title}
-                </p>
+                <p className="font-semibold text-[14px] leading-tight truncate">{budget.title}</p>
                 <span
                   className={`text-[10px] font-medium px-2 py-0.5 rounded-full shrink-0 ${statusColor}`}
                 >
@@ -90,14 +88,12 @@ export function BudgetCard({ budget }: { budget: Budget }) {
             </div>
 
             <div className="shrink-0 text-right">
-              <p className="text-[15px] font-bold leading-tight tabular-nums">
-                {fmt(total)}
-              </p>
+              <p className="text-[15px] font-bold leading-tight tabular-nums">{fmt(total)}</p>
               <p className="text-[10px] text-muted-foreground">total</p>
             </div>
           </div>
         </CardContent>
       </Card>
     </Link>
-  )
+  );
 }

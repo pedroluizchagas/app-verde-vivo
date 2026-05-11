@@ -1,55 +1,53 @@
-import type React from "react"
-import { redirect } from "next/navigation"
-import { headers } from "next/headers"
-import { createClient } from "@/lib/supabase/server"
-import { Sidebar } from "@/components/nav/sidebar"
-import { NotificationsProvider } from "@/components/dashboard/notifications-context"
-import { NotificationsShell } from "@/components/dashboard/notifications-shell"
+import type React from "react";
+import { redirect } from "next/navigation";
+import { headers } from "next/headers";
+import { createClient } from "@/lib/supabase/server";
+import { Sidebar } from "@/components/nav/sidebar";
+import { NotificationsProvider } from "@/components/dashboard/notifications-context";
+import { NotificationsShell } from "@/components/dashboard/notifications-shell";
 
-export default async function DashboardLayout({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const supabase = await createClient()
+export default async function DashboardLayout({ children }: { children: React.ReactNode }) {
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   if (!user) {
-    redirect("/auth/login")
+    redirect("/auth/login");
   }
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("full_name, avatar_url, company_name, company_subtitle, watermark_base64, watermark_fit, plan, trial_ends_at")
+    .select(
+      "full_name, avatar_url, company_name, company_subtitle, watermark_base64, watermark_fit, plan, trial_ends_at",
+    )
     .eq("id", user!.id)
-    .maybeSingle()
+    .maybeSingle();
 
-  const headersList = await headers()
-  const pathname = headersList.get("x-pathname") ?? ""
-  const isOnPlanPage = pathname.startsWith("/dashboard/plan")
+  const headersList = await headers();
+  const pathname = headersList.get("x-pathname") ?? "";
+  const isOnPlanPage = pathname.startsWith("/dashboard/plan");
 
-  const hasPlan = !!profile?.plan
+  const hasPlan = !!profile?.plan;
   const trialActive =
-    profile?.trial_ends_at != null && new Date(profile.trial_ends_at) > new Date()
-  const hasAccess = hasPlan || trialActive
+    profile?.trial_ends_at != null && new Date(profile.trial_ends_at) > new Date();
+  const hasAccess = hasPlan || trialActive;
 
   if (!hasAccess && !isOnPlanPage) {
-    redirect("/dashboard/plan")
+    redirect("/dashboard/plan");
   }
 
   const trialDaysLeft = trialActive
     ? Math.max(
         0,
         Math.ceil(
-          (new Date(profile!.trial_ends_at!).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
-        )
+          (new Date(profile!.trial_ends_at!).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+        ),
       )
-    : 0
+    : 0;
 
-  const now = new Date()
-  now.setHours(0, 0, 0, 0)
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
 
   const { data: nextAppointment } = await supabase
     .from("appointments")
@@ -60,7 +58,7 @@ export default async function DashboardLayout({
     .gte("scheduled_date", now.toISOString())
     .order("scheduled_date", { ascending: true })
     .limit(1)
-    .maybeSingle()
+    .maybeSingle();
 
   return (
     <div className="flex h-svh bg-sidebar overflow-hidden">
@@ -92,5 +90,5 @@ export default async function DashboardLayout({
         <NotificationsShell>{children}</NotificationsShell>
       </NotificationsProvider>
     </div>
-  )
+  );
 }

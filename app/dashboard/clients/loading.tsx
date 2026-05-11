@@ -1,4 +1,4 @@
-import { Card, CardContent } from "@/components/ui/card"
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Loading() {
   return (
@@ -31,5 +31,5 @@ export default function Loading() {
         ))}
       </div>
     </div>
-  )
+  );
 }

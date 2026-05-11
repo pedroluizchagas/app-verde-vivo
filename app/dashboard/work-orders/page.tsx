@@ -1,57 +1,50 @@
-import { createClient } from "@/lib/supabase/server"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Plus, ClipboardList, CheckCircle2, DollarSign, Loader2 } from "lucide-react"
-import { WorkOrderCard } from "@/components/work-orders/work-order-card"
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus, ClipboardList, CheckCircle2, DollarSign, Loader2 } from "lucide-react";
+import { WorkOrderCard } from "@/components/work-orders/work-order-card";
 
 export default async function WorkOrdersPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: orders } = await supabase
     .from("service_orders")
     .select("id, title, status, total_amount, created_at, client:clients(name)")
     .eq("gardener_id", user!.id)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
 
-  const allOrders = (orders || []) as any[]
+  const allOrders = (orders || []) as any[];
 
-  const activeOrders = allOrders.filter(
-    (o) => o.status === "draft" || o.status === "issued"
-  )
+  const activeOrders = allOrders.filter((o) => o.status === "draft" || o.status === "issued");
   const historyOrders = allOrders.filter(
-    (o) => o.status === "completed" || o.status === "cancelled"
-  )
-  const completedOrders = allOrders.filter((o) => o.status === "completed")
+    (o) => o.status === "completed" || o.status === "cancelled",
+  );
+  const completedOrders = allOrders.filter((o) => o.status === "completed");
 
-  const totalRevenue = completedOrders.reduce(
-    (s, o) => s + Number(o.total_amount || 0),
-    0
-  )
+  const totalRevenue = completedOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(v)
+    }).format(v);
 
   const fmtK = (v: number) => {
-    if (v >= 1000) return `R$\u00a0${(v / 1000).toFixed(1)}K`
-    return fmt(v)
-  }
+    if (v >= 1000) return `R$\u00a0${(v / 1000).toFixed(1)}K`;
+    return fmt(v);
+  };
 
   return (
     <div className="flex flex-col gap-4">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight">
-            Ordens de Serviço
-          </h1>
+          <h1 className="text-2xl font-bold tracking-tight">Ordens de Serviço</h1>
           <p className="text-[13px] text-muted-foreground mt-0.5">
             {allOrders.length} OS cadastrada
             {allOrders.length !== 1 ? "s" : ""}
@@ -77,12 +70,8 @@ export default async function WorkOrdersPage() {
                 <ClipboardList className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {allOrders.length}
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              ordens
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{allOrders.length}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">ordens</p>
           </CardContent>
         </Card>
 
@@ -96,9 +85,7 @@ export default async function WorkOrdersPage() {
                 <Loader2 className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {activeOrders.length}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{activeOrders.length}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
               ativa{activeOrders.length !== 1 ? "s" : ""}
             </p>
@@ -115,9 +102,7 @@ export default async function WorkOrdersPage() {
                 <CheckCircle2 className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {completedOrders.length}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{completedOrders.length}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">ordens</p>
           </CardContent>
         </Card>
@@ -132,12 +117,8 @@ export default async function WorkOrdersPage() {
                 <DollarSign className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[18px] font-bold leading-tight tabular-nums">
-              {fmtK(totalRevenue)}
-            </p>
-            <p className="text-[11px] text-muted-foreground mt-0.5">
-              concluídas
-            </p>
+            <p className="text-[18px] font-bold leading-tight tabular-nums">{fmtK(totalRevenue)}</p>
+            <p className="text-[11px] text-muted-foreground mt-0.5">concluídas</p>
           </CardContent>
         </Card>
       </div>
@@ -192,13 +173,11 @@ export default async function WorkOrdersPage() {
             </div>
           ) : (
             <div className="flex flex-col items-center justify-center gap-4 py-16 text-center">
-              <p className="text-sm text-muted-foreground">
-                Nenhuma OS no histórico.
-              </p>
+              <p className="text-sm text-muted-foreground">Nenhuma OS no histórico.</p>
             </div>
           )}
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

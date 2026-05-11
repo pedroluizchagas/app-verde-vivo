@@ -1,5 +1,22 @@
-import { z } from "zod"
-import { scheduleVisit, createBudget, updateBudgetStatus, updateStock, createClient, approveBudgetAndRecordIncome, recordServiceIncome, recordIncome, recordExpense, recordInventoryPurchase, recordPartnerCommission, createNote, createTask, createMaintenancePlan, generateMonthlyTask, closeMonthlyExecution } from "./actions"
+import { z } from "zod";
+import {
+  scheduleVisit,
+  createBudget,
+  updateBudgetStatus,
+  updateStock,
+  createClient,
+  approveBudgetAndRecordIncome,
+  recordServiceIncome,
+  recordIncome,
+  recordExpense,
+  recordInventoryPurchase,
+  recordPartnerCommission,
+  createNote,
+  createTask,
+  createMaintenancePlan,
+  generateMonthlyTask,
+  closeMonthlyExecution,
+} from "./actions";
 
 export const schemas = {
   create_client: z.object({
@@ -140,42 +157,76 @@ export const schemas = {
     status: z.enum(["paid", "pending"]).optional(),
     due_date: z.string().optional(),
   }),
-} as const
+} as const;
 
-type Intent = keyof typeof schemas
+type Intent = keyof typeof schemas;
 
-export const registry: Record<Intent, { schema: (typeof schemas)[Intent]; action: (userId: string, params: any, token?: string) => Promise<any>; critical?: boolean }> = {
+export const registry: Record<
+  Intent,
+  {
+    schema: (typeof schemas)[Intent];
+    action: (userId: string, params: any, token?: string) => Promise<any>;
+    critical?: boolean;
+  }
+> = {
   create_client: { schema: schemas.create_client, action: createClient },
   schedule_visit: { schema: schemas.schedule_visit, action: scheduleVisit },
   create_budget: { schema: schemas.create_budget, action: createBudget },
-  update_budget_status: { schema: schemas.update_budget_status, action: updateBudgetStatus, critical: true },
+  update_budget_status: {
+    schema: schemas.update_budget_status,
+    action: updateBudgetStatus,
+    critical: true,
+  },
   update_stock: { schema: schemas.update_stock, action: updateStock, critical: true },
-  approve_budget_and_record_income: { schema: schemas.approve_budget_and_record_income, action: approveBudgetAndRecordIncome, critical: true },
-  record_service_income: { schema: schemas.record_service_income, action: recordServiceIncome, critical: true },
+  approve_budget_and_record_income: {
+    schema: schemas.approve_budget_and_record_income,
+    action: approveBudgetAndRecordIncome,
+    critical: true,
+  },
+  record_service_income: {
+    schema: schemas.record_service_income,
+    action: recordServiceIncome,
+    critical: true,
+  },
   record_income: { schema: schemas.record_income, action: recordIncome, critical: true },
   record_expense: { schema: schemas.record_expense, action: recordExpense, critical: true },
-  record_inventory_purchase: { schema: schemas.record_inventory_purchase, action: recordInventoryPurchase, critical: true },
-  record_partner_commission: { schema: schemas.record_partner_commission, action: recordPartnerCommission, critical: true },
+  record_inventory_purchase: {
+    schema: schemas.record_inventory_purchase,
+    action: recordInventoryPurchase,
+    critical: true,
+  },
+  record_partner_commission: {
+    schema: schemas.record_partner_commission,
+    action: recordPartnerCommission,
+    critical: true,
+  },
   create_note: { schema: schemas.create_note, action: createNote },
   create_task: { schema: schemas.create_task, action: createTask },
-  create_maintenance_plan: { schema: schemas.create_maintenance_plan, action: createMaintenancePlan },
+  create_maintenance_plan: {
+    schema: schemas.create_maintenance_plan,
+    action: createMaintenancePlan,
+  },
   generate_monthly_task: { schema: schemas.generate_monthly_task, action: generateMonthlyTask },
-  close_monthly_execution: { schema: schemas.close_monthly_execution, action: closeMonthlyExecution, critical: true },
-}
+  close_monthly_execution: {
+    schema: schemas.close_monthly_execution,
+    action: closeMonthlyExecution,
+    critical: true,
+  },
+};
 
 export function validateIntent(intent: string, params: any) {
-  const entry = registry[intent as Intent]
-  if (!entry) return { ok: false, need: [], error: "Intent desconhecida" }
-  const parsed = entry.schema.safeParse(params)
+  const entry = registry[intent as Intent];
+  if (!entry) return { ok: false, need: [], error: "Intent desconhecida" };
+  const parsed = entry.schema.safeParse(params);
   if (!parsed.success) {
-    const issues = parsed.error.issues.map((i) => i.path.join("."))
-    return { ok: false, need: issues }
+    const issues = parsed.error.issues.map((i) => i.path.join("."));
+    return { ok: false, need: issues };
   }
-  return { ok: true, value: parsed.data, critical: !!entry.critical }
+  return { ok: true, value: parsed.data, critical: !!entry.critical };
 }
 
 export async function executeIntent(userId: string, intent: string, params: any, token?: string) {
-  const entry = registry[intent as Intent]
-  if (!entry) throw new Error("Intent desconhecida")
-  return await entry.action(userId, params, token)
+  const entry = registry[intent as Intent];
+  if (!entry) throw new Error("Intent desconhecida");
+  return await entry.action(userId, params, token);
 }

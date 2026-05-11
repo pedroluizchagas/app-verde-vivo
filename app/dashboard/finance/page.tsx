@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus,
   AlertCircle,
@@ -12,26 +12,26 @@ import {
   Banknote,
   ArrowUpRight,
   ArrowDownRight,
-} from "lucide-react"
-import { TransactionCard } from "@/components/finance/transaction-card"
-import { ExportButtons } from "@/components/finance/export-buttons"
+} from "lucide-react";
+import { TransactionCard } from "@/components/finance/transaction-card";
+import { ExportButtons } from "@/components/finance/export-buttons";
 
 function toISODate(d: Date) {
-  const year = d.getFullYear()
-  const month = String(d.getMonth() + 1).padStart(2, "0")
-  const day = String(d.getDate()).padStart(2, "0")
-  return `${year}-${month}-${day}`
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 export default async function FinancePage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
-  const today = new Date()
-  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1)
-  const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0)
+  const today = new Date();
+  const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+  const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0);
 
   const { data: monthTransactions } = await supabase
     .from("financial_transactions")
@@ -39,16 +39,16 @@ export default async function FinancePage() {
     .eq("gardener_id", user!.id)
     .gte("transaction_date", toISODate(startOfMonth))
     .lte("transaction_date", toISODate(endOfMonth))
-    .order("transaction_date", { ascending: false })
+    .order("transaction_date", { ascending: false });
 
   const { data: paidTransactions } = await supabase
     .from("financial_transactions")
     .select("amount, type, status")
     .eq("gardener_id", user!.id)
-    .eq("status", "paid")
+    .eq("status", "paid");
 
-  const in30 = new Date(today)
-  in30.setDate(in30.getDate() + 30)
+  const in30 = new Date(today);
+  in30.setDate(in30.getDate() + 30);
   const { data: pending30 } = await supabase
     .from("financial_transactions")
     .select("amount, type, due_date, description")
@@ -56,10 +56,10 @@ export default async function FinancePage() {
     .eq("status", "pending")
     .gte("due_date", toISODate(today))
     .lte("due_date", toISODate(in30))
-    .order("due_date", { ascending: true })
+    .order("due_date", { ascending: true });
 
-  const in7 = new Date(today)
-  in7.setDate(in7.getDate() + 7)
+  const in7 = new Date(today);
+  in7.setDate(in7.getDate() + 7);
   const { data: alerts } = await supabase
     .from("financial_transactions")
     .select("id, description, amount, type, due_date")
@@ -67,45 +67,39 @@ export default async function FinancePage() {
     .eq("status", "pending")
     .gte("due_date", toISODate(today))
     .lte("due_date", toISODate(in7))
-    .order("due_date", { ascending: true })
+    .order("due_date", { ascending: true });
 
   const monthIncome = (monthTransactions || [])
     .filter((t) => t.type === "income")
-    .reduce((sum, t) => sum + Number(t.amount), 0)
+    .reduce((sum, t) => sum + Number(t.amount), 0);
   const monthExpense = (monthTransactions || [])
     .filter((t) => t.type === "expense")
-    .reduce((sum, t) => sum + Number(t.amount), 0)
-  const monthResult = monthIncome - monthExpense
+    .reduce((sum, t) => sum + Number(t.amount), 0);
+  const monthResult = monthIncome - monthExpense;
 
   const currentBalance = (paidTransactions || []).reduce(
-    (sum, t) =>
-      sum + (t.type === "income" ? Number(t.amount) : -Number(t.amount)),
-    0
-  )
+    (sum, t) => sum + (t.type === "income" ? Number(t.amount) : -Number(t.amount)),
+    0,
+  );
 
   const forecastNext30 = (pending30 || []).reduce(
-    (sum, t) =>
-      sum + (t.type === "income" ? Number(t.amount) : -Number(t.amount)),
-    0
-  )
+    (sum, t) => sum + (t.type === "income" ? Number(t.amount) : -Number(t.amount)),
+    0,
+  );
 
   const currency = (value: number) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(value)
+    }).format(value);
 
   const monthLabel = today.toLocaleDateString("pt-BR", {
     month: "long",
     year: "numeric",
-  })
+  });
 
-  const incomeCount = (monthTransactions || []).filter(
-    (t) => t.type === "income"
-  ).length
-  const expenseCount = (monthTransactions || []).filter(
-    (t) => t.type === "expense"
-  ).length
+  const incomeCount = (monthTransactions || []).filter((t) => t.type === "income").length;
+  const expenseCount = (monthTransactions || []).filter((t) => t.type === "expense").length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -113,17 +107,10 @@ export default async function FinancePage() {
       <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Financeiro</h1>
-          <p className="text-[13px] text-muted-foreground mt-1 capitalize">
-            {monthLabel}
-          </p>
+          <p className="text-[13px] text-muted-foreground mt-1 capitalize">{monthLabel}</p>
         </div>
         <div className="flex gap-2">
-          <Button
-            asChild
-            variant="outline"
-            size="sm"
-            className="h-9 rounded-lg text-[13px]"
-          >
+          <Button asChild variant="outline" size="sm" className="h-9 rounded-lg text-[13px]">
             <Link href="/dashboard/finance/categories">Categorias</Link>
           </Button>
           <Button asChild size="icon" className="h-9 w-9 rounded-full">
@@ -156,9 +143,7 @@ export default async function FinancePage() {
             >
               {currency(currentBalance)}
             </p>
-            <p className="text-[10px] text-muted-foreground">
-              receitas − despesas pagas
-            </p>
+            <p className="text-[10px] text-muted-foreground">receitas − despesas pagas</p>
           </CardContent>
         </Card>
 
@@ -219,9 +204,7 @@ export default async function FinancePage() {
             >
               {currency(monthResult)}
             </p>
-            <p className="text-[10px] text-muted-foreground">
-              receitas − despesas do mês
-            </p>
+            <p className="text-[10px] text-muted-foreground">receitas − despesas do mês</p>
           </CardContent>
         </Card>
       </div>
@@ -231,9 +214,7 @@ export default async function FinancePage() {
         {/* Previsão de fluxo */}
         <Card className="py-0">
           <CardContent className="p-4">
-            <h2 className="text-[14px] font-semibold mb-3">
-              Previsão de fluxo (30 dias)
-            </h2>
+            <h2 className="text-[14px] font-semibold mb-3">Previsão de fluxo (30 dias)</h2>
             <div className="flex items-baseline gap-2 mb-3">
               <p
                 className={`text-xl font-bold tabular-nums ${
@@ -244,23 +225,16 @@ export default async function FinancePage() {
               >
                 {currency(forecastNext30)}
               </p>
-              <span className="text-[11px] text-muted-foreground">
-                em lançamentos pendentes
-              </span>
+              <span className="text-[11px] text-muted-foreground">em lançamentos pendentes</span>
             </div>
             {pending30 && pending30.length > 0 ? (
               <div className="flex flex-col divide-y divide-border/40">
                 {pending30.slice(0, 4).map((t: any, i: number) => (
-                  <div
-                    key={i}
-                    className="flex items-center justify-between py-2"
-                  >
+                  <div key={i} className="flex items-center justify-between py-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div
                         className={`h-5 w-5 rounded-full flex items-center justify-center shrink-0 ${
-                          t.type === "income"
-                            ? "bg-emerald-500/10"
-                            : "bg-red-500/10"
+                          t.type === "income" ? "bg-emerald-500/10" : "bg-red-500/10"
                         }`}
                       >
                         {t.type === "income" ? (
@@ -285,10 +259,10 @@ export default async function FinancePage() {
                         {currency(Number(t.amount))}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        {new Date(`${t.due_date}T12:00:00`).toLocaleDateString(
-                          "pt-BR",
-                          { day: "2-digit", month: "short" }
-                        )}
+                        {new Date(`${t.due_date}T12:00:00`).toLocaleDateString("pt-BR", {
+                          day: "2-digit",
+                          month: "short",
+                        })}
                       </p>
                     </div>
                   </div>
@@ -336,9 +310,7 @@ export default async function FinancePage() {
                         {currency(Number(a.amount))}
                       </p>
                       <p className="text-[10px] text-muted-foreground">
-                        {new Date(
-                          `${a.due_date}T12:00:00`
-                        ).toLocaleDateString("pt-BR", {
+                        {new Date(`${a.due_date}T12:00:00`).toLocaleDateString("pt-BR", {
                           day: "2-digit",
                           month: "short",
                         })}
@@ -359,9 +331,7 @@ export default async function FinancePage() {
       {/* Lançamentos do mês */}
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-[14px] font-semibold">
-            Lançamentos do mês
-          </h2>
+          <h2 className="text-[14px] font-semibold">Lançamentos do mês</h2>
           <ExportButtons
             transactions={(monthTransactions || []).map((t) => ({
               id: t.id,
@@ -454,5 +424,5 @@ export default async function FinancePage() {
         </Tabs>
       </div>
     </div>
-  )
+  );
 }

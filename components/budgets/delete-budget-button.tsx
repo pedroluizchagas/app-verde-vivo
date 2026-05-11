@@ -1,9 +1,9 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,35 +14,35 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Trash2 } from "lucide-react"
+} from "@/components/ui/alert-dialog";
+import { Trash2 } from "lucide-react";
 
 export function DeleteBudgetButton({
   budgetId,
   budgetTitle,
 }: {
-  budgetId: string
-  budgetTitle: string
+  budgetId: string;
+  budgetTitle: string;
 }) {
-  const router = useRouter()
-  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter();
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async () => {
-    setIsDeleting(true)
-    const supabase = createClient()
+    setIsDeleting(true);
+    const supabase = createClient();
 
     try {
-      const { error } = await supabase.from("budgets").delete().eq("id", budgetId)
+      const { error } = await supabase.from("budgets").delete().eq("id", budgetId);
 
-      if (error) throw error
+      if (error) throw error;
 
-      router.push("/dashboard/budgets")
-      router.refresh()
+      router.push("/dashboard/budgets");
+      router.refresh();
     } catch (error) {
-      console.error("Error deleting budget:", error)
-      setIsDeleting(false)
+      console.error("Error deleting budget:", error);
+      setIsDeleting(false);
     }
-  }
+  };
 
   return (
     <AlertDialog>
@@ -71,5 +71,5 @@ export function DeleteBudgetButton({
         </AlertDialogFooter>
       </AlertDialogContent>
     </AlertDialog>
-  )
+  );
 }

@@ -1,66 +1,54 @@
-"use client"
+"use client";
 
-import {
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts"
-import { useTheme } from "next-themes"
-import { useSyncExternalStore } from "react"
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { useTheme } from "next-themes";
+import { useSyncExternalStore } from "react";
 
 type ChartEntry = {
-  month: string
-  receita: number
-  despesa: number
-}
+  month: string;
+  receita: number;
+  despesa: number;
+};
 
 function formatCurrency(v: number) {
   return new Intl.NumberFormat("pt-BR", {
     style: "currency",
     currency: "BRL",
-  }).format(v)
+  }).format(v);
 }
 
 function formatAxis(v: number) {
-  if (v >= 1000) return `${(v / 1000).toFixed(0)}K`
-  return String(v)
+  if (v >= 1000) return `${(v / 1000).toFixed(0)}K`;
+  return String(v);
 }
 
 export function MonthlyChart({ data }: { data: ChartEntry[] }) {
-  const { resolvedTheme } = useTheme()
+  const { resolvedTheme } = useTheme();
   const mounted = useSyncExternalStore(
     () => () => {},
     () => true,
-    () => false
-  )
+    () => false,
+  );
 
-  const isDark = !mounted || resolvedTheme === "dark"
+  const isDark = !mounted || resolvedTheme === "dark";
 
   // Visao diaria quando ha mais de 12 entradas (dias do mes)
-  const isDailyView = data.length > 12
+  const isDailyView = data.length > 12;
 
-  const gridStroke = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)"
-  const axisColor = isDark ? "#666" : "#9a9a9a"
-  const despesaFill = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.07)"
-  const tooltipBg = isDark ? "#1a1a1a" : "#ffffff"
-  const tooltipBorder = isDark ? "none" : "1px solid #e8e3dc"
-  const tooltipColor = isDark ? "#fff" : "#1a1a1a"
-  const tooltipLabelColor = isDark ? "#888" : "#aaa"
-  const cursorFill = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)"
+  const gridStroke = isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.06)";
+  const axisColor = isDark ? "#666" : "#9a9a9a";
+  const despesaFill = isDark ? "rgba(255,255,255,0.09)" : "rgba(0,0,0,0.07)";
+  const tooltipBg = isDark ? "#1a1a1a" : "#ffffff";
+  const tooltipBorder = isDark ? "none" : "1px solid #e8e3dc";
+  const tooltipColor = isDark ? "#fff" : "#1a1a1a";
+  const tooltipLabelColor = isDark ? "#888" : "#aaa";
+  const cursorFill = isDark ? "rgba(255,255,255,0.03)" : "rgba(0,0,0,0.03)";
 
   return (
     <div className="h-[220px] w-full">
       <ResponsiveContainer width="100%" height="100%">
         <BarChart data={data} barGap={2} barCategoryGap="20%">
-          <CartesianGrid
-            strokeDasharray="3 3"
-            stroke={gridStroke}
-            vertical={false}
-          />
+          <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
           <XAxis
             dataKey="month"
             axisLine={false}
@@ -116,5 +104,5 @@ export function MonthlyChart({ data }: { data: ChartEntry[] }) {
         </BarChart>
       </ResponsiveContainer>
     </div>
-  )
+  );
 }

@@ -1,62 +1,53 @@
-"use client"
+"use client";
 
-import { Card, CardContent } from "@/components/ui/card"
-import { Check, X, Clock, Circle } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Card, CardContent } from "@/components/ui/card";
+import { Check, X, Clock, Circle } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface TimelineEntry {
-  key: string
-  status: "done" | "skipped" | "pending" | "open"
-  isCurrentMonth: boolean
-  label: string
+  key: string;
+  status: "done" | "skipped" | "pending" | "open";
+  isCurrentMonth: boolean;
+  label: string;
 }
 
 export function MaintenanceTimeline({
   executions,
   months = 6,
 }: {
-  executions: any[]
-  months?: number
+  executions: any[];
+  months?: number;
 }) {
-  const now = new Date()
+  const now = new Date();
 
-  const entries: TimelineEntry[] = []
+  const entries: TimelineEntry[] = [];
   for (let i = months - 1; i >= 0; i--) {
-    const d = new Date(now.getFullYear(), now.getMonth() - i, 1)
-    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`
-    const shortMonth = d
-      .toLocaleString("pt-BR", { month: "short" })
-      .replace(".", "")
-    const label =
-      shortMonth.charAt(0).toUpperCase() + shortMonth.slice(1)
+    const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+    const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+    const shortMonth = d.toLocaleString("pt-BR", { month: "short" }).replace(".", "");
+    const label = shortMonth.charAt(0).toUpperCase() + shortMonth.slice(1);
 
-    const exec = (executions || []).find(
-      (e: any) => String(e.cycle) === key
-    )
-    const rawStatus = exec ? String(exec.status) : "pending"
-    const isCurrentMonth = i === 0
+    const exec = (executions || []).find((e: any) => String(e.cycle) === key);
+    const rawStatus = exec ? String(exec.status) : "pending";
+    const isCurrentMonth = i === 0;
 
     entries.push({
       key,
       status: rawStatus as TimelineEntry["status"],
       isCurrentMonth,
       label,
-    })
+    });
   }
 
-  const doneCount = entries.filter((e) => e.status === "done").length
-  const skippedCount = entries.filter((e) => e.status === "skipped").length
-  const pendingCount = entries.filter(
-    (e) => e.status === "pending" || e.status === "open"
-  ).length
+  const doneCount = entries.filter((e) => e.status === "done").length;
+  const skippedCount = entries.filter((e) => e.status === "skipped").length;
+  const pendingCount = entries.filter((e) => e.status === "pending" || e.status === "open").length;
 
   return (
     <Card className="py-0">
       <CardContent className="p-5">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-[14px] font-semibold">
-            Acompanhamento — {months} meses
-          </h2>
+          <h2 className="text-[14px] font-semibold">Acompanhamento — {months} meses</h2>
           <div className="flex items-center gap-3 text-[11px] text-muted-foreground">
             <span className="flex items-center gap-1">
               <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0" />
@@ -77,10 +68,9 @@ export function MaintenanceTimeline({
 
         <div className="grid grid-cols-6 gap-2">
           {entries.map((entry) => {
-            const isDone = entry.status === "done"
-            const isSkipped = entry.status === "skipped"
-            const isPending =
-              entry.status === "pending" || entry.status === "open"
+            const isDone = entry.status === "done";
+            const isSkipped = entry.status === "skipped";
+            const isPending = entry.status === "pending" || entry.status === "open";
 
             return (
               <div
@@ -93,16 +83,14 @@ export function MaintenanceTimeline({
                       ? "border-emerald-500/20 bg-emerald-500/5"
                       : isSkipped
                         ? "border-amber-500/20 bg-amber-500/5"
-                        : "border-border/50 bg-muted/30"
+                        : "border-border/50 bg-muted/30",
                 )}
               >
                 {/* Mês */}
                 <span
                   className={cn(
                     "text-[10px] font-semibold uppercase tracking-wide",
-                    entry.isCurrentMonth
-                      ? "text-primary"
-                      : "text-muted-foreground"
+                    entry.isCurrentMonth ? "text-primary" : "text-muted-foreground",
                   )}
                 >
                   {entry.label}
@@ -118,7 +106,7 @@ export function MaintenanceTimeline({
                         ? "bg-amber-500"
                         : entry.isCurrentMonth
                           ? "bg-primary/20 border-2 border-primary"
-                          : "bg-muted border-2 border-border/60"
+                          : "bg-muted border-2 border-border/60",
                   )}
                 >
                   {isDone ? (
@@ -142,7 +130,7 @@ export function MaintenanceTimeline({
                         ? "text-amber-600 dark:text-amber-400"
                         : entry.isCurrentMonth
                           ? "text-primary"
-                          : "text-muted-foreground"
+                          : "text-muted-foreground",
                   )}
                 >
                   {isDone
@@ -154,10 +142,10 @@ export function MaintenanceTimeline({
                         : "Pendente"}
                 </span>
               </div>
-            )
+            );
           })}
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }

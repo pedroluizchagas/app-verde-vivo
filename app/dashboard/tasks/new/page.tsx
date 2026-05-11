@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { TaskCreateForm } from "@/components/tasks/task-create-form"
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { TaskCreateForm } from "@/components/tasks/task-create-form";
 
 export default function NewTaskPage() {
   return (
@@ -17,5 +17,5 @@ export default function NewTaskPage() {
       </div>
       <TaskCreateForm />
     </div>
-  )
+  );
 }

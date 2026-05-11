@@ -1,26 +1,26 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Card, CardContent } from "@/components/ui/card"
-import { User, Phone, Mail, MapPin, FileText, AlertCircle } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Card, CardContent } from "@/components/ui/card";
+import { User, Phone, Mail, MapPin, FileText, AlertCircle } from "lucide-react";
 
 interface ClientFormProps {
   client?: {
-    id: string
-    name: string
-    email: string | null
-    phone: string
-    address: string
-    notes: string | null
-  }
+    id: string;
+    name: string;
+    email: string | null;
+    phone: string;
+    address: string;
+    notes: string | null;
+  };
 }
 
 const AVATAR_COLORS = [
@@ -30,43 +30,43 @@ const AVATAR_COLORS = [
   "bg-amber-500/15 text-amber-600 dark:text-amber-400",
   "bg-rose-500/15 text-rose-600 dark:text-rose-400",
   "bg-teal-500/15 text-teal-600 dark:text-teal-400",
-]
+];
 
 function getAvatarColor(name: string) {
-  if (!name.trim()) return "bg-muted text-muted-foreground"
-  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length]
+  if (!name.trim()) return "bg-muted text-muted-foreground";
+  return AVATAR_COLORS[name.charCodeAt(0) % AVATAR_COLORS.length];
 }
 
 function getInitials(name: string) {
-  const parts = name.trim().split(" ").filter(Boolean)
-  if (!parts.length) return null
+  const parts = name.trim().split(" ").filter(Boolean);
+  if (!parts.length) return null;
   return parts
     .slice(0, 2)
     .map((w) => w.charAt(0).toUpperCase())
-    .join("")
+    .join("");
 }
 
 export function ClientForm({ client }: ClientFormProps) {
-  const router = useRouter()
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-  const [nameValue, setNameValue] = useState(client?.name ?? "")
+  const router = useRouter();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [nameValue, setNameValue] = useState(client?.name ?? "");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    setIsLoading(true)
-    setError(null)
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
 
-    const formData = new FormData(e.currentTarget)
-    const supabase = createClient()
+    const formData = new FormData(e.currentTarget);
+    const supabase = createClient();
 
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
     if (!user) {
-      setError("Usuário não autenticado")
-      setIsLoading(false)
-      return
+      setError("Usuário não autenticado");
+      setIsLoading(false);
+      return;
     }
 
     const clientData = {
@@ -76,28 +76,28 @@ export function ClientForm({ client }: ClientFormProps) {
       address: formData.get("address") as string,
       notes: (formData.get("notes") as string) || null,
       gardener_id: user.id,
-    }
+    };
 
     try {
       if (client) {
-        const { error } = await supabase.from("clients").update(clientData).eq("id", client.id)
-        if (error) throw error
-        router.push(`/dashboard/clients/${client.id}`)
+        const { error } = await supabase.from("clients").update(clientData).eq("id", client.id);
+        if (error) throw error;
+        router.push(`/dashboard/clients/${client.id}`);
       } else {
-        const { error } = await supabase.from("clients").insert([clientData])
-        if (error) throw error
-        router.push("/dashboard/clients")
+        const { error } = await supabase.from("clients").insert([clientData]);
+        if (error) throw error;
+        router.push("/dashboard/clients");
       }
-      router.refresh()
+      router.refresh();
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "Erro ao salvar cliente")
+      setError(error instanceof Error ? error.message : "Erro ao salvar cliente");
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
-  const initials = getInitials(nameValue)
-  const avatarColor = getAvatarColor(nameValue)
+  const initials = getInitials(nameValue);
+  const avatarColor = getAvatarColor(nameValue);
 
   return (
     <Card className="py-0">
@@ -132,8 +132,7 @@ export function ClientForm({ client }: ClientFormProps) {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div className="grid gap-1.5">
                 <Label htmlFor="name" className="text-sm font-medium">
-                  Nome completo{" "}
-                  <span className="text-destructive font-normal">*</span>
+                  Nome completo <span className="text-destructive font-normal">*</span>
                 </Label>
                 <div className="relative">
                   <User className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -152,8 +151,7 @@ export function ClientForm({ client }: ClientFormProps) {
 
               <div className="grid gap-1.5">
                 <Label htmlFor="phone" className="text-sm font-medium">
-                  Telefone{" "}
-                  <span className="text-destructive font-normal">*</span>
+                  Telefone <span className="text-destructive font-normal">*</span>
                 </Label>
                 <div className="relative">
                   <Phone className="absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground pointer-events-none" />
@@ -195,8 +193,7 @@ export function ClientForm({ client }: ClientFormProps) {
             </p>
             <div className="grid gap-1.5">
               <Label htmlFor="address" className="text-sm font-medium">
-                Endereço{" "}
-                <span className="text-destructive font-normal">*</span>
+                Endereço <span className="text-destructive font-normal">*</span>
               </Label>
               <div className="relative">
                 <MapPin className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -253,5 +250,5 @@ export function ClientForm({ client }: ClientFormProps) {
         </form>
       </CardContent>
     </Card>
-  )
+  );
 }

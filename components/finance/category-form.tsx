@@ -1,64 +1,64 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
+import { useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from "@/components/ui/select"
-import { ArrowUpRight, ArrowDownRight } from "lucide-react"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/select";
+import { ArrowUpRight, ArrowDownRight } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ParentCategory {
-  id: string
-  name: string
-  kind: "expense" | "income" | null
+  id: string;
+  name: string;
+  kind: "expense" | "income" | null;
 }
 
 export function CategoryForm({ parents }: { parents: ParentCategory[] }) {
-  const supabase = createClient()
-  const [name, setName] = useState("")
-  const [parentId, setParentId] = useState<string | null>(null)
-  const [kind, setKind] = useState<"expense" | "income" | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const supabase = createClient();
+  const [name, setName] = useState("");
+  const [parentId, setParentId] = useState<string | null>(null);
+  const [kind, setKind] = useState<"expense" | "income" | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const selectedParent = parents.find((p) => p.id === parentId) ?? null
-  const inheritedKind = selectedParent?.kind ?? null
-  const effectiveKind = inheritedKind ?? kind
+  const selectedParent = parents.find((p) => p.id === parentId) ?? null;
+  const inheritedKind = selectedParent?.kind ?? null;
+  const effectiveKind = inheritedKind ?? kind;
 
   const handleParentChange = (v: string) => {
-    const newParentId = v === "none" ? null : v
-    setParentId(newParentId)
-    const parent = parents.find((p) => p.id === newParentId)
-    if (parent?.kind) setKind(parent.kind)
-  }
+    const newParentId = v === "none" ? null : v;
+    setParentId(newParentId);
+    const parent = parents.find((p) => p.id === newParentId);
+    if (parent?.kind) setKind(parent.kind);
+  };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault()
-    if (!name.trim()) return
-    setIsLoading(true)
-    setError(null)
+    e.preventDefault();
+    if (!name.trim()) return;
+    setIsLoading(true);
+    setError(null);
     try {
       const { error: insertError } = await supabase
         .from("financial_categories")
-        .insert({ name: name.trim(), parent_id: parentId, kind: effectiveKind })
-      if (insertError) throw insertError
-      setName("")
-      setParentId(null)
-      setKind(null)
-      window?.location?.reload()
+        .insert({ name: name.trim(), parent_id: parentId, kind: effectiveKind });
+      if (insertError) throw insertError;
+      setName("");
+      setParentId(null);
+      setKind(null);
+      window?.location?.reload();
     } catch (err: any) {
-      setError(err?.message || "Erro ao criar categoria")
-      setIsLoading(false)
+      setError(err?.message || "Erro ao criar categoria");
+      setIsLoading(false);
     }
-  }
+  };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col gap-4">
@@ -97,7 +97,7 @@ export function CategoryForm({ parents }: { parents: ParentCategory[] }) {
               effectiveKind === "income"
                 ? "border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
                 : "border-border text-muted-foreground hover:border-muted-foreground/40",
-              inheritedKind ? "opacity-60 cursor-not-allowed" : ""
+              inheritedKind ? "opacity-60 cursor-not-allowed" : "",
             )}
           >
             <ArrowUpRight className="h-4 w-4 shrink-0" />
@@ -112,7 +112,7 @@ export function CategoryForm({ parents }: { parents: ParentCategory[] }) {
               effectiveKind === "expense"
                 ? "border-red-400 bg-red-500/10 text-red-500 dark:text-red-400"
                 : "border-border text-muted-foreground hover:border-muted-foreground/40",
-              inheritedKind ? "opacity-60 cursor-not-allowed" : ""
+              inheritedKind ? "opacity-60 cursor-not-allowed" : "",
             )}
           >
             <ArrowDownRight className="h-4 w-4 shrink-0" />
@@ -124,13 +124,9 @@ export function CategoryForm({ parents }: { parents: ParentCategory[] }) {
       {/* Categoria pai */}
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="cat-parent" className="text-[12px] font-medium">
-          Categoria pai{" "}
-          <span className="text-muted-foreground font-normal">(opcional)</span>
+          Categoria pai <span className="text-muted-foreground font-normal">(opcional)</span>
         </Label>
-        <Select
-          value={parentId || "none"}
-          onValueChange={handleParentChange}
-        >
+        <Select value={parentId || "none"} onValueChange={handleParentChange}>
           <SelectTrigger id="cat-parent" className="h-11">
             <SelectValue placeholder="Selecionar categoria pai" />
           </SelectTrigger>
@@ -146,14 +142,12 @@ export function CategoryForm({ parents }: { parents: ParentCategory[] }) {
       </div>
 
       {error && (
-        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-          {error}
-        </div>
+        <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">{error}</div>
       )}
 
       <Button type="submit" disabled={isLoading || !name.trim()}>
         {isLoading ? "Salvando..." : "Criar categoria"}
       </Button>
     </form>
-  )
+  );
 }

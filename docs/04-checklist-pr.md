@@ -8,35 +8,43 @@ Copiar este bloco no corpo do PR e preencher:
 
 ```markdown
 ## Fase
+
 Fase NN — <título da fase>
 
 Link: docs/fases/fase-NN-<slug>.md
 
 ## Resumo
+
 <2–4 linhas explicando o que mudou em alto nível>
 
 ## O que foi feito
+
 - [ ] Item 1 do escopo
 - [ ] Item 2 do escopo
 - [ ] ...
 
 ## O que NÃO foi feito (e por quê)
+
 - Item X: motivo (fora do escopo / descoberto durante execução / virou Fase futura)
 
 ## Como testar localmente
+
 1. `pnpm install`
 2. `cp .env.example .env.local && preencher`
 3. `pnpm dev`
 4. Passos específicos de validação manual...
 
 ## Riscos
+
 - Risco 1: <descrição> — mitigação: <…>
 - Risco 2: …
 
 ## Migrações
+
 - [ ] Sem migração / [ ] Migração reversível documentada
 
 ## Checklist de Definition of Done
+
 - [ ] `pnpm lint` passa sem warnings
 - [ ] `pnpm tsc --noEmit` passa
 - [ ] `pnpm build` passa

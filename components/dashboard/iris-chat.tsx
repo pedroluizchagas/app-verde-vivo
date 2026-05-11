@@ -1,11 +1,11 @@
-"use client"
+"use client";
 
-import { useEffect, useRef, useState } from "react"
-import { createClient } from "@/lib/supabase/client"
-import { Card, CardContent } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Button } from "@/components/ui/button"
-import { Mic, Send, Square, Sparkles, Upload } from "lucide-react"
+import { useEffect, useRef, useState } from "react";
+import { createClient } from "@/lib/supabase/client";
+import { Card, CardContent } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Mic, Send, Square, Sparkles, Upload } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,17 +15,17 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-} from "@/components/ui/alert-dialog"
-import { cn } from "@/lib/utils"
+} from "@/components/ui/alert-dialog";
+import { cn } from "@/lib/utils";
 
-type ChatItem = { role: "user" | "assistant"; content: string }
+type ChatItem = { role: "user" | "assistant"; content: string };
 
 const SUGGESTIONS = [
   "Agende uma visita para amanha as 15h",
   "Registre receita de R$ 250 para o cliente Joao",
   "Crie uma tarefa: comprar fertilizante NPK",
   "Quais sao meus proximos agendamentos?",
-]
+];
 
 function TypingIndicator() {
   return (
@@ -41,89 +41,80 @@ function TypingIndicator() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export function IrisChat() {
-  const [items, setItems] = useState<ChatItem[]>([])
-  const [text, setText] = useState("")
-  const [audio, setAudio] = useState<File | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [isRecording, setIsRecording] = useState(false)
-  const [recordingSeconds, setRecordingSeconds] = useState(0)
+  const [items, setItems] = useState<ChatItem[]>([]);
+  const [text, setText] = useState("");
+  const [audio, setAudio] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [pending, setPending] = useState<{
-    intent: string
-    params: any
-    reply: string
-  } | null>(null)
+    intent: string;
+    params: any;
+    reply: string;
+  } | null>(null);
 
-  const inputRef = useRef<HTMLInputElement>(null)
-  const messagesEndRef = useRef<HTMLDivElement>(null)
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null)
-  const chunksRef = useRef<Blob[]>([])
-  const fileInputRef = useRef<HTMLInputElement>(null)
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null)
-
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
+  const inputRef = useRef<HTMLInputElement>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const chunksRef = useRef<Blob[]>([]);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" })
-  }, [items, isLoading])
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [items, isLoading]);
 
   useEffect(() => {
     if (isRecording) {
-      setRecordingSeconds(0)
-      timerRef.current = setInterval(
-        () => setRecordingSeconds((s) => s + 1),
-        1000
-      )
+      setRecordingSeconds(0);
+      timerRef.current = setInterval(() => setRecordingSeconds((s) => s + 1), 1000);
     } else {
-      if (timerRef.current) clearInterval(timerRef.current)
+      if (timerRef.current) clearInterval(timerRef.current);
     }
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current)
-    }
-  }, [isRecording])
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, [isRecording]);
 
   const send = async (overrideText?: string) => {
-    const msg = overrideText ?? text
-    if (!msg && !audio) return
-    setIsLoading(true)
-    setItems((prev) => [
-      ...prev,
-      { role: "user", content: msg || "[Audio enviado]" },
-    ])
-    setText("")
+    const msg = overrideText ?? text;
+    if (!msg && !audio) return;
+    setIsLoading(true);
+    setItems((prev) => [...prev, { role: "user", content: msg || "[Audio enviado]" }]);
+    setText("");
 
     try {
-      const supabase = createClient()
+      const supabase = createClient();
       const {
         data: { user },
-      } = await supabase.auth.getUser()
-      if (!user) throw new Error("Nao autenticado")
+      } = await supabase.auth.getUser();
+      if (!user) throw new Error("Nao autenticado");
 
-      let res: Response
+      let res: Response;
       if (audio) {
-        const form = new FormData()
-        if (msg) form.append("text", msg)
-        form.append("audio", audio)
-        form.append("mode", "dry")
-        res = await fetch("/api/assistant", { method: "POST", body: form })
+        const form = new FormData();
+        if (msg) form.append("text", msg);
+        form.append("audio", audio);
+        form.append("mode", "dry");
+        res = await fetch("/api/assistant", { method: "POST", body: form });
       } else {
         res = await fetch("/api/assistant", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ text: msg, mode: "dry" }),
-        })
+        });
       }
 
-      const data = await res.json()
-      setItems((prev) => [
-        ...prev,
-        { role: "assistant", content: data?.reply ?? "Ok" },
-      ])
+      const data = await res.json();
+      setItems((prev) => [...prev, { role: "assistant", content: data?.reply ?? "Ok" }]);
 
       if (data?.intent && data?.params && !data?.result?.need) {
         if (data?.critical) {
@@ -131,78 +122,74 @@ export function IrisChat() {
             intent: data.intent,
             params: data.params,
             reply: data.reply,
-          })
+          });
         } else {
           const execRes = await fetch("/api/assistant", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ intent: data.intent, params: data.params }),
-          })
-          const execData = await execRes.json()
-          let execMsg = execData?.reply ?? "Executado"
-          const r = execData?.result
+          });
+          const execData = await execRes.json();
+          let execMsg = execData?.reply ?? "Executado";
+          const r = execData?.result;
           if (r?.existed && r?.id) {
-            execMsg += ` (ja existia)`
+            execMsg += ` (ja existia)`;
           } else if (r?.id) {
-            execMsg += ` (registrado com sucesso)`
+            execMsg += ` (registrado com sucesso)`;
           }
-          setItems((prev) => [
-            ...prev,
-            { role: "assistant", content: execMsg },
-          ])
+          setItems((prev) => [...prev, { role: "assistant", content: execMsg }]);
         }
       }
     } catch (err: any) {
       setItems((prev) => [
         ...prev,
         { role: "assistant", content: `Erro: ${err?.message ?? String(err)}` },
-      ])
+      ]);
     } finally {
-      setIsLoading(false)
-      setAudio(null)
+      setIsLoading(false);
+      setAudio(null);
     }
-  }
+  };
 
   const startRecording = async () => {
-    if (!navigator.mediaDevices) return
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true })
-    const mr = new MediaRecorder(stream)
-    mediaRecorderRef.current = mr
-    chunksRef.current = []
+    if (!navigator.mediaDevices) return;
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mr = new MediaRecorder(stream);
+    mediaRecorderRef.current = mr;
+    chunksRef.current = [];
     mr.ondataavailable = (e) => {
-      if (e.data.size > 0) chunksRef.current.push(e.data)
-    }
+      if (e.data.size > 0) chunksRef.current.push(e.data);
+    };
     mr.onstop = () => {
-      const blob = new Blob(chunksRef.current, { type: "audio/webm" })
+      const blob = new Blob(chunksRef.current, { type: "audio/webm" });
       const file = new File([blob], `recording_${Date.now()}.webm`, {
         type: "audio/webm",
-      })
-      setAudio(file)
-    }
-    mr.start()
-    setIsRecording(true)
-  }
+      });
+      setAudio(file);
+    };
+    mr.start();
+    setIsRecording(true);
+  };
 
   const stopRecording = () => {
-    mediaRecorderRef.current?.stop()
-    setIsRecording(false)
-  }
+    mediaRecorderRef.current?.stop();
+    setIsRecording(false);
+  };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter" && !e.shiftKey && !isLoading) {
-      e.preventDefault()
-      send()
+      e.preventDefault();
+      send();
     }
-  }
+  };
 
   const fmtTime = (s: number) =>
-    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`
+    `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`;
 
   return (
     <div className="flex flex-col gap-4">
       <Card className="py-0 flex flex-col">
         <CardContent className="p-0 flex flex-col h-full">
-
           {/* Header */}
           <div className="flex items-center gap-3 px-5 py-4 border-b border-border/60">
             <div className="h-9 w-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
@@ -210,9 +197,7 @@ export function IrisChat() {
             </div>
             <div>
               <p className="font-bold text-[15px] leading-tight">Iris</p>
-              <p className="text-[11px] text-muted-foreground">
-                Assistente de jardinagem com IA
-              </p>
+              <p className="text-[11px] text-muted-foreground">Assistente de jardinagem com IA</p>
             </div>
             <div className="ml-auto flex items-center gap-1.5">
               <span className="h-2 w-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -229,12 +214,10 @@ export function IrisChat() {
                     <Sparkles className="h-6 w-6 text-primary" />
                   </div>
                   <div>
-                    <p className="font-semibold text-[15px]">
-                      Ola! Sou a Iris.
-                    </p>
+                    <p className="font-semibold text-[15px]">Ola! Sou a Iris.</p>
                     <p className="text-[13px] text-muted-foreground mt-1 max-w-xs text-balance">
-                      Posso agendar servicos, registrar receitas, criar tarefas
-                      e muito mais — basta pedir.
+                      Posso agendar servicos, registrar receitas, criar tarefas e muito mais — basta
+                      pedir.
                     </p>
                   </div>
                 </div>
@@ -245,8 +228,8 @@ export function IrisChat() {
                       key={s}
                       type="button"
                       onClick={() => {
-                        setText(s)
-                        inputRef.current?.focus()
+                        setText(s);
+                        inputRef.current?.focus();
                       }}
                       className="text-left text-[12px] px-3.5 py-2.5 rounded-xl border border-border/60 hover:border-primary/50 hover:bg-primary/5 text-muted-foreground hover:text-foreground transition-all"
                     >
@@ -262,7 +245,7 @@ export function IrisChat() {
                     key={idx}
                     className={cn(
                       "flex gap-2.5 items-end",
-                      it.role === "user" ? "flex-row-reverse" : "flex-row"
+                      it.role === "user" ? "flex-row-reverse" : "flex-row",
                     )}
                   >
                     {it.role === "assistant" && (
@@ -276,7 +259,7 @@ export function IrisChat() {
                         "max-w-[78%] px-3.5 py-2.5 text-[13px] leading-relaxed",
                         it.role === "user"
                           ? "bg-primary text-primary-foreground rounded-2xl rounded-br-sm"
-                          : "bg-muted text-foreground rounded-2xl rounded-bl-sm"
+                          : "bg-muted text-foreground rounded-2xl rounded-bl-sm",
                       )}
                     >
                       {it.content}
@@ -315,9 +298,7 @@ export function IrisChat() {
                 onChange={(e) => setText(e.target.value)}
                 onKeyDown={handleKeyDown}
                 placeholder={
-                  audio
-                    ? "Adicione um texto (opcional) e envie..."
-                    : "Peca algo a Iris..."
+                  audio ? "Adicione um texto (opcional) e envie..." : "Peca algo a Iris..."
                 }
                 className="h-11 flex-1"
                 disabled={isLoading}
@@ -384,8 +365,7 @@ export function IrisChat() {
               <div className="flex items-center gap-1.5 mt-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-red-500 animate-pulse shrink-0" />
                 <span className="text-[11px] text-red-500 font-medium">
-                  Gravando {fmtTime(recordingSeconds)} — clique em parar quando
-                  terminar
+                  Gravando {fmtTime(recordingSeconds)} — clique em parar quando terminar
                 </span>
               </div>
             )}
@@ -394,10 +374,7 @@ export function IrisChat() {
       </Card>
 
       {/* Dialogo de confirmacao para acoes criticas */}
-      <AlertDialog
-        open={!!pending}
-        onOpenChange={(v) => !v && setPending(null)}
-      >
+      <AlertDialog open={!!pending} onOpenChange={(v) => !v && setPending(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Confirmar acao</AlertDialogTitle>
@@ -409,13 +386,11 @@ export function IrisChat() {
             <pre>{JSON.stringify(pending?.params, null, 2)}</pre>
           </div>
           <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setPending(null)}>
-              Cancelar
-            </AlertDialogCancel>
+            <AlertDialogCancel onClick={() => setPending(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction
               onClick={async () => {
-                if (!pending) return
-                setIsLoading(true)
+                if (!pending) return;
+                setIsLoading(true);
                 try {
                   const execRes = await fetch("/api/assistant", {
                     method: "POST",
@@ -424,21 +399,18 @@ export function IrisChat() {
                       intent: pending.intent,
                       params: pending.params,
                     }),
-                  })
-                  const execData = await execRes.json()
-                  let msg = execData?.reply ?? "Executado"
-                  const r = execData?.result
+                  });
+                  const execData = await execRes.json();
+                  let msg = execData?.reply ?? "Executado";
+                  const r = execData?.result;
                   if (r?.existed && r?.id) {
-                    msg += ` (ja existia)`
+                    msg += ` (ja existia)`;
                   } else if (r?.id) {
-                    msg += ` (registrado com sucesso)`
+                    msg += ` (registrado com sucesso)`;
                   } else if (r?.transaction_id || r?.appointment_id) {
-                    msg += ` (lancado com sucesso)`
+                    msg += ` (lancado com sucesso)`;
                   }
-                  setItems((prev) => [
-                    ...prev,
-                    { role: "assistant", content: msg },
-                  ])
+                  setItems((prev) => [...prev, { role: "assistant", content: msg }]);
                 } catch (err: any) {
                   setItems((prev) => [
                     ...prev,
@@ -446,10 +418,10 @@ export function IrisChat() {
                       role: "assistant",
                       content: `Erro: ${err?.message ?? String(err)}`,
                     },
-                  ])
+                  ]);
                 } finally {
-                  setIsLoading(false)
-                  setPending(null)
+                  setIsLoading(false);
+                  setPending(null);
                 }
               }}
             >
@@ -459,5 +431,5 @@ export function IrisChat() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
-  )
+  );
 }

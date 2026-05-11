@@ -1,110 +1,118 @@
-import { createServerClient } from "@supabase/ssr"
-import { NextResponse, type NextRequest } from "next/server"
-import { isSupabaseUnreachable } from "./errors"
+import { createServerClient } from "@supabase/ssr";
+import { NextResponse, type NextRequest } from "next/server";
+import { isSupabaseUnreachable } from "./errors";
 
-let lastSupabaseUnreachableAt = 0
-const SUPABASE_UNREACHABLE_TTL_MS = 30_000
+let lastSupabaseUnreachableAt = 0;
+const SUPABASE_UNREACHABLE_TTL_MS = 30_000;
 
 function normalizeEnvValue(value: unknown): string | undefined {
-  const raw = String(value ?? "")
-  if (!raw) return undefined
-  const unwrapped = raw.replace(/^[\s"'`]+/, "").replace(/[\s"'`]+$/, "")
-  return unwrapped || undefined
+  const raw = String(value ?? "");
+  if (!raw) return undefined;
+  const unwrapped = raw.replace(/^[\s"'`]+/, "").replace(/[\s"'`]+$/, "");
+  return unwrapped || undefined;
 }
 
 export async function updateSession(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/api")) {
-    return NextResponse.next({ request })
+    return NextResponse.next({ request });
   }
 
-  const requestHeaders = new Headers(request.headers)
-  requestHeaders.set("x-pathname", request.nextUrl.pathname)
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
 
   let supabaseResponse = NextResponse.next({
     request: { headers: requestHeaders },
-  })
+  });
 
-  const supabaseUrl = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL)
-  const supabaseAnonKey = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  const supabaseUrl = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_URL);
+  const supabaseAnonKey = normalizeEnvValue(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("[v0] Missing Supabase environment variables in middleware")
-    return supabaseResponse
+    console.error("[v0] Missing Supabase environment variables in middleware");
+    return supabaseResponse;
   }
 
   if (Date.now() - lastSupabaseUnreachableAt < SUPABASE_UNREACHABLE_TTL_MS) {
-    return supabaseResponse
+    return supabaseResponse;
   }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
       getAll() {
-        return request.cookies.getAll()
+        return request.cookies.getAll();
       },
       setAll(cookiesToSet) {
-        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+        cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         supabaseResponse = NextResponse.next({
           request: { headers: requestHeaders },
-        })
-        cookiesToSet.forEach(({ name, value, options }) => supabaseResponse.cookies.set(name, value, options))
+        });
+        cookiesToSet.forEach(({ name, value, options }) =>
+          supabaseResponse.cookies.set(name, value, options),
+        );
       },
     },
-  })
+  });
 
   try {
     const {
       data: { user },
-    } = await supabase.auth.getUser()
+    } = await supabase.auth.getUser();
 
     const isPublicRoute =
       request.nextUrl.pathname === "/" ||
       request.nextUrl.pathname.startsWith("/auth") ||
       request.nextUrl.pathname.startsWith("/api") ||
       request.nextUrl.pathname.startsWith("/_vercel") ||
-      request.nextUrl.pathname.startsWith("/_next")
+      request.nextUrl.pathname.startsWith("/_next");
 
     if (!user && !isPublicRoute) {
-      const url = request.nextUrl.clone()
-      url.pathname = "/auth/login"
-      return NextResponse.redirect(url)
+      const url = request.nextUrl.clone();
+      url.pathname = "/auth/login";
+      return NextResponse.redirect(url);
     }
 
-    if (user && request.nextUrl.pathname.startsWith("/auth") && !request.nextUrl.pathname.startsWith("/auth/callback")) {
-      const url = request.nextUrl.clone()
-      url.pathname = "/dashboard"
-      return NextResponse.redirect(url)
+    if (
+      user &&
+      request.nextUrl.pathname.startsWith("/auth") &&
+      !request.nextUrl.pathname.startsWith("/auth/callback")
+    ) {
+      const url = request.nextUrl.clone();
+      url.pathname = "/dashboard";
+      return NextResponse.redirect(url);
     }
 
-    const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard")
-    const isOnPlanPage = request.nextUrl.pathname.startsWith("/dashboard/plan")
-    const isOnProfilePage = request.nextUrl.pathname.startsWith("/dashboard/profile")
+    const isDashboardRoute = request.nextUrl.pathname.startsWith("/dashboard");
+    const isOnPlanPage = request.nextUrl.pathname.startsWith("/dashboard/plan");
+    const isOnProfilePage = request.nextUrl.pathname.startsWith("/dashboard/profile");
 
     if (user && isDashboardRoute && !isOnPlanPage && !isOnProfilePage) {
       const { data: profile } = await supabase
         .from("profiles")
         .select("plan, trial_ends_at")
         .eq("id", user.id)
-        .maybeSingle()
+        .maybeSingle();
 
-      const hasPlan = !!profile?.plan
+      const hasPlan = !!profile?.plan;
       const trialActive =
-        profile?.trial_ends_at != null && new Date(profile.trial_ends_at) > new Date()
+        profile?.trial_ends_at != null && new Date(profile.trial_ends_at) > new Date();
 
       if (!hasPlan && !trialActive) {
-        const url = request.nextUrl.clone()
-        url.pathname = "/dashboard/plan"
-        return NextResponse.redirect(url)
+        const url = request.nextUrl.clone();
+        url.pathname = "/dashboard/plan";
+        return NextResponse.redirect(url);
       }
     }
   } catch (error) {
-    const code = (error as any)?.code
-    const causeCode = (error as any)?.cause?.code
+    const code = (error as any)?.code;
+    const causeCode = (error as any)?.cause?.code;
     if (code === "refresh_token_not_found") {
-      const toClear = request.cookies.getAll().filter((c) => c.name.startsWith("sb-"))
+      const toClear = request.cookies.getAll().filter((c) => c.name.startsWith("sb-"));
       if (toClear.length) {
-        toClear.forEach(({ name }) => request.cookies.delete(name))
-        supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } })
-        toClear.forEach(({ name }) => supabaseResponse.cookies.set(name, "", { maxAge: 0, path: "/" }))
+        toClear.forEach(({ name }) => request.cookies.delete(name));
+        supabaseResponse = NextResponse.next({ request: { headers: requestHeaders } });
+        toClear.forEach(({ name }) =>
+          supabaseResponse.cookies.set(name, "", { maxAge: 0, path: "/" }),
+        );
       }
     } else {
       const unreachable =
@@ -112,19 +120,19 @@ export async function updateSession(request: NextRequest) {
         causeCode === "EAI_AGAIN" ||
         causeCode === "ECONNREFUSED" ||
         causeCode === "ETIMEDOUT" ||
-        isSupabaseUnreachable(error)
+        isSupabaseUnreachable(error);
       if (unreachable) {
-        const now = Date.now()
-        const shouldLog = now - lastSupabaseUnreachableAt >= SUPABASE_UNREACHABLE_TTL_MS
-        lastSupabaseUnreachableAt = now
+        const now = Date.now();
+        const shouldLog = now - lastSupabaseUnreachableAt >= SUPABASE_UNREACHABLE_TTL_MS;
+        lastSupabaseUnreachableAt = now;
         if (shouldLog) {
-          console.error("[v0] Supabase unreachable. Check NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl)
+          console.error("[v0] Supabase unreachable. Check NEXT_PUBLIC_SUPABASE_URL:", supabaseUrl);
         }
       } else {
-        console.error("[v0] Error in middleware:", error)
+        console.error("[v0] Error in middleware:", error);
       }
     }
   }
 
-  return supabaseResponse
+  return supabaseResponse;
 }

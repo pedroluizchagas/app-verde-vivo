@@ -1,23 +1,23 @@
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { Clock, User, MapPin } from "lucide-react"
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { Clock, User, MapPin } from "lucide-react";
 
 interface Appointment {
-  id: string
-  title: string
-  description: string | null
-  scheduled_date: string
-  end_date?: string | null
-  duration_minutes: number
-  status: string
-  type?: string
-  location?: string | null
-  all_day?: boolean
+  id: string;
+  title: string;
+  description: string | null;
+  scheduled_date: string;
+  end_date?: string | null;
+  duration_minutes: number;
+  status: string;
+  type?: string;
+  location?: string | null;
+  all_day?: boolean;
   client: {
-    name: string
-    phone: string
-    address: string
-  } | null
+    name: string;
+    phone: string;
+    address: string;
+  } | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -25,21 +25,21 @@ const statusColors: Record<string, string> = {
   in_progress: "bg-amber-500/10 text-amber-600 dark:text-amber-400",
   completed: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
   cancelled: "bg-destructive/10 text-destructive",
-}
+};
 
 const statusBorderColors: Record<string, string> = {
   scheduled: "border-l-blue-500",
   in_progress: "border-l-amber-500",
   completed: "border-l-emerald-500",
   cancelled: "border-l-red-400",
-}
+};
 
 const statusLabels: Record<string, string> = {
   scheduled: "Agendado",
   in_progress: "Em andamento",
   completed: "Concluído",
   cancelled: "Cancelado",
-}
+};
 
 const typeLabels: Record<string, string> = {
   service: "Serviço",
@@ -47,38 +47,46 @@ const typeLabels: Record<string, string> = {
   training: "Treinamento",
   meeting: "Reunião",
   other: "Outro",
-}
+};
 
 const MONTH_ABBR = [
-  "jan", "fev", "mar", "abr", "mai", "jun",
-  "jul", "ago", "set", "out", "nov", "dez",
-]
+  "jan",
+  "fev",
+  "mar",
+  "abr",
+  "mai",
+  "jun",
+  "jul",
+  "ago",
+  "set",
+  "out",
+  "nov",
+  "dez",
+];
 
 export function AppointmentCard({ appointment }: { appointment: Appointment }) {
-  const date = new Date(appointment.scheduled_date)
-  const day = date.getDate()
-  const month = MONTH_ABBR[date.getMonth()]
+  const date = new Date(appointment.scheduled_date);
+  const day = date.getDate();
+  const month = MONTH_ABBR[date.getMonth()];
 
   const timeStart = date.toLocaleTimeString("pt-BR", {
     hour: "2-digit",
     minute: "2-digit",
-  })
-  const end = appointment.end_date ? new Date(appointment.end_date) : null
+  });
+  const end = appointment.end_date ? new Date(appointment.end_date) : null;
   const timeEnd = end
     ? end.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
-    : null
+    : null;
   const timeStr = appointment.all_day
     ? "Dia inteiro"
-    : `${timeStart}${timeEnd ? ` \u2013 ${timeEnd}` : ""}`
+    : `${timeStart}${timeEnd ? ` \u2013 ${timeEnd}` : ""}`;
 
-  const statusColor =
-    statusColors[appointment.status] ?? "bg-muted text-muted-foreground"
-  const borderColor =
-    statusBorderColors[appointment.status] ?? "border-l-border"
-  const statusLabel = statusLabels[appointment.status] ?? appointment.status
-  const typeLabel = appointment.type ? typeLabels[appointment.type] : null
+  const statusColor = statusColors[appointment.status] ?? "bg-muted text-muted-foreground";
+  const borderColor = statusBorderColors[appointment.status] ?? "border-l-border";
+  const statusLabel = statusLabels[appointment.status] ?? appointment.status;
+  const typeLabel = appointment.type ? typeLabels[appointment.type] : null;
 
-  const displayLocation = appointment.location || null
+  const displayLocation = appointment.location || null;
 
   return (
     <Link href={`/dashboard/schedule/${appointment.id}`}>
@@ -89,9 +97,7 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
           <div className="flex items-start gap-3">
             {/* Bloco de data */}
             <div className="flex flex-col items-center justify-center w-12 h-12 shrink-0 rounded-xl bg-muted">
-              <span className="text-[18px] font-bold leading-none tabular-nums">
-                {day}
-              </span>
+              <span className="text-[18px] font-bold leading-none tabular-nums">{day}</span>
               <span className="text-[9px] uppercase tracking-widest text-muted-foreground mt-0.5">
                 {month}
               </span>
@@ -112,9 +118,7 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
                 <div className="flex items-center gap-1">
                   <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
-                  <span className="text-[11px] text-muted-foreground">
-                    {timeStr}
-                  </span>
+                  <span className="text-[11px] text-muted-foreground">{timeStr}</span>
                 </div>
                 {appointment.client && (
                   <div className="flex items-center gap-1 min-w-0">
@@ -145,5 +149,5 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
         </CardContent>
       </Card>
     </Link>
-  )
+  );
 }

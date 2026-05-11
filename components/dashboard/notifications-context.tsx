@@ -1,21 +1,17 @@
-"use client"
+"use client";
 
-import { createContext, useContext, useState } from "react"
+import { createContext, useContext, useState } from "react";
 
 type NotificationsContextType = {
-  isOpen: boolean
-  toggle: () => void
-  close: () => void
-}
+  isOpen: boolean;
+  toggle: () => void;
+  close: () => void;
+};
 
-const NotificationsContext = createContext<NotificationsContextType | null>(null)
+const NotificationsContext = createContext<NotificationsContextType | null>(null);
 
-export function NotificationsProvider({
-  children,
-}: {
-  children: React.ReactNode
-}) {
-  const [isOpen, setIsOpen] = useState(false)
+export function NotificationsProvider({ children }: { children: React.ReactNode }) {
+  const [isOpen, setIsOpen] = useState(false);
 
   return (
     <NotificationsContext.Provider
@@ -27,11 +23,11 @@ export function NotificationsProvider({
     >
       {children}
     </NotificationsContext.Provider>
-  )
+  );
 }
 
 export function useNotifications() {
-  const ctx = useContext(NotificationsContext)
-  if (!ctx) throw new Error("useNotifications fora do NotificationsProvider")
-  return ctx
+  const ctx = useContext(NotificationsContext);
+  if (!ctx) throw new Error("useNotifications fora do NotificationsProvider");
+  return ctx;
 }

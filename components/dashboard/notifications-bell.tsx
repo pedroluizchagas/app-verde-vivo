@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { Bell } from "lucide-react"
-import { useNotifications } from "./notifications-context"
+import { Bell } from "lucide-react";
+import { useNotifications } from "./notifications-context";
 
 export function NotificationsBell() {
-  const { isOpen, toggle } = useNotifications()
+  const { isOpen, toggle } = useNotifications();
 
   return (
     <button
@@ -16,5 +16,5 @@ export function NotificationsBell() {
     >
       <Bell className="h-4 w-4" />
     </button>
-  )
+  );
 }

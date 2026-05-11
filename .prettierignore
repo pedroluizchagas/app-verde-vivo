@@ -1,0 +1,44 @@
+# Mirror of .gitignore plus extras
+/node_modules
+**/node_modules
+mobile/node_modules
+mobile/.expo
+mobile/android
+mobile/ios
+mobile/credentials.json
+mobile/credentials/
+mobile/*.jks
+
+# next.js
+/.next/
+/out/
+
+# production
+/build
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# env files
+.env*
+!.env.example
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# lockfiles
+pnpm-lock.yaml
+
+# mobile (fase própria)
+mobile/
+
+# misc
+logs/
+public/

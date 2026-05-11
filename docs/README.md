@@ -14,27 +14,27 @@ Documentação técnica e plano de evolução do **Gestão Garden** (anteriormen
 
 ## Índice
 
-| # | Arquivo | Conteúdo |
-|---|---|---|
-| 00 | [`00-visao-tecnica.md`](./00-visao-tecnica.md) | Visão estratégica, princípios, dívida técnica conhecida |
-| 01 | [`01-arquitetura-alvo.md`](./01-arquitetura-alvo.md) | Arquitetura-alvo: web, mobile, IA, dados, integrações |
-| 02 | [`02-roadmap.md`](./02-roadmap.md) | Roadmap por fases, dependências, critérios de produção |
-| 03 | [`03-padroes-e-convencoes.md`](./03-padroes-e-convencoes.md) | Código, commits, branches, naming, segurança |
-| 04 | [`04-checklist-pr.md`](./04-checklist-pr.md) | Definition of Done para cada PR |
+| #   | Arquivo                                                      | Conteúdo                                                |
+| --- | ------------------------------------------------------------ | ------------------------------------------------------- |
+| 00  | [`00-visao-tecnica.md`](./00-visao-tecnica.md)               | Visão estratégica, princípios, dívida técnica conhecida |
+| 01  | [`01-arquitetura-alvo.md`](./01-arquitetura-alvo.md)         | Arquitetura-alvo: web, mobile, IA, dados, integrações   |
+| 02  | [`02-roadmap.md`](./02-roadmap.md)                           | Roadmap por fases, dependências, critérios de produção  |
+| 03  | [`03-padroes-e-convencoes.md`](./03-padroes-e-convencoes.md) | Código, commits, branches, naming, segurança            |
+| 04  | [`04-checklist-pr.md`](./04-checklist-pr.md)                 | Definition of Done para cada PR                         |
 
 ## Fases de execução
 
-| Fase | Tema | Bloqueia produção? |
-|---|---|---|
-| [00](./fases/fase-00-preparacao.md) | Preparação e rebrand para Gestão Garden | Não |
-| [01](./fases/fase-01-seguranca-critica.md) | Segurança crítica | **Sim** |
-| [02](./fases/fase-02-qualidade-codigo.md) | Qualidade de código e tipagem | Não |
-| [03](./fases/fase-03-pagamentos-dados.md) | Pagamentos robustos e modelo de dados | **Sim** |
-| [04](./fases/fase-04-ia-iris.md) | IA (Íris): guardrails e confirmação | Parcial |
-| [05](./fases/fase-05-testes.md) | Testes automatizados | Não |
-| [06](./fases/fase-06-observabilidade.md) | Observabilidade e operação | Não |
-| [07](./fases/fase-07-mobile-cicd.md) | Mobile alinhado e CI/CD | Não |
-| [08](./fases/fase-08-performance-escala.md) | Performance e escala | Não |
+| Fase                                        | Tema                                    | Bloqueia produção? |
+| ------------------------------------------- | --------------------------------------- | ------------------ |
+| [00](./fases/fase-00-preparacao.md)         | Preparação e rebrand para Gestão Garden | Não                |
+| [01](./fases/fase-01-seguranca-critica.md)  | Segurança crítica                       | **Sim**            |
+| [02](./fases/fase-02-qualidade-codigo.md)   | Qualidade de código e tipagem           | Não                |
+| [03](./fases/fase-03-pagamentos-dados.md)   | Pagamentos robustos e modelo de dados   | **Sim**            |
+| [04](./fases/fase-04-ia-iris.md)            | IA (Íris): guardrails e confirmação     | Parcial            |
+| [05](./fases/fase-05-testes.md)             | Testes automatizados                    | Não                |
+| [06](./fases/fase-06-observabilidade.md)    | Observabilidade e operação              | Não                |
+| [07](./fases/fase-07-mobile-cicd.md)        | Mobile alinhado e CI/CD                 | Não                |
+| [08](./fases/fase-08-performance-escala.md) | Performance e escala                    | Não                |
 
 ## Convenção dos prompts executáveis
 

@@ -1,58 +1,45 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound, redirect } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import {
-  ArrowLeft,
-  Edit,
-  User,
-  Phone,
-  MapPin,
-  Calendar,
-  Clock,
-  DollarSign,
-} from "lucide-react"
-import Link from "next/link"
-import { Card, CardContent } from "@/components/ui/card"
-import { DeleteBudgetButton } from "@/components/budgets/delete-budget-button"
-import { statusLabels, statusColors } from "@/components/budgets/budget-card"
+import { createClient } from "@/lib/supabase/server";
+import { notFound, redirect } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft, Edit, User, Phone, MapPin, Calendar, Clock, DollarSign } from "lucide-react";
+import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
+import { DeleteBudgetButton } from "@/components/budgets/delete-budget-button";
+import { statusLabels, statusColors } from "@/components/budgets/budget-card";
 
-export default async function BudgetDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
+export default async function BudgetDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
 
   if (id === "new") {
-    redirect("/dashboard/budgets/new")
+    redirect("/dashboard/budgets/new");
   }
 
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: budget } = await supabase
     .from("budgets")
     .select("*, client:clients(id, name, phone, address)")
     .eq("id", id)
     .eq("gardener_id", user!.id)
-    .single()
+    .single();
 
   if (!budget) {
-    notFound()
+    notFound();
   }
 
   const fmt = (v: number) =>
-    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v)
+    new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);
 
-  const total = Number(budget.total_amount || 0)
-  const statusLabel = statusLabels[budget.status] ?? budget.status
-  const statusColor = statusColors[budget.status] ?? "bg-muted text-muted-foreground"
+  const total = Number(budget.total_amount || 0);
+  const statusLabel = statusLabels[budget.status] ?? budget.status;
+  const statusColor = statusColors[budget.status] ?? "bg-muted text-muted-foreground";
 
-  const now = new Date()
-  const validUntil = budget.valid_until ? new Date(budget.valid_until) : null
-  const isExpired = validUntil && validUntil < now && budget.status === "pending"
+  const now = new Date();
+  const validUntil = budget.valid_until ? new Date(budget.valid_until) : null;
+  const isExpired = validUntil && validUntil < now && budget.status === "pending";
 
   const validStr = validUntil
     ? validUntil.toLocaleDateString("pt-BR", {
@@ -60,13 +47,13 @@ export default async function BudgetDetailPage({
         month: "long",
         year: "numeric",
       })
-    : null
+    : null;
 
   const createdStr = new Date(budget.created_at).toLocaleDateString("pt-BR", {
     day: "2-digit",
     month: "long",
     year: "numeric",
-  })
+  });
 
   return (
     <div className="flex flex-col gap-4">
@@ -126,10 +113,10 @@ export default async function BudgetDetailPage({
                 <Calendar className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[13px] font-bold leading-tight capitalize">
-              {createdStr}
-            </p>
-            <span className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-1 inline-block ${statusColor}`}>
+            <p className="text-[13px] font-bold leading-tight capitalize">{createdStr}</p>
+            <span
+              className={`text-[10px] font-medium px-1.5 py-0.5 rounded-full mt-1 inline-block ${statusColor}`}
+            >
               {statusLabel}
             </span>
           </CardContent>
@@ -153,9 +140,7 @@ export default async function BudgetDetailPage({
                   {validStr}
                 </p>
                 {isExpired && (
-                  <p className="text-[10px] text-destructive mt-0.5 font-medium">
-                    Expirado
-                  </p>
+                  <p className="text-[10px] text-destructive mt-0.5 font-medium">Expirado</p>
                 )}
               </>
             ) : (
@@ -195,9 +180,7 @@ export default async function BudgetDetailPage({
                   size="sm"
                   className="h-8 rounded-lg text-[12px] mt-3"
                 >
-                  <Link href={`/dashboard/budgets/${id}/edit`}>
-                    Adicionar descrição
-                  </Link>
+                  <Link href={`/dashboard/budgets/${id}/edit`}>Adicionar descrição</Link>
                 </Button>
               </CardContent>
             </Card>
@@ -314,5 +297,5 @@ export default async function BudgetDetailPage({
         </div>
       </div>
     </div>
-  )
+  );
 }

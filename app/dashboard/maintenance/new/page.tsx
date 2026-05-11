@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { MaintenancePlanForm } from "@/components/maintenance/plan-form"
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { MaintenancePlanForm } from "@/components/maintenance/plan-form";
 
 export default function NewMaintenancePlanPage() {
   return (
@@ -17,5 +17,5 @@ export default function NewMaintenancePlanPage() {
       </div>
       <MaintenancePlanForm />
     </div>
-  )
+  );
 }

@@ -1,20 +1,20 @@
-import { redirect } from "next/navigation"
-import { createClient } from "@/lib/supabase/server"
-import { PlanCards } from "@/components/dashboard/plan-cards"
-import { CreditCard } from "lucide-react"
+import { redirect } from "next/navigation";
+import { createClient } from "@/lib/supabase/server";
+import { PlanCards } from "@/components/dashboard/plan-cards";
+import { CreditCard } from "lucide-react";
 
 export default async function PlanPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect("/auth/login")
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("plan, trial_ends_at")
     .eq("id", user.id)
-    .maybeSingle()
+    .maybeSingle();
 
   const { data: subscription } = await supabase
     .from("subscriptions")
@@ -22,13 +22,16 @@ export default async function PlanPage() {
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(1)
-    .maybeSingle()
+    .maybeSingle();
 
-  const trialEndsAt = profile?.trial_ends_at ?? null
+  const trialEndsAt = profile?.trial_ends_at ?? null;
   const trialDaysLeft =
     !profile?.plan && trialEndsAt
-      ? Math.max(0, Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))
-      : 0
+      ? Math.max(
+          0,
+          Math.ceil((new Date(trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24)),
+        )
+      : 0;
 
   return (
     <div className="flex flex-col gap-6">
@@ -49,5 +52,5 @@ export default async function PlanPage() {
         trialEndsAt={trialEndsAt}
       />
     </div>
-  )
+  );
 }

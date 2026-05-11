@@ -1,7 +1,7 @@
-import { ProductForm } from "@/components/stock/product-form"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { ProductForm } from "@/components/stock/product-form";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function NewProductPage() {
   return (
@@ -18,5 +18,5 @@ export default function NewProductPage() {
 
       <ProductForm />
     </div>
-  )
+  );
 }

@@ -1,8 +1,8 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound, redirect } from "next/navigation"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
+import { createClient } from "@/lib/supabase/server";
+import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeft,
   Edit,
@@ -14,83 +14,79 @@ import {
   Package,
   DollarSign,
   FileText,
-} from "lucide-react"
-import { ExportDashboardPDFButton } from "@/components/reports/export-button"
-import { RecordIncomeButton } from "@/components/work-orders/record-income-button"
-import { WorkOrderServiceNoteRich } from "@/components/work-orders/service-note-rich"
-import { statusLabels, statusColors } from "@/components/work-orders/work-order-card"
+} from "lucide-react";
+import { ExportDashboardPDFButton } from "@/components/reports/export-button";
+import { RecordIncomeButton } from "@/components/work-orders/record-income-button";
+import { WorkOrderServiceNoteRich } from "@/components/work-orders/service-note-rich";
+import { statusLabels, statusColors } from "@/components/work-orders/work-order-card";
 
-export default async function WorkOrderDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
+export default async function WorkOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   if (id === "new") {
-    redirect("/dashboard/work-orders/new")
+    redirect("/dashboard/work-orders/new");
   }
 
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: order } = await supabase
     .from("service_orders")
     .select(
-      "*, client:clients(id, name, phone, address), appointment:appointments(id, title, scheduled_date)"
+      "*, client:clients(id, name, phone, address), appointment:appointments(id, title, scheduled_date)",
     )
     .eq("gardener_id", user!.id)
     .eq("id", id)
-    .maybeSingle()
+    .maybeSingle();
 
   if (!order) {
-    notFound()
+    notFound();
   }
 
   const { data: items } = await supabase
     .from("service_order_items")
     .select("id, quantity, unit_cost, unit_price, unit, product:products(name, unit)")
-    .eq("order_id", id)
+    .eq("order_id", id);
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("company_name, watermark_base64")
     .eq("id", user!.id)
-    .maybeSingle()
+    .maybeSingle();
 
   const currency = (v: number) =>
     new Intl.NumberFormat("pt-BR", {
       style: "currency",
       currency: "BRL",
-    }).format(Number(v || 0))
+    }).format(Number(v || 0));
 
-  const laborCost = Number((order as any).labor_cost || 0)
-  const markupPct = Number((order as any).materials_markup_pct || 0)
-  const extraCharges = Number((order as any).extra_charges || 0)
-  const discount = Number((order as any).discount || 0)
+  const laborCost = Number((order as any).labor_cost || 0);
+  const markupPct = Number((order as any).materials_markup_pct || 0);
+  const extraCharges = Number((order as any).extra_charges || 0);
+  const discount = Number((order as any).discount || 0);
 
   const materialsBase = (items || []).reduce(
     (s: number, it: any) => s + Number(it.unit_cost) * Number(it.quantity),
-    0
-  )
+    0,
+  );
   const materialsPrice = (items || []).reduce(
     (s: number, it: any) => s + Number(it.unit_price) * Number(it.quantity),
-    0
-  )
-  const markupAmount = materialsPrice - materialsBase
-  const total = Number((order as any).total_amount || 0)
+    0,
+  );
+  const markupAmount = materialsPrice - materialsBase;
+  const total = Number((order as any).total_amount || 0);
 
-  const statusLabel = statusLabels[(order as any).status] ?? (order as any).status
-  const statusColor =
-    statusColors[(order as any).status] ?? "bg-muted text-muted-foreground"
+  const statusLabel = statusLabels[(order as any).status] ?? (order as any).status;
+  const statusColor = statusColors[(order as any).status] ?? "bg-muted text-muted-foreground";
 
   const typeLabel = (order as any).appointment
-    ? new Date((order as any).appointment.scheduled_date).toLocaleDateString(
-        "pt-BR",
-        { day: "2-digit", month: "short", year: "numeric" }
-      )
-    : null
+    ? new Date((order as any).appointment.scheduled_date).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -107,18 +103,11 @@ export default async function WorkOrderDetailPage({
             <h1 className="text-2xl font-bold tracking-tight leading-tight truncate">
               {(order as any).title}
             </h1>
-            <p className="text-[13px] text-muted-foreground">
-              Ordem de Serviço
-            </p>
+            <p className="text-[13px] text-muted-foreground">Ordem de Serviço</p>
           </div>
         </div>
         <div className="flex gap-2 shrink-0">
-          <Button
-            asChild
-            variant="outline"
-            size="icon"
-            title="Editar OS"
-          >
+          <Button asChild variant="outline" size="icon" title="Editar OS">
             <Link href={`/dashboard/work-orders/${id}/edit`}>
               <Edit className="h-4 w-4" />
               <span className="sr-only">Editar</span>
@@ -126,9 +115,7 @@ export default async function WorkOrderDetailPage({
           </Button>
           {(order as any).transaction_id ? (
             <Button asChild variant="outline" size="sm" className="h-9 rounded-lg text-[12px]">
-              <Link
-                href={`/dashboard/finance/transactions/${(order as any).transaction_id}`}
-              >
+              <Link href={`/dashboard/finance/transactions/${(order as any).transaction_id}`}>
                 Ver lançamento
               </Link>
             </Button>
@@ -252,9 +239,8 @@ export default async function WorkOrderDetailPage({
                   </div>
 
                   {(items as any[]).map((it: any) => {
-                    const lineTotal =
-                      Number(it.unit_price) * Number(it.quantity)
-                    const unit = it.unit || it.product?.unit || "un"
+                    const lineTotal = Number(it.unit_price) * Number(it.quantity);
+                    const unit = it.unit || it.product?.unit || "un";
                     return (
                       <div
                         key={it.id}
@@ -270,7 +256,7 @@ export default async function WorkOrderDetailPage({
                           {currency(lineTotal)}
                         </span>
                       </div>
-                    )
+                    );
                   })}
                 </div>
               </CardContent>
@@ -289,17 +275,13 @@ export default async function WorkOrderDetailPage({
 
               <div className="flex flex-col divide-y divide-border/40">
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-[13px] text-muted-foreground">
-                    Mão de obra
-                  </span>
+                  <span className="text-[13px] text-muted-foreground">Mão de obra</span>
                   <span className="text-[13px] font-medium tabular-nums">
                     {currency(laborCost)}
                   </span>
                 </div>
                 <div className="flex items-center justify-between py-2">
-                  <span className="text-[13px] text-muted-foreground">
-                    Materiais (base)
-                  </span>
+                  <span className="text-[13px] text-muted-foreground">Materiais (base)</span>
                   <span className="text-[13px] font-medium tabular-nums">
                     {currency(materialsBase)}
                   </span>
@@ -316,9 +298,7 @@ export default async function WorkOrderDetailPage({
                 )}
                 {extraCharges > 0 && (
                   <div className="flex items-center justify-between py-2">
-                    <span className="text-[13px] text-muted-foreground">
-                      Adicionais
-                    </span>
+                    <span className="text-[13px] text-muted-foreground">Adicionais</span>
                     <span className="text-[13px] font-medium tabular-nums">
                       {currency(extraCharges)}
                     </span>
@@ -326,9 +306,7 @@ export default async function WorkOrderDetailPage({
                 )}
                 {discount > 0 && (
                   <div className="flex items-center justify-between py-2">
-                    <span className="text-[13px] text-muted-foreground">
-                      Desconto
-                    </span>
+                    <span className="text-[13px] text-muted-foreground">Desconto</span>
                     <span className="text-[13px] font-medium tabular-nums text-destructive">
                       -{currency(discount)}
                     </span>
@@ -440,9 +418,7 @@ export default async function WorkOrderDetailPage({
                       {(order as any).appointment.title || "Agendamento"}
                     </p>
                     {typeLabel && (
-                      <p className="text-[11px] text-muted-foreground mt-0.5">
-                        {typeLabel}
-                      </p>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">{typeLabel}</p>
                     )}
                   </div>
                 </Link>
@@ -471,9 +447,7 @@ export default async function WorkOrderDetailPage({
                     size="sm"
                     className="h-8 rounded-lg text-[12px] w-full"
                   >
-                    <Link
-                      href={`/dashboard/finance/transactions/${(order as any).transaction_id}`}
-                    >
+                    <Link href={`/dashboard/finance/transactions/${(order as any).transaction_id}`}>
                       Ver lançamento
                     </Link>
                   </Button>
@@ -501,12 +475,10 @@ export default async function WorkOrderDetailPage({
         order={order}
         items={items || []}
         companyName={
-          (profile as any)?.company_name ||
-          (profile as any)?.full_name ||
-          "Gestão Garden"
+          (profile as any)?.company_name || (profile as any)?.full_name || "Gestão Garden"
         }
         watermarkBase64={(profile as any)?.watermark_base64 || undefined}
       />
     </div>
-  )
+  );
 }

@@ -1,9 +1,12 @@
-import Link from "next/link"
-import { ArrowLeft, Mail, CheckCircle } from "lucide-react"
+import Link from "next/link";
+import { ArrowLeft, Mail, CheckCircle } from "lucide-react";
 
 export default function SignUpSuccessPage() {
   return (
-    <div className="min-h-svh flex items-center justify-center px-6 py-12" style={{ background: "#070708", color: "#f0f0f0" }}>
+    <div
+      className="min-h-svh flex items-center justify-center px-6 py-12"
+      style={{ background: "#070708", color: "#f0f0f0" }}
+    >
       {/* Ambient background */}
       <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
         <div
@@ -15,7 +18,10 @@ export default function SignUpSuccessPage() {
         />
         <div
           className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full"
-          style={{ background: "radial-gradient(circle, rgba(34,197,94,0.09) 0%, transparent 65%)", filter: "blur(2px)" }}
+          style={{
+            background: "radial-gradient(circle, rgba(34,197,94,0.09) 0%, transparent 65%)",
+            filter: "blur(2px)",
+          }}
         />
       </div>
 
@@ -54,14 +60,17 @@ export default function SignUpSuccessPage() {
           Verifique seu email
         </h1>
         <p className="text-sm leading-relaxed mb-8" style={{ color: "rgba(255,255,255,0.45)" }}>
-          Enviamos um link de confirmacao para o seu email.
-          Clique no link para ativar sua conta e comecar a usar a Iris.
+          Enviamos um link de confirmacao para o seu email. Clique no link para ativar sua conta e
+          comecar a usar a Iris.
         </p>
 
         {/* Card de instrucoes */}
         <div
           className="rounded-2xl p-5 mb-6 text-left space-y-3"
-          style={{ background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.08)" }}
+          style={{
+            background: "rgba(255,255,255,0.04)",
+            border: "1px solid rgba(255,255,255,0.08)",
+          }}
         >
           {[
             "Abra seu email e procure a mensagem da Iris",
@@ -93,8 +102,8 @@ export default function SignUpSuccessPage() {
         >
           <CheckCircle className="h-4 w-4 mt-0.5 shrink-0" style={{ color: "#fbbf24" }} />
           <p className="text-xs leading-relaxed" style={{ color: "rgba(251,191,36,0.80)" }}>
-            Nao recebeu? Verifique a pasta de spam ou lixo eletronico.
-            O email pode levar alguns minutos para chegar.
+            Nao recebeu? Verifique a pasta de spam ou lixo eletronico. O email pode levar alguns
+            minutos para chegar.
           </p>
         </div>
 
@@ -108,5 +117,5 @@ export default function SignUpSuccessPage() {
         </Link>
       </div>
     </div>
-  )
+  );
 }

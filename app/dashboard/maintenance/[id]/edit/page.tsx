@@ -1,24 +1,30 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { MaintenancePlanForm } from "@/components/maintenance/plan-form"
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { MaintenancePlanForm } from "@/components/maintenance/plan-form";
 
-export default async function EditMaintenancePlanPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
+export default async function EditMaintenancePlanPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
   const { data: plan } = await supabase
     .from("maintenance_plans")
     .select("*")
     .eq("id", id)
     .eq("gardener_id", user!.id)
-    .maybeSingle()
+    .maybeSingle();
 
   if (!plan) {
-    notFound()
+    notFound();
   }
 
   return (
@@ -35,6 +41,5 @@ export default async function EditMaintenancePlanPage({ params }: { params: Prom
 
       <MaintenancePlanForm initialPlan={plan} />
     </div>
-  )
+  );
 }
-

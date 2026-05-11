@@ -20,12 +20,14 @@
 ## Estado Atual (snapshot)
 
 ### O que está bom
+
 - Arquitetura macro coerente: Next.js App Router (web) + Expo (mobile) + Supabase (DB/auth) + Stripe + Groq.
 - 35 migrações SQL versionadas, RLS aplicada nas tabelas principais.
 - Sistema de IA bem estruturado: registry de intents tipadas, orquestrador com cache de contexto, classificação e pós-processamento.
 - Documentação interna do projeto (`CLAUDE.md`) acima da média.
 
 ### Dívida técnica crítica
+
 - `package.json` ainda chamado `my-v0-project`. README de duas linhas. Sem `.env.example`.
 - `next.config.mjs` com `typescript.ignoreBuildErrors: true` — erros de tipo passam despercebidos.
 - Coexistência de `package-lock.json` e `pnpm-lock.yaml`.
@@ -39,13 +41,14 @@
 - Páginas monolíticas (>450 linhas) misturando data fetching, cálculo e UI.
 
 ### Riscos imediatos
-| Risco | Impacto | Probabilidade |
-|---|---|---|
-| Cobrança duplicada por retry de webhook | Alto | Média |
-| Acesso pago liberado sem pagamento (período hardcoded) | Alto | Baixa |
-| Spam de push notifications via rota aberta | Alto | Alta se descoberto |
-| Vazamento entre tenants via service-role + bug de lógica | Crítico | Baixa |
-| Stack quebrada após refator (sem testes) | Médio | Alta |
+
+| Risco                                                    | Impacto | Probabilidade      |
+| -------------------------------------------------------- | ------- | ------------------ |
+| Cobrança duplicada por retry de webhook                  | Alto    | Média              |
+| Acesso pago liberado sem pagamento (período hardcoded)   | Alto    | Baixa              |
+| Spam de push notifications via rota aberta               | Alto    | Alta se descoberto |
+| Vazamento entre tenants via service-role + bug de lógica | Crítico | Baixa              |
+| Stack quebrada após refator (sem testes)                 | Médio   | Alta               |
 
 ## Visão de 12 meses
 

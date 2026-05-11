@@ -1,41 +1,41 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { AppointmentForm } from "@/components/schedule/appointment-form"
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { AppointmentForm } from "@/components/schedule/appointment-form";
 
-export default async function EditAppointmentPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
-  const supabase = await createClient()
+export default async function EditAppointmentPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: appointment } = await supabase
     .from("appointments")
     .select("*")
     .eq("id", id)
     .eq("gardener_id", user!.id)
-    .single()
+    .single();
 
   if (!appointment) {
-    notFound()
+    notFound();
   }
 
   // Get clients for the dropdown
-  const { data: clients } = await supabase.from("clients").select("id, name").eq("gardener_id", user!.id).order("name")
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("id, name")
+    .eq("gardener_id", user!.id)
+    .order("name");
 
   // Get service orders for linking
   const { data: orders } = await supabase
     .from("service_orders")
     .select("id, title, status")
     .eq("gardener_id", user!.id)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
 
   return (
     <div className="flex flex-col gap-4">
@@ -47,16 +47,19 @@ export default async function EditAppointmentPage({
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight leading-tight">
-            Editar agendamento
-          </h1>
-          <p className="text-[13px] text-muted-foreground">
-            Atualize os dados do agendamento
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight leading-tight">Editar agendamento</h1>
+          <p className="text-[13px] text-muted-foreground">Atualize os dados do agendamento</p>
         </div>
       </div>
 
-      <AppointmentForm clients={clients || []} orders={(orders || []).map((o: any) => ({ id: String(o.id), title: String(o.title || "OS") }))} appointment={appointment} />
+      <AppointmentForm
+        clients={clients || []}
+        orders={(orders || []).map((o: any) => ({
+          id: String(o.id),
+          title: String(o.title || "OS"),
+        }))}
+        appointment={appointment}
+      />
     </div>
-  )
+  );
 }

@@ -1,32 +1,28 @@
-import { createClient } from "@/lib/supabase/server"
-import { notFound } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { PhotoUpload } from "@/components/photos/photo-upload"
-import { PhotoGallery } from "@/components/photos/photo-gallery"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { createClient } from "@/lib/supabase/server";
+import { notFound } from "next/navigation";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { PhotoUpload } from "@/components/photos/photo-upload";
+import { PhotoGallery } from "@/components/photos/photo-gallery";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-export default async function ClientPhotosPage({
-  params,
-}: {
-  params: Promise<{ id: string }>
-}) {
-  const { id } = await params
-  const supabase = await createClient()
+export default async function ClientPhotosPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: client } = await supabase
     .from("clients")
     .select("name")
     .eq("id", id)
     .eq("gardener_id", user!.id)
-    .single()
+    .single();
 
   if (!client) {
-    notFound()
+    notFound();
   }
 
   const { data: photos } = await supabase
@@ -34,7 +30,7 @@ export default async function ClientPhotosPage({
     .select("*")
     .eq("client_id", id)
     .eq("gardener_id", user!.id)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
 
   return (
     <div className="flex flex-col gap-4">
@@ -66,5 +62,5 @@ export default async function ClientPhotosPage({
         </TabsContent>
       </Tabs>
     </div>
-  )
+  );
 }

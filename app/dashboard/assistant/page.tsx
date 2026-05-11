@@ -1,23 +1,23 @@
-import { redirect } from "next/navigation"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
-import { IrisChat } from "@/components/dashboard/iris-chat"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { Sparkles, Lock, ArrowRight } from "lucide-react"
+import { redirect } from "next/navigation";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { IrisChat } from "@/components/dashboard/iris-chat";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { Sparkles, Lock, ArrowRight } from "lucide-react";
 
 export default async function AssistantPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) redirect("/auth/login")
+  } = await supabase.auth.getUser();
+  if (!user) redirect("/auth/login");
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("plan")
     .eq("id", user.id)
-    .maybeSingle()
+    .maybeSingle();
 
   if (profile?.plan !== "plus") {
     return (
@@ -31,9 +31,7 @@ export default async function AssistantPage() {
               </div>
               <div>
                 <p className="font-bold text-[15px] leading-tight">Iris</p>
-                <p className="text-[11px] text-muted-foreground">
-                  Assistente de jardinagem com IA
-                </p>
+                <p className="text-[11px] text-muted-foreground">Assistente de jardinagem com IA</p>
               </div>
               <div className="ml-auto flex items-center gap-1.5">
                 <Lock className="h-3.5 w-3.5 text-muted-foreground" />
@@ -52,8 +50,8 @@ export default async function AssistantPage() {
                   A Iris esta disponivel no Plano Plus
                 </p>
                 <p className="text-sm text-muted-foreground mt-2 text-balance">
-                  Com a Iris voce agenda servicos, registra financeiro, gerencia
-                  estoque e muito mais — tudo por texto ou voz, em portugues natural.
+                  Com a Iris voce agenda servicos, registra financeiro, gerencia estoque e muito
+                  mais — tudo por texto ou voz, em portugues natural.
                 </p>
               </div>
 
@@ -93,8 +91,8 @@ export default async function AssistantPage() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
-  return <IrisChat />
+  return <IrisChat />;
 }

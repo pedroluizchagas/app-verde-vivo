@@ -30,12 +30,28 @@ Regras:
   create_maintenance_plan: { client_name?: string, client_id?: string, service_name?: string, title: string, default_labor_cost?: number, materials_markup_pct?: number, preferred_weekday?: number (0..6), preferred_week_of_month?: number (1..4), window_days?: number, billing_day?: number, status?: "active|paused" }
   generate_monthly_task: { plan_id?: string, client_name?: string, cycle?: string }
   close_monthly_execution: { plan_id?: string, execution_id?: string, client_name?: string, title?: string, description?: string, labor_cost?: number, materials_total?: number, status?: "paid|pending", due_date?: string (date) }
-`
+`;
 
-export type AgentIntent = "create_client" | "schedule_visit" | "create_budget" | "update_budget_status" | "update_stock" | "approve_budget_and_record_income" | "record_service_income" | "record_income" | "record_expense" | "record_partner_commission" | "create_note" | "create_task" | "create_maintenance_plan" | "generate_monthly_task" | "close_monthly_execution" | "none"
+export type AgentIntent =
+  | "create_client"
+  | "schedule_visit"
+  | "create_budget"
+  | "update_budget_status"
+  | "update_stock"
+  | "approve_budget_and_record_income"
+  | "record_service_income"
+  | "record_income"
+  | "record_expense"
+  | "record_partner_commission"
+  | "create_note"
+  | "create_task"
+  | "create_maintenance_plan"
+  | "generate_monthly_task"
+  | "close_monthly_execution"
+  | "none";
 
 export interface AgentResponse {
-  intent: AgentIntent
-  params: Record<string, unknown>
-  reply: string
+  intent: AgentIntent;
+  params: Record<string, unknown>;
+  reply: string;
 }

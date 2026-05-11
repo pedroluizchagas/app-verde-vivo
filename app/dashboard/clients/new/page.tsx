@@ -1,7 +1,7 @@
-import { ClientForm } from "@/components/clients/client-form"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
+import { ClientForm } from "@/components/clients/client-form";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 
 export default function NewClientPage() {
   return (
@@ -21,5 +21,5 @@ export default function NewClientPage() {
 
       <ClientForm />
     </div>
-  )
+  );
 }

@@ -1,59 +1,59 @@
-import { NextResponse } from "next/server"
-import { createServiceRoleClient } from "@/lib/supabase/server"
-import { constructStripeWebhookEvent, retrieveStripeSubscription } from "@/lib/stripe/client"
-import { enforceRateLimit, getClientIp } from "@/lib/rate-limit"
-import type Stripe from "stripe"
+import { NextResponse } from "next/server";
+import { createServiceRoleClient } from "@/lib/supabase/server";
+import { constructStripeWebhookEvent, retrieveStripeSubscription } from "@/lib/stripe/client";
+import { enforceRateLimit, getClientIp } from "@/lib/rate-limit";
+import type Stripe from "stripe";
 
-export const runtime = "nodejs"
+export const runtime = "nodejs";
 
 export async function POST(request: Request) {
   // Proteção mínima de webhook: rate limit por IP antes da validação de assinatura,
   // para evitar consumo desnecessário do verifier do Stripe em caso de flood.
-  const limited = await enforceRateLimit("webhook", getClientIp(request))
-  if (limited) return limited
+  const limited = await enforceRateLimit("webhook", getClientIp(request));
+  if (limited) return limited;
 
-  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET
+  const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    console.error("[webhook] STRIPE_WEBHOOK_SECRET nao configurado")
-    return NextResponse.json({ error: "webhook_not_configured" }, { status: 500 })
+    console.error("[webhook] STRIPE_WEBHOOK_SECRET nao configurado");
+    return NextResponse.json({ error: "webhook_not_configured" }, { status: 500 });
   }
 
-  const signature = request.headers.get("stripe-signature") ?? ""
-  const rawBody = await request.text()
+  const signature = request.headers.get("stripe-signature") ?? "";
+  const rawBody = await request.text();
 
-  let event: Stripe.Event
+  let event: Stripe.Event;
   try {
-    event = constructStripeWebhookEvent(rawBody, signature, webhookSecret)
+    event = constructStripeWebhookEvent(rawBody, signature, webhookSecret);
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : "Assinatura invalida"
-    console.error("[webhook] Validacao falhou:", message)
-    return NextResponse.json({ error: "invalid_signature" }, { status: 400 })
+    const message = err instanceof Error ? err.message : "Assinatura invalida";
+    console.error("[webhook] Validacao falhou:", message);
+    return NextResponse.json({ error: "invalid_signature" }, { status: 400 });
   }
 
   // service-role justificado: webhook administrativo do Stripe. Sem usuário autenticado
   // no contexto da requisição (chamada server-to-server), RLS não se aplica.
-  const admin = createServiceRoleClient()
+  const admin = createServiceRoleClient();
 
   // checkout.session.completed
   // - Associa o stripe_subscription_id ao registro pendente
   // - Ativa a assinatura imediatamente, eliminando a race condition com invoice.payment_succeeded
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as Stripe.Checkout.Session
-    const subscriptionDbId = session.metadata?.subscription_db_id
+    const session = event.data.object as Stripe.Checkout.Session;
+    const subscriptionDbId = session.metadata?.subscription_db_id;
     const stripeSubscriptionId =
-      typeof session.subscription === "string" ? session.subscription : session.subscription?.id
+      typeof session.subscription === "string" ? session.subscription : session.subscription?.id;
 
     if (subscriptionDbId && stripeSubscriptionId) {
       const { data: sub } = await admin
         .from("subscriptions")
         .select("id, user_id, plan")
         .eq("id", subscriptionDbId)
-        .maybeSingle()
+        .maybeSingle();
 
       if (sub) {
-        const now = new Date()
-        const periodEnd = new Date(now)
-        periodEnd.setMonth(periodEnd.getMonth() + 1)
+        const now = new Date();
+        const periodEnd = new Date(now);
+        periodEnd.setMonth(periodEnd.getMonth() + 1);
 
         await admin
           .from("subscriptions")
@@ -64,9 +64,9 @@ export async function POST(request: Request) {
             current_period_end: periodEnd.toISOString(),
             updated_at: now.toISOString(),
           })
-          .eq("id", sub.id)
+          .eq("id", sub.id);
 
-        await admin.from("profiles").update({ plan: sub.plan }).eq("id", sub.user_id)
+        await admin.from("profiles").update({ plan: sub.plan }).eq("id", sub.user_id);
       }
     }
   }
@@ -75,54 +75,61 @@ export async function POST(request: Request) {
   // - Ativa/renova a assinatura com datas reais do periodo de cobranca
   // - Fallback via metadados do Stripe cobre casos onde o evento chega antes do checkout.session.completed
   if (event.type === "invoice.payment_succeeded") {
-    const invoice = event.data.object as Stripe.Invoice
+    const invoice = event.data.object as Stripe.Invoice;
     const stripeSubscriptionId =
-      typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id
+      typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
 
-    if (!stripeSubscriptionId) return NextResponse.json({ ok: true })
+    if (!stripeSubscriptionId) return NextResponse.json({ ok: true });
 
-    let sub: { id: string; user_id: string; plan: string } | null = null
+    let sub: { id: string; user_id: string; plan: string } | null = null;
 
     const { data: subByStripeId } = await admin
       .from("subscriptions")
       .select("id, user_id, plan")
       .eq("stripe_subscription_id", stripeSubscriptionId)
-      .maybeSingle()
+      .maybeSingle();
 
-    sub = subByStripeId ?? null
+    sub = subByStripeId ?? null;
 
     // Fallback: recupera metadados da assinatura no Stripe para encontrar o registro no banco
     if (!sub) {
       try {
-        const stripeSub = await retrieveStripeSubscription(stripeSubscriptionId)
-        const subscriptionDbId = stripeSub.metadata?.subscription_db_id
+        const stripeSub = await retrieveStripeSubscription(stripeSubscriptionId);
+        const subscriptionDbId = stripeSub.metadata?.subscription_db_id;
 
         if (subscriptionDbId) {
           const { data: subByDbId } = await admin
             .from("subscriptions")
             .select("id, user_id, plan")
             .eq("id", subscriptionDbId)
-            .maybeSingle()
+            .maybeSingle();
 
           if (subByDbId) {
-            sub = subByDbId
+            sub = subByDbId;
             await admin
               .from("subscriptions")
-              .update({ stripe_subscription_id: stripeSubscriptionId, updated_at: new Date().toISOString() })
-              .eq("id", sub.id)
+              .update({
+                stripe_subscription_id: stripeSubscriptionId,
+                updated_at: new Date().toISOString(),
+              })
+              .eq("id", sub.id);
           }
         }
       } catch (err) {
-        console.error("[webhook] Erro ao buscar assinatura Stripe para fallback:", err)
+        console.error("[webhook] Erro ao buscar assinatura Stripe para fallback:", err);
       }
     }
 
-    if (!sub) return NextResponse.json({ ok: true })
+    if (!sub) return NextResponse.json({ ok: true });
 
-    const periodStart = invoice.period_start ? new Date(invoice.period_start * 1000) : new Date()
+    const periodStart = invoice.period_start ? new Date(invoice.period_start * 1000) : new Date();
     const periodEnd = invoice.period_end
       ? new Date(invoice.period_end * 1000)
-      : (() => { const d = new Date(periodStart); d.setMonth(d.getMonth() + 1); return d })()
+      : (() => {
+          const d = new Date(periodStart);
+          d.setMonth(d.getMonth() + 1);
+          return d;
+        })();
 
     await admin
       .from("subscriptions")
@@ -132,54 +139,54 @@ export async function POST(request: Request) {
         current_period_end: periodEnd.toISOString(),
         updated_at: new Date().toISOString(),
       })
-      .eq("id", sub.id)
+      .eq("id", sub.id);
 
-    await admin.from("profiles").update({ plan: sub.plan }).eq("id", sub.user_id)
+    await admin.from("profiles").update({ plan: sub.plan }).eq("id", sub.user_id);
   }
 
   // invoice.payment_failed
   // - Marca assinatura como inadimplente
   if (event.type === "invoice.payment_failed") {
-    const invoice = event.data.object as Stripe.Invoice
+    const invoice = event.data.object as Stripe.Invoice;
     const stripeSubscriptionId =
-      typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id
+      typeof invoice.subscription === "string" ? invoice.subscription : invoice.subscription?.id;
 
-    if (!stripeSubscriptionId) return NextResponse.json({ ok: true })
+    if (!stripeSubscriptionId) return NextResponse.json({ ok: true });
 
     const { data: sub } = await admin
       .from("subscriptions")
       .select("id")
       .eq("stripe_subscription_id", stripeSubscriptionId)
-      .maybeSingle()
+      .maybeSingle();
 
-    if (!sub) return NextResponse.json({ ok: true })
+    if (!sub) return NextResponse.json({ ok: true });
 
     await admin
       .from("subscriptions")
       .update({ status: "overdue", updated_at: new Date().toISOString() })
-      .eq("id", sub.id)
+      .eq("id", sub.id);
   }
 
   // customer.subscription.deleted
   // - Cancela a assinatura e remove o plano do perfil
   if (event.type === "customer.subscription.deleted") {
-    const stripeSub = event.data.object as Stripe.Subscription
+    const stripeSub = event.data.object as Stripe.Subscription;
 
     const { data: sub } = await admin
       .from("subscriptions")
       .select("id, user_id")
       .eq("stripe_subscription_id", stripeSub.id)
-      .maybeSingle()
+      .maybeSingle();
 
-    if (!sub) return NextResponse.json({ ok: true })
+    if (!sub) return NextResponse.json({ ok: true });
 
     await admin
       .from("subscriptions")
       .update({ status: "cancelled", updated_at: new Date().toISOString() })
-      .eq("id", sub.id)
+      .eq("id", sub.id);
 
-    await admin.from("profiles").update({ plan: null }).eq("id", sub.user_id)
+    await admin.from("profiles").update({ plan: null }).eq("id", sub.user_id);
   }
 
-  return NextResponse.json({ ok: true })
+  return NextResponse.json({ ok: true });
 }

@@ -1,10 +1,10 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useRouter } from "next/navigation"
-import { createClient } from "@/lib/supabase/client"
-import { Button } from "@/components/ui/button"
-import { Trash2, X } from "lucide-react"
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import { Button } from "@/components/ui/button";
+import { Trash2, X } from "lucide-react";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -15,53 +15,53 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
   AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import { Badge } from "@/components/ui/badge"
+} from "@/components/ui/alert-dialog";
+import { Badge } from "@/components/ui/badge";
 
 interface Photo {
-  id: string
-  url: string
-  type: string
-  caption: string | null
-  created_at: string
+  id: string;
+  url: string;
+  type: string;
+  caption: string | null;
+  created_at: string;
 }
 
 const typeLabels = {
   before: "Antes",
   after: "Depois",
   general: "Geral",
-}
+};
 
 const typeColors = {
   before: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
   after: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
   general: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-}
+};
 
 export function PhotoGallery({ photos }: { photos: Photo[] }) {
-  const router = useRouter()
-  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null)
-  const [isDeleting, setIsDeleting] = useState(false)
+  const router = useRouter();
+  const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const handleDelete = async (photoId: string) => {
-    setIsDeleting(true)
-    const supabase = createClient()
+    setIsDeleting(true);
+    const supabase = createClient();
 
     try {
-      const { error } = await supabase.from("photos").delete().eq("id", photoId)
+      const { error } = await supabase.from("photos").delete().eq("id", photoId);
 
-      if (error) throw error
-      router.refresh()
-      setSelectedPhoto(null)
+      if (error) throw error;
+      router.refresh();
+      setSelectedPhoto(null);
     } catch (error) {
-      console.error("Error deleting photo:", error)
+      console.error("Error deleting photo:", error);
     } finally {
-      setIsDeleting(false)
+      setIsDeleting(false);
     }
-  }
+  };
 
   if (photos.length === 0) {
-    return <div className="text-center py-8 text-muted-foreground">Nenhuma foto adicionada</div>
+    return <div className="text-center py-8 text-muted-foreground">Nenhuma foto adicionada</div>;
   }
 
   return (
@@ -79,7 +79,10 @@ export function PhotoGallery({ photos }: { photos: Photo[] }) {
               className="w-full h-full object-cover rounded-lg"
             />
             <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-              <Badge variant="secondary" className={typeColors[photo.type as keyof typeof typeColors]}>
+              <Badge
+                variant="secondary"
+                className={typeColors[photo.type as keyof typeof typeColors]}
+              >
                 {typeLabels[photo.type as keyof typeof typeLabels]}
               </Badge>
             </div>
@@ -110,7 +113,10 @@ export function PhotoGallery({ photos }: { photos: Photo[] }) {
 
             <div className="mt-4 bg-card rounded-lg p-4 flex items-start justify-between gap-4">
               <div className="flex-1">
-                <Badge variant="secondary" className={typeColors[selectedPhoto.type as keyof typeof typeColors]}>
+                <Badge
+                  variant="secondary"
+                  className={typeColors[selectedPhoto.type as keyof typeof typeColors]}
+                >
                   {typeLabels[selectedPhoto.type as keyof typeof typeLabels]}
                 </Badge>
                 {selectedPhoto.caption && <p className="mt-2 text-sm">{selectedPhoto.caption}</p>}
@@ -128,7 +134,9 @@ export function PhotoGallery({ photos }: { photos: Photo[] }) {
                 <AlertDialogContent>
                   <AlertDialogHeader>
                     <AlertDialogTitle>Excluir foto?</AlertDialogTitle>
-                    <AlertDialogDescription>Esta ação não pode ser desfeita.</AlertDialogDescription>
+                    <AlertDialogDescription>
+                      Esta ação não pode ser desfeita.
+                    </AlertDialogDescription>
                   </AlertDialogHeader>
                   <AlertDialogFooter>
                     <AlertDialogCancel>Cancelar</AlertDialogCancel>
@@ -147,5 +155,5 @@ export function PhotoGallery({ photos }: { photos: Photo[] }) {
         </div>
       )}
     </>
-  )
+  );
 }

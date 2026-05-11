@@ -15,6 +15,7 @@ Tornar o pipeline de qualidade **honesto**: build falha em erro de tipo. Reduzir
 ## Escopo
 
 ### Entra
+
 - Remover `ignoreBuildErrors`.
 - Corrigir todos os erros de tipo que apareçam.
 - Eliminar `any` em código de aplicação (mantendo apenas onde justificado em comentário).
@@ -25,6 +26,7 @@ Tornar o pipeline de qualidade **honesto**: build falha em erro de tipo. Reduzir
 - Configurar `tsconfig.json` para incluir mobile no checking opcional (sem quebrar build do web).
 
 ### Não entra
+
 - Reescrever todas as páginas (só as duas piores).
 - Mudar arquitetura.
 - Adicionar testes (Fase 05).
@@ -32,7 +34,7 @@ Tornar o pipeline de qualidade **honesto**: build falha em erro de tipo. Reduzir
 
 ## Prompt para o agente executor
 
-```markdown
+````markdown
 Você está executando a **Fase 02 — Qualidade de Código** do Gestão Garden, conforme `docs/fases/fase-02-qualidade-codigo.md`.
 
 **Pré-requisitos:** Fase 00 mergeada. Fase 01 idealmente mergeada (mas não bloqueante; trabalhar em branch separada).
@@ -40,6 +42,7 @@ Você está executando a **Fase 02 — Qualidade de Código** do Gestão Garden,
 **Branch:** `feat/fase-02-qualidade-codigo` a partir de main.
 
 **Leia antes:**
+
 - `docs/03-padroes-e-convencoes.md`
 - `next.config.mjs`, `tsconfig.json`, `eslint.config.mjs`, `package.json`
 
@@ -48,6 +51,7 @@ Você está executando a **Fase 02 — Qualidade de Código** do Gestão Garden,
 ### 1. Remover `ignoreBuildErrors`
 
 Editar `next.config.mjs`:
+
 ```js
 typescript: {
   // ignoreBuildErrors: true,  ← REMOVER
@@ -56,10 +60,12 @@ images: {
   unoptimized: true,  // manter por enquanto, será revisto na Fase 08
 }
 ```
+````
 
 Rodar `pnpm tsc --noEmit` e capturar todos os erros. Corrigir um a um. **Não usar `// @ts-ignore` para silenciar.**
 
 Categorias esperadas:
+
 - Acessos a propriedades opcionais sem narrowing (`(profile as any).stripe_customer_id`).
 - Tipos do Supabase não importados — usar tipos gerados (`pnpm supabase gen types typescript` se configurado, ou tipos manuais em `lib/domain/<contexto>/types.ts`).
 - Tipos de eventos Stripe — usar `Stripe.Event` discriminado.
@@ -68,6 +74,7 @@ Categorias esperadas:
 ### 2. Eliminar `any`
 
 Buscar com `rg "as any|: any|<any>"` em `app/`, `components/`, `lib/`, `middleware.ts`. Para cada ocorrência:
+
 - Tente eliminar com tipos reais.
 - Se for SDK terceiro sem tipos, criar tipo local em `lib/types/<sdk>.d.ts`.
 - Se realmente inevitável, justificar com comentário acima:
@@ -82,6 +89,7 @@ NÃO substituir `any` por `unknown` cega — fazer narrowing com Zod ou type gua
 ### 3. ESLint endurecido
 
 Editar `eslint.config.mjs` adicionando regras (em flat config):
+
 ```js
 {
   rules: {
@@ -102,6 +110,7 @@ Rodar `pnpm lint` e corrigir tudo. Meta: zero warnings.
 `pnpm add -D prettier eslint-config-prettier`
 
 Criar `.prettierrc.json`:
+
 ```json
 {
   "semi": true,
@@ -118,6 +127,7 @@ Criar `.prettierignore` (mesmo conteúdo de `.gitignore` + `pnpm-lock.yaml`).
 Adicionar `eslint-config-prettier` ao `eslint.config.mjs`.
 
 Adicionar scripts:
+
 ```json
 "format": "prettier --write .",
 "format:check": "prettier --check ."
@@ -128,6 +138,7 @@ Rodar `pnpm format` uma vez e commitar separadamente (`chore: aplicar prettier a
 ### 5. Scripts de qualidade
 
 Adicionar/atualizar em `package.json`:
+
 ```json
 "typecheck": "tsc --noEmit",
 "check": "pnpm lint && pnpm typecheck && pnpm format:check"
@@ -136,12 +147,14 @@ Adicionar/atualizar em `package.json`:
 ### 6. Quebrar páginas monolíticas
 
 #### `app/dashboard/finance/page.tsx` (458 linhas)
+
 - Mover queries para `lib/domain/finance/queries.ts` (funções: `obterTransacoesDoMes`, `calcularKpisFinanceiros`, `obterCategorias`).
 - Tipos em `lib/domain/finance/types.ts`.
 - Componentes de UI específicos para `components/finance/` (cards de KPI, tabela, filtros).
 - Página fica como orquestrador (~80–120 linhas).
 
 #### `app/dashboard/page.tsx` (570 linhas)
+
 - Mesma abordagem. Queries em `lib/domain/dashboard/queries.ts`. Componentes de KPI/charts em `components/dashboard/`.
 - Cuidado: já existe pasta `components/dashboard/`. Reaproveitar e expandir.
 
@@ -155,16 +168,19 @@ Não mexer em outras páginas nesta fase, mesmo que estejam grandes.
 - Buscar `any` no diff novo: zero adições sem comentário.
 
 **Restrições:**
+
 - NÃO mudar lógica de negócio.
 - NÃO renomear rotas, tabelas, colunas.
 - NÃO adicionar testes (é Fase 05).
 - NÃO tocar em mobile nesta fase.
 
 **Entrega:**
+
 - PR draft, título: `refactor(qualidade): habilitar typecheck no build, eliminar any e quebrar páginas monolíticas`.
 - Commits separados por tarefa: `chore(prettier)`, `refactor(types)`, `refactor(eslint)`, `refactor(finance)`, `refactor(dashboard)`.
 
 **Definition of Done — copiar para o PR:**
+
 - [ ] `next.config.mjs` sem `ignoreBuildErrors`.
 - [ ] `pnpm tsc --noEmit` passa.
 - [ ] Zero `any` sem comentário justificativo no diff.
@@ -174,6 +190,7 @@ Não mexer em outras páginas nesta fase, mesmo que estejam grandes.
 - [ ] `dashboard/finance/page.tsx` reduzida a < 150 linhas.
 - [ ] `dashboard/page.tsx` reduzida a < 150 linhas.
 - [ ] Comportamento das páginas quebradas inalterado (verificado manualmente).
+
 ```
 
 ## Definition of Done
@@ -190,3 +207,4 @@ Não mexer em outras páginas nesta fase, mesmo que estejam grandes.
 - **Quantidade de erros TS revelados pode ser grande.** Se passar de ~80 erros, pausar e abrir issue — pode justificar quebrar a fase em duas.
 - **Quebra de comportamento ao refatorar páginas.** Sem testes, validar manualmente cada KPI antes/depois.
 - **Prettier reformata 100% do projeto.** Fazer commit separado para isolar diff de formatação do diff de lógica.
+```

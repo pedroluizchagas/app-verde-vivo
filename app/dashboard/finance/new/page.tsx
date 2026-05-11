@@ -1,26 +1,26 @@
-import { TransactionForm } from "@/components/finance/transaction-form"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
+import { TransactionForm } from "@/components/finance/transaction-form";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function NewTransactionPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: categories } = await supabase
     .from("financial_categories")
     .select("id, name, parent_id, kind")
     .eq("gardener_id", user!.id)
-    .order("name")
+    .order("name");
 
   const { data: clients } = await supabase
     .from("clients")
     .select("id, name")
     .eq("gardener_id", user!.id)
-    .order("name")
+    .order("name");
 
   return (
     <div className="flex flex-col gap-4">
@@ -36,5 +36,5 @@ export default async function NewTransactionPage() {
 
       <TransactionForm categories={categories || []} clients={clients || []} />
     </div>
-  )
+  );
 }

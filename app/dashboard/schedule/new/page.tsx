@@ -1,24 +1,28 @@
-import { AppointmentForm } from "@/components/schedule/appointment-form"
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { createClient } from "@/lib/supabase/server"
+import { AppointmentForm } from "@/components/schedule/appointment-form";
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 
 export default async function NewAppointmentPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   // Get clients for the dropdown
-  const { data: clients } = await supabase.from("clients").select("id, name").eq("gardener_id", user!.id).order("name")
+  const { data: clients } = await supabase
+    .from("clients")
+    .select("id, name")
+    .eq("gardener_id", user!.id)
+    .order("name");
 
   // Get service orders for linking
   const { data: orders } = await supabase
     .from("service_orders")
     .select("id, title, status")
     .eq("gardener_id", user!.id)
-    .order("created_at", { ascending: false })
+    .order("created_at", { ascending: false });
 
   return (
     <div className="flex flex-col gap-4">
@@ -30,16 +34,18 @@ export default async function NewAppointmentPage() {
           </Link>
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight leading-tight">
-            Novo agendamento
-          </h1>
-          <p className="text-[13px] text-muted-foreground">
-            Preencha os dados do agendamento
-          </p>
+          <h1 className="text-2xl font-bold tracking-tight leading-tight">Novo agendamento</h1>
+          <p className="text-[13px] text-muted-foreground">Preencha os dados do agendamento</p>
         </div>
       </div>
 
-      <AppointmentForm clients={clients || []} orders={(orders || []).map((o: any) => ({ id: String(o.id), title: String(o.title || "OS") }))} />
+      <AppointmentForm
+        clients={clients || []}
+        orders={(orders || []).map((o: any) => ({
+          id: String(o.id),
+          title: String(o.title || "OS"),
+        }))}
+      />
     </div>
-  )
+  );
 }

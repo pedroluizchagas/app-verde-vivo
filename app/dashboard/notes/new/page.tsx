@@ -1,7 +1,7 @@
-import { Button } from "@/components/ui/button"
-import { ArrowLeft } from "lucide-react"
-import Link from "next/link"
-import { NoteCreateForm } from "@/components/notes/note-create-form"
+import { Button } from "@/components/ui/button";
+import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
+import { NoteCreateForm } from "@/components/notes/note-create-form";
 
 export default function NewNotePage() {
   return (
@@ -18,5 +18,5 @@ export default function NewNotePage() {
 
       <NoteCreateForm />
     </div>
-  )
+  );
 }

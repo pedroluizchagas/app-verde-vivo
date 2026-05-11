@@ -1,9 +1,9 @@
-import Stripe from "stripe"
+import Stripe from "stripe";
 
 function getStripe(): Stripe {
-  const key = process.env.STRIPE_SECRET_KEY
-  if (!key) throw new Error("STRIPE_SECRET_KEY nao configurado")
-  return new Stripe(key)
+  const key = process.env.STRIPE_SECRET_KEY;
+  if (!key) throw new Error("STRIPE_SECRET_KEY nao configurado");
+  return new Stripe(key);
 }
 
 /**
@@ -13,26 +13,26 @@ function getStripe(): Stripe {
 export async function getOrCreateStripeCustomer(
   userId: string,
   email: string,
-  name?: string | null
+  name?: string | null,
 ): Promise<string> {
-  const stripe = getStripe()
+  const stripe = getStripe();
 
   const existing = await stripe.customers.search({
     query: `metadata['user_id']:'${userId}'`,
     limit: 1,
-  })
+  });
 
   if (existing.data.length > 0) {
-    return existing.data[0].id
+    return existing.data[0].id;
   }
 
   const customer = await stripe.customers.create({
     email,
     name: name ?? undefined,
     metadata: { user_id: userId },
-  })
+  });
 
-  return customer.id
+  return customer.id;
 }
 
 /**
@@ -41,14 +41,14 @@ export async function getOrCreateStripeCustomer(
  * associar o pagamento ao registro correto no banco.
  */
 export async function createStripeCheckoutSession(params: {
-  stripeCustomerId: string
-  priceId: string
-  userId: string
-  subscriptionDbId: string
-  successUrl: string
-  cancelUrl: string
+  stripeCustomerId: string;
+  priceId: string;
+  userId: string;
+  subscriptionDbId: string;
+  successUrl: string;
+  cancelUrl: string;
 }): Promise<{ url: string; sessionId: string }> {
-  const stripe = getStripe()
+  const stripe = getStripe();
 
   const session = await stripe.checkout.sessions.create({
     customer: params.stripeCustomerId,
@@ -66,18 +66,18 @@ export async function createStripeCheckoutSession(params: {
         subscription_db_id: params.subscriptionDbId,
       },
     },
-  })
+  });
 
-  if (!session.url) throw new Error("Stripe nao retornou URL de checkout")
-  return { url: session.url, sessionId: session.id }
+  if (!session.url) throw new Error("Stripe nao retornou URL de checkout");
+  return { url: session.url, sessionId: session.id };
 }
 
 /**
  * Cancela uma assinatura imediatamente no Stripe.
  */
 export async function cancelStripeSubscription(subscriptionId: string): Promise<void> {
-  const stripe = getStripe()
-  await stripe.subscriptions.cancel(subscriptionId)
+  const stripe = getStripe();
+  await stripe.subscriptions.cancel(subscriptionId);
 }
 
 /**
@@ -86,35 +86,39 @@ export async function cancelStripeSubscription(subscriptionId: string): Promise<
  */
 export async function createStripePortalSession(
   stripeCustomerId: string,
-  returnUrl: string
+  returnUrl: string,
 ): Promise<string> {
-  const stripe = getStripe()
+  const stripe = getStripe();
   const session = await stripe.billingPortal.sessions.create({
     customer: stripeCustomerId,
     return_url: returnUrl,
-  })
-  return session.url
+  });
+  return session.url;
 }
 
 /**
  * Recupera uma assinatura Stripe pelo ID.
  */
-export async function retrieveStripeSubscription(subscriptionId: string): Promise<Stripe.Subscription> {
-  const stripe = getStripe()
-  return stripe.subscriptions.retrieve(subscriptionId)
+export async function retrieveStripeSubscription(
+  subscriptionId: string,
+): Promise<Stripe.Subscription> {
+  const stripe = getStripe();
+  return stripe.subscriptions.retrieve(subscriptionId);
 }
 
 /**
  * Lista assinaturas ativas de um cliente Stripe.
  */
-export async function listActiveStripeSubscriptions(customerId: string): Promise<Stripe.Subscription[]> {
-  const stripe = getStripe()
+export async function listActiveStripeSubscriptions(
+  customerId: string,
+): Promise<Stripe.Subscription[]> {
+  const stripe = getStripe();
   const result = await stripe.subscriptions.list({
     customer: customerId,
     status: "active",
     limit: 10,
-  })
-  return result.data
+  });
+  return result.data;
 }
 
 /**
@@ -124,8 +128,8 @@ export async function listActiveStripeSubscriptions(customerId: string): Promise
 export function constructStripeWebhookEvent(
   body: string | Buffer,
   signature: string,
-  secret: string
+  secret: string,
 ): Stripe.Event {
-  const stripe = getStripe()
-  return stripe.webhooks.constructEvent(body, signature, secret)
+  const stripe = getStripe();
+  return stripe.webhooks.constructEvent(body, signature, secret);
 }

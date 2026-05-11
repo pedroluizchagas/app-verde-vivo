@@ -1,38 +1,36 @@
-import { createClient } from "@/lib/supabase/server"
-import { Card, CardContent } from "@/components/ui/card"
-import { AvatarUpload } from "@/components/profile/avatar-upload"
-import { LogoutButton } from "@/components/profile/logout-button"
-import { PreferencesForm } from "@/components/finance/preferences-form"
-import { BrandForm } from "@/components/profile/brand-form"
-import { Phone, Mail, UserCircle, Settings, Sparkles, CreditCard } from "lucide-react"
-import { CpfCnpjForm } from "@/components/profile/cpf-cnpj-form"
+import { createClient } from "@/lib/supabase/server";
+import { Card, CardContent } from "@/components/ui/card";
+import { AvatarUpload } from "@/components/profile/avatar-upload";
+import { LogoutButton } from "@/components/profile/logout-button";
+import { PreferencesForm } from "@/components/finance/preferences-form";
+import { BrandForm } from "@/components/profile/brand-form";
+import { Phone, Mail, UserCircle, Settings, Sparkles, CreditCard } from "lucide-react";
+import { CpfCnpjForm } from "@/components/profile/cpf-cnpj-form";
 
 export default async function ProfilePage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: profile } = await supabase
     .from("profiles")
     .select("full_name, avatar_url, phone")
     .eq("id", user!.id)
-    .maybeSingle()
+    .maybeSingle();
 
   const { data: prefs } = await supabase
     .from("user_preferences")
-    .select(
-      "credit_card_due_day, default_pending_days, default_product_margin_pct"
-    )
+    .select("credit_card_due_day, default_pending_days, default_product_margin_pct")
     .eq("gardener_id", user!.id)
-    .maybeSingle()
+    .maybeSingle();
 
   const memberSince = user?.created_at
     ? new Date(user.created_at).toLocaleDateString("pt-BR", {
         month: "long",
         year: "numeric",
       })
-    : null
+    : null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -72,17 +70,13 @@ export default async function ProfilePage() {
                 {user?.email && (
                   <div className="flex items-center gap-1">
                     <Mail className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span className="text-[12px] text-muted-foreground truncate">
-                      {user.email}
-                    </span>
+                    <span className="text-[12px] text-muted-foreground truncate">{user.email}</span>
                   </div>
                 )}
                 {profile?.phone && (
                   <div className="flex items-center gap-1">
                     <Phone className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span className="text-[12px] text-muted-foreground">
-                      {profile.phone}
-                    </span>
+                    <span className="text-[12px] text-muted-foreground">{profile.phone}</span>
                   </div>
                 )}
               </div>
@@ -120,9 +114,7 @@ export default async function ProfilePage() {
                 <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center shrink-0">
                   <Sparkles className="h-3 w-3 text-muted-foreground" />
                 </div>
-                <h2 className="text-[14px] font-semibold">
-                  Empresa e marca d&apos;água
-                </h2>
+                <h2 className="text-[14px] font-semibold">Empresa e marca d&apos;água</h2>
               </div>
               <BrandForm />
             </CardContent>
@@ -183,5 +175,5 @@ export default async function ProfilePage() {
         </div>
       </div>
     </div>
-  )
+  );
 }

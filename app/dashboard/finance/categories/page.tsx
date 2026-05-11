@@ -1,59 +1,52 @@
-import { createClient } from "@/lib/supabase/server"
-import Link from "next/link"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent } from "@/components/ui/card"
-import { CategoryForm } from "@/components/finance/category-form"
-import { CategorySeedButton } from "@/components/finance/category-seed"
-import {
-  ArrowLeft,
-  Plus,
-  ArrowUpRight,
-  ArrowDownRight,
-  Layers,
-  Sparkles,
-} from "lucide-react"
+import { createClient } from "@/lib/supabase/server";
+import Link from "next/link";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import { CategoryForm } from "@/components/finance/category-form";
+import { CategorySeedButton } from "@/components/finance/category-seed";
+import { ArrowLeft, Plus, ArrowUpRight, ArrowDownRight, Layers, Sparkles } from "lucide-react";
 
 export default async function FinanceCategoriesPage() {
-  const supabase = await createClient()
+  const supabase = await createClient();
   const {
     data: { user },
-  } = await supabase.auth.getUser()
+  } = await supabase.auth.getUser();
 
   const { data: categories } = await supabase
     .from("financial_categories")
     .select("id, name, parent_id, kind")
     .eq("gardener_id", user!.id)
-    .order("name")
+    .order("name");
 
   const allCategories = (categories || []) as {
-    id: string
-    name: string
-    parent_id: string | null
-    kind: "expense" | "income" | null
-  }[]
+    id: string;
+    name: string;
+    parent_id: string | null;
+    kind: "expense" | "income" | null;
+  }[];
 
-  const parents = allCategories.filter((c) => c.parent_id === null)
-  const children = allCategories.filter((c) => c.parent_id !== null)
+  const parents = allCategories.filter((c) => c.parent_id === null);
+  const children = allCategories.filter((c) => c.parent_id !== null);
 
-  const childrenByParent: Record<string, { id: string; name: string }[]> = {}
+  const childrenByParent: Record<string, { id: string; name: string }[]> = {};
   children.forEach((c) => {
-    const key = String(c.parent_id)
-    childrenByParent[key] = childrenByParent[key] || []
-    childrenByParent[key].push({ id: c.id, name: c.name })
-  })
+    const key = String(c.parent_id);
+    childrenByParent[key] = childrenByParent[key] || [];
+    childrenByParent[key].push({ id: c.id, name: c.name });
+  });
 
-  const incomeParents = parents.filter((p) => p.kind === "income")
-  const expenseParents = parents.filter((p) => p.kind === "expense")
-  const uncategorizedParents = parents.filter((p) => p.kind == null)
+  const incomeParents = parents.filter((p) => p.kind === "income");
+  const expenseParents = parents.filter((p) => p.kind === "expense");
+  const uncategorizedParents = parents.filter((p) => p.kind == null);
 
   const incomeChildCount = children.filter((c) => {
-    const parent = parents.find((p) => p.id === c.parent_id)
-    return parent?.kind === "income"
-  }).length
+    const parent = parents.find((p) => p.id === c.parent_id);
+    return parent?.kind === "income";
+  }).length;
   const expenseChildCount = children.filter((c) => {
-    const parent = parents.find((p) => p.id === c.parent_id)
-    return parent?.kind === "expense"
-  }).length
+    const parent = parents.find((p) => p.id === c.parent_id);
+    return parent?.kind === "expense";
+  }).length;
 
   return (
     <div className="flex flex-col gap-4">
@@ -89,12 +82,10 @@ export default async function FinanceCategoriesPage() {
                 <Layers className="h-3.5 w-3.5 text-muted-foreground" />
               </div>
             </div>
-            <p className="text-[22px] font-bold leading-tight">
-              {allCategories.length}
-            </p>
+            <p className="text-[22px] font-bold leading-tight">{allCategories.length}</p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              {parents.length} grupo{parents.length !== 1 ? "s" : ""} +{" "}
-              {children.length} subcategoria
+              {parents.length} grupo{parents.length !== 1 ? "s" : ""} + {children.length}{" "}
+              subcategoria
               {children.length !== 1 ? "s" : ""}
             </p>
           </CardContent>
@@ -114,8 +105,8 @@ export default async function FinanceCategoriesPage() {
               {incomeParents.length}
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              grupo{incomeParents.length !== 1 ? "s" : ""} · {incomeChildCount}{" "}
-              subcategoria{incomeChildCount !== 1 ? "s" : ""}
+              grupo{incomeParents.length !== 1 ? "s" : ""} · {incomeChildCount} subcategoria
+              {incomeChildCount !== 1 ? "s" : ""}
             </p>
           </CardContent>
         </Card>
@@ -134,8 +125,8 @@ export default async function FinanceCategoriesPage() {
               {expenseParents.length}
             </p>
             <p className="text-[11px] text-muted-foreground mt-0.5">
-              grupo{expenseParents.length !== 1 ? "s" : ""} · {expenseChildCount}{" "}
-              subcategoria{expenseChildCount !== 1 ? "s" : ""}
+              grupo{expenseParents.length !== 1 ? "s" : ""} · {expenseChildCount} subcategoria
+              {expenseChildCount !== 1 ? "s" : ""}
             </p>
           </CardContent>
         </Card>
@@ -165,8 +156,8 @@ export default async function FinanceCategoriesPage() {
               <div>
                 <p className="text-[14px] font-semibold">Categorias sugeridas</p>
                 <p className="text-[12px] text-muted-foreground mt-0.5">
-                  Adicione automaticamente grupos pré-definidos de receitas e
-                  despesas comuns para jardinagem.
+                  Adicione automaticamente grupos pré-definidos de receitas e despesas comuns para
+                  jardinagem.
                 </p>
               </div>
             </div>
@@ -252,14 +243,13 @@ export default async function FinanceCategoriesPage() {
         <Card className="py-0">
           <CardContent className="p-8 text-center">
             <p className="text-[13px] text-muted-foreground">
-              Nenhuma categoria criada. Use o formulário acima ou adicione as
-              categorias sugeridas.
+              Nenhuma categoria criada. Use o formulário acima ou adicione as categorias sugeridas.
             </p>
           </CardContent>
         </Card>
       )}
     </div>
-  )
+  );
 }
 
 function CategoryTreeCard({
@@ -267,23 +257,21 @@ function CategoryTreeCard({
   subcategories,
   kind,
 }: {
-  parent: { id: string; name: string }
-  subcategories: { id: string; name: string }[]
-  kind: "income" | "expense" | null
+  parent: { id: string; name: string };
+  subcategories: { id: string; name: string }[];
+  kind: "income" | "expense" | null;
 }) {
   const borderColor =
     kind === "income"
       ? "border-l-emerald-500"
       : kind === "expense"
         ? "border-l-red-400"
-        : "border-l-border"
+        : "border-l-border";
 
   return (
     <Card className={`py-0 border-l-4 ${borderColor}`}>
       <CardContent className="p-4">
-        <p className="font-semibold text-[14px] leading-tight mb-2">
-          {parent.name}
-        </p>
+        <p className="font-semibold text-[14px] leading-tight mb-2">{parent.name}</p>
         {subcategories.length > 0 ? (
           <div className="flex flex-wrap gap-1.5">
             {subcategories.map((ch) => (
@@ -296,11 +284,9 @@ function CategoryTreeCard({
             ))}
           </div>
         ) : (
-          <p className="text-[11px] text-muted-foreground italic">
-            Sem subcategorias
-          </p>
+          <p className="text-[11px] text-muted-foreground italic">Sem subcategorias</p>
         )}
       </CardContent>
     </Card>
-  )
+  );
 }

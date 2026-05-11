@@ -10,16 +10,16 @@ Padrões obrigatórios. Desvios precisam de justificativa no PR.
 
 ## Naming
 
-| Item | Convenção | Exemplo |
-|---|---|---|
-| Arquivo de componente | kebab-case + `.tsx` | `delete-appointment-button.tsx` |
-| Arquivo de utilitário | kebab-case + `.ts` | `formatar-moeda.ts` |
-| Função/Componente React | PascalCase | `DeleteAppointmentButton` |
-| Função utilitária | camelCase | `formatarMoeda` |
-| Constante de módulo | UPPER_SNAKE_CASE | `MAX_TENTATIVAS` |
-| Tipo / Interface | PascalCase | `OrcamentoStatus`, `Cliente` |
-| Tabela Supabase | snake_case plural | `clients`, `work_orders` |
-| Coluna Supabase | snake_case singular | `gardener_id`, `created_at` |
+| Item                    | Convenção           | Exemplo                         |
+| ----------------------- | ------------------- | ------------------------------- |
+| Arquivo de componente   | kebab-case + `.tsx` | `delete-appointment-button.tsx` |
+| Arquivo de utilitário   | kebab-case + `.ts`  | `formatar-moeda.ts`             |
+| Função/Componente React | PascalCase          | `DeleteAppointmentButton`       |
+| Função utilitária       | camelCase           | `formatarMoeda`                 |
+| Constante de módulo     | UPPER_SNAKE_CASE    | `MAX_TENTATIVAS`                |
+| Tipo / Interface        | PascalCase          | `OrcamentoStatus`, `Cliente`    |
+| Tabela Supabase         | snake_case plural   | `clients`, `work_orders`        |
+| Coluna Supabase         | snake_case singular | `gardener_id`, `created_at`     |
 
 ## TypeScript
 
@@ -105,6 +105,7 @@ Convenção: **Conventional Commits** em pt-BR.
 Tipos: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`, `perf`, `ci`, `build`.
 
 Exemplos:
+
 - `feat(stripe): adicionar idempotência ao webhook`
 - `fix(auth): centralizar extração de bearer token`
 - `docs(roadmap): adicionar fase 04 (ia guardrails)`

@@ -19,6 +19,7 @@ Endurecer o pipeline da Íris contra injection e erro silencioso. Forçar confir
 ## Escopo
 
 ### Entra
+
 - System prompt com guardrails explícitos.
 - Sanitização de input antes de enviar ao LLM.
 - Mensagem do usuário em `role: "user"` (não concatenada no system).
@@ -29,6 +30,7 @@ Endurecer o pipeline da Íris contra injection e erro silencioso. Forçar confir
 - Versionar o system prompt (`lib/agent/prompts/system-v1.ts`, `system-v2.ts`).
 
 ### Não entra
+
 - Treinamento de modelo customizado.
 - Mudança de provedor (continua Groq).
 - Suporte a novas intents (essas viram features de produto, não desta fase).
@@ -44,6 +46,7 @@ Você está executando a **Fase 04 — IA (Íris): Guardrails e Confirmação** 
 **Branch:** `feat/fase-04-ia-iris-guardrails`.
 
 **Leia antes:**
+
 - `lib/agent/orchestrator.ts`
 - `lib/agent/registry.ts`
 - `lib/agent/schema.ts`
@@ -57,19 +60,21 @@ Você está executando a **Fase 04 — IA (Íris): Guardrails e Confirmação** 
 
 Estrutura nova:
 ```
+
 lib/agent/
-  prompts/
-    system-v1.ts          # versão atual, congelada
-    system-v2.ts          # nova com guardrails (esta fase)
-    index.ts              # exporta a versão ativa
-  intents/
-    schemas.ts            # schemas Zod por intent
-    registry.ts           # mapa nome → { schema, critical, descricao }
-  orchestrator.ts
-  actions.ts
-  sanitize.ts             # NOVO: sanitização de input
-  telemetry.ts            # NOVO: registro em agent_invocations
-```
+prompts/
+system-v1.ts # versão atual, congelada
+system-v2.ts # nova com guardrails (esta fase)
+index.ts # exporta a versão ativa
+intents/
+schemas.ts # schemas Zod por intent
+registry.ts # mapa nome → { schema, critical, descricao }
+orchestrator.ts
+actions.ts
+sanitize.ts # NOVO: sanitização de input
+telemetry.ts # NOVO: registro em agent_invocations
+
+````
 
 Refatorar imports no projeto.
 
@@ -95,7 +100,7 @@ INTENTS DISPONÍVEIS: <gerar lista a partir do registry>
 CONTEXTO DO USUÁRIO (clientes e produtos cadastrados):
 {contexto}
 `;
-```
+````
 
 (O placeholder `{contexto}` é interpolado pelo orchestrator com dados do usuário autenticado.)
 
@@ -105,7 +110,7 @@ Manter `system-v1.ts` intocada para rollback fácil. `index.ts` exporta v2.
 
 Criar `lib/agent/sanitize.ts`:
 
-```ts
+````ts
 const MAX_INPUT_LENGTH = 2000;
 
 export function sanitizarEntradaUsuario(input: string): string {
@@ -115,7 +120,7 @@ export function sanitizarEntradaUsuario(input: string): string {
   texto = texto.replace(/<\|.*?\|>/g, "");
   return texto;
 }
-```
+````
 
 Aplicar antes de enviar ao Groq.
 
@@ -172,6 +177,7 @@ Quando a resposta do orchestrator for `{ intent, params, critical: true }`:
 - "Editar" abre form pré-preenchido para o usuário ajustar antes de confirmar.
 
 Criar nova rota `app/api/assistant/execute/route.ts` que:
+
 - `requireUserWithPlan(request, "plus")`.
 - Valida payload com schema do intent (de novo, defesa em profundidade).
 - Confere `critical` no registry para garantir que requer execução pela rota correta.
@@ -227,17 +233,20 @@ Confirmar que `assistantLimiter` e `transcribeLimiter` existem e estão aplicado
 - Conferir no DB que `agent_invocations` recebe registros.
 
 **Restrições:**
+
 - NÃO mudar provedor de LLM.
 - NÃO criar intents novas.
 - NÃO redesenhar UI do chat (apenas adicionar modal de confirmação).
 - NÃO remover heurísticas de pós-processamento se o LLM ainda não extrai aqueles campos confiavelmente — no caso, deixar fallback no Zod e logar.
 
 **Entrega:**
+
 - PR draft.
 - Título: `feat(iris): guardrails de prompt, confirmação para intents críticas e telemetria`.
 - Resumo cobrindo: novo prompt, sanitização, schemas refinados, fluxo de confirmação, tabela de telemetria.
 
 **Definition of Done — copiar para o PR:**
+
 - [ ] System prompt v2 com guardrails ativo.
 - [ ] Input do usuário em `role: "user"`, sanitizado, com limite de tamanho.
 - [ ] Schemas Zod refinados (telefone BR, datas, valores limitados, max length).
@@ -247,6 +256,7 @@ Confirmar que `assistantLimiter` e `transcribeLimiter` existem e estão aplicado
 - [ ] Telemetria gravando em todas as execuções.
 - [ ] Heurísticas regex de pós-processamento removidas (ou justificadas).
 - [ ] 4 cenários manuais de prompt injection / ambiguidade testados e documentados no PR.
+
 ```
 
 ## Definition of Done
@@ -263,3 +273,4 @@ Confirmar que `assistantLimiter` e `transcribeLimiter` existem e estão aplicado
 - **LLM pode regredir** ao seguir o novo prompt. Antes de mergear, rodar suite de inputs reais (10–20 mensagens típicas) e comparar com baseline.
 - **Confirmação UI atrita usuário.** Considerar opt-out ("não perguntar de novo para esta categoria") em fase futura — agora, segurança vem antes.
 - **Telemetria pode encher rapidamente.** Adicionar política de retenção (ex: cleanup > 90 dias) ou deixar para Fase 06/08.
+```
