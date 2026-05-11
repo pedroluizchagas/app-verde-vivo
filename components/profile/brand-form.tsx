@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Upload, X, ImagePlus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, extrairMensagemErro } from "@/lib/utils";
 
 type WatermarkFit = "contain" | "cover";
 
@@ -35,15 +35,21 @@ export function BrandForm() {
         setLoading(false);
         return;
       }
-      const { data: profile } = await supabase
+      const { data: profileRaw } = await supabase
         .from("profiles")
         .select("company_name, company_subtitle, watermark_base64, watermark_fit")
         .eq("id", user.id)
         .maybeSingle();
-      setCompanyName(String((profile as any)?.company_name || ""));
-      setCompanySubtitle(String((profile as any)?.company_subtitle || ""));
-      setPreviewUrl(((profile as any)?.watermark_base64 as string) || null);
-      setWatermarkFit(((profile as any)?.watermark_fit as WatermarkFit) || "contain");
+      const profile = profileRaw as {
+        company_name?: string | null;
+        company_subtitle?: string | null;
+        watermark_base64?: string | null;
+        watermark_fit?: WatermarkFit | null;
+      } | null;
+      setCompanyName(String(profile?.company_name ?? ""));
+      setCompanySubtitle(String(profile?.company_subtitle ?? ""));
+      setPreviewUrl(profile?.watermark_base64 ?? null);
+      setWatermarkFit(profile?.watermark_fit ?? "contain");
       setLoading(false);
     })();
   }, []);
@@ -85,7 +91,12 @@ export function BrandForm() {
         watermark_base64 = await asPromise;
       }
 
-      const payload: any = {
+      const payload: {
+        company_name: string | null;
+        company_subtitle: string | null;
+        watermark_fit: WatermarkFit;
+        watermark_base64?: string | null;
+      } = {
         company_name: companyName.trim() || null,
         company_subtitle: companySubtitle.trim() || null,
         watermark_fit: watermarkFit,
@@ -102,8 +113,8 @@ export function BrandForm() {
       setSelectedFile(null);
       setWatermarkRemoved(false);
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao salvar");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao salvar"));
     } finally {
       setSaving(false);
     }

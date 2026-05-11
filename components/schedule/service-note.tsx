@@ -5,22 +5,44 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Share2, FileText } from "lucide-react";
 import { ExportDashboardPDFButton } from "@/components/reports/export-button";
 
+interface AppointmentNota {
+  id: string;
+  title: string;
+  status: string;
+  scheduled_date: string;
+  description?: string | null;
+  client?: { name?: string | null; phone?: string | null; address?: string | null } | null;
+}
+
+interface MaterialNota {
+  id: string;
+  quantity: number;
+  unit_cost?: number | null;
+  product?: { name?: string | null; unit?: string | null; cost?: number | null } | null;
+}
+
+interface Totals {
+  laborCost: number;
+  materialsCost: number;
+  serviceTotal: number;
+}
+
 export function ServiceNote({
   appointment,
   materials,
   totals,
   marginPct = 0,
 }: {
-  appointment: any;
-  materials: any[];
-  totals: { laborCost: number; materialsCost: number; serviceTotal: number };
+  appointment: AppointmentNota;
+  materials: MaterialNota[];
+  totals: Totals;
   marginPct?: number;
 }) {
   const handleShare = async () => {
     const noteText = buildNoteText(appointment, materials, totals, marginPct);
-    if ((navigator as any).share) {
+    if (typeof navigator.share === "function") {
       try {
-        await (navigator as any).share({ title: appointment.title, text: noteText });
+        await navigator.share({ title: appointment.title, text: noteText });
       } catch {}
     } else {
       const url = `https://wa.me/?text=${encodeURIComponent(noteText)}`;
@@ -77,7 +99,7 @@ export function ServiceNote({
             <p className="text-sm text-muted-foreground">Materiais</p>
             <div className="space-y-1">
               {materials.length > 0 ? (
-                materials.map((m: any) => (
+                materials.map((m) => (
                   <div key={m.id} className="flex items-center justify-between text-sm">
                     <span>
                       {m.product?.name} — {Number(m.quantity)} {m.product?.unit}
@@ -142,9 +164,9 @@ function currency(value: number) {
 }
 
 function buildNoteText(
-  appointment: any,
-  materials: any[],
-  totals: { laborCost: number; materialsCost: number; serviceTotal: number },
+  appointment: AppointmentNota,
+  materials: MaterialNota[],
+  totals: Totals,
   marginPct: number = 0,
 ) {
   const date = new Date(appointment.scheduled_date);
@@ -156,7 +178,7 @@ function buildNoteText(
     `Materiais:`,
     ...(materials.length > 0
       ? materials.map(
-          (m: any) =>
+          (m) =>
             `${m.product?.name} — ${Number(m.quantity)} ${m.product?.unit} (${currency(Number(m.quantity) * Number(m.unit_cost ?? m.product?.cost ?? 0) * (1 + (marginPct > 0 ? marginPct / 100 : 0)))})`,
         )
       : ["Nenhum"]),

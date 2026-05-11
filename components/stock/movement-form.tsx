@@ -26,7 +26,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { PackagePlus, PackageMinus, Calculator, Info } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, extrairMensagemErro } from "@/lib/utils";
 
 interface MovementFormProps {
   products: { id: string; name: string; unit: string; cost: number }[];
@@ -111,7 +111,7 @@ export function MovementForm({
       if (!user) throw new Error("Não autenticado");
       if (!productId) throw new Error("Selecione um produto");
 
-      const payload: any = {
+      const payload = {
         gardener_id: user.id,
         product_id: productId,
         type,
@@ -205,8 +205,8 @@ export function MovementForm({
 
       router.push("/dashboard/stock");
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao registrar movimentação");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao registrar movimentação"));
       setIsLoading(false);
     }
   };

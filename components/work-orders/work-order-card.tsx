@@ -6,9 +6,9 @@ interface WorkOrder {
   id: string;
   title: string;
   status: string;
-  total_amount: number | null;
-  created_at: string;
-  client: { name: string } | null;
+  total_amount?: number | null;
+  created_at?: string | null;
+  client?: { name?: string | null } | { name?: string | null }[] | null;
 }
 
 export const statusLabels: Record<string, string> = {
@@ -39,13 +39,16 @@ export function WorkOrderCard({ order }: { order: WorkOrder }) {
   const statusLabel = statusLabels[order.status] ?? order.status;
   const statusColor = statusColors[order.status] ?? "bg-muted text-muted-foreground";
   const borderColor = statusBorderColors[order.status] ?? "border-l-border";
-  const total = Number(order.total_amount || 0);
+  const total = Number(order.total_amount ?? 0);
+  const cliente = Array.isArray(order.client) ? (order.client[0] ?? null) : (order.client ?? null);
 
-  const date = new Date(order.created_at).toLocaleDateString("pt-BR", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric",
-  });
+  const date = order.created_at
+    ? new Date(order.created_at).toLocaleDateString("pt-BR", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      })
+    : "";
 
   return (
     <Link href={`/dashboard/work-orders/${order.id}`}>
@@ -64,11 +67,11 @@ export function WorkOrderCard({ order }: { order: WorkOrder }) {
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                {order.client && (
+                {cliente?.name && (
                   <div className="flex items-center gap-1">
                     <User className="h-3 w-3 text-muted-foreground shrink-0" />
                     <span className="text-[11px] text-muted-foreground truncate">
-                      {order.client.name}
+                      {cliente.name}
                     </span>
                   </div>
                 )}

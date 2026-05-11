@@ -19,6 +19,46 @@ import { ExportDashboardPDFButton } from "@/components/reports/export-button";
 import { RecordIncomeButton } from "@/components/work-orders/record-income-button";
 import { WorkOrderServiceNoteRich } from "@/components/work-orders/service-note-rich";
 import { statusLabels, statusColors } from "@/components/work-orders/work-order-card";
+import type { ClienteResumo } from "@/lib/domain/types";
+
+interface OrderItemRow {
+  id: string;
+  quantity: number;
+  unit_cost: number;
+  unit_price: number;
+  unit?: string | null;
+  product?: { name?: string | null; unit?: string | null } | { name?: string | null; unit?: string | null }[] | null;
+}
+
+interface AppointmentEmbutido {
+  id: string;
+  title?: string | null;
+  scheduled_date: string;
+}
+
+interface OrderRow {
+  id: string;
+  gardener_id: string;
+  client_id: string | null;
+  appointment_id?: string | null;
+  title: string;
+  description?: string | null;
+  status: string;
+  total_amount?: number | null;
+  labor_cost?: number | null;
+  materials_markup_pct?: number | null;
+  extra_charges?: number | null;
+  discount?: number | null;
+  transaction_id?: string | null;
+  client?: ClienteResumo | ClienteResumo[] | null;
+  appointment?: AppointmentEmbutido | null;
+}
+
+interface ProfileEmbutido {
+  company_name?: string | null;
+  full_name?: string | null;
+  watermark_base64?: string | null;
+}
 
 export default async function WorkOrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -31,7 +71,7 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: order } = await supabase
+  const { data: orderRaw } = await supabase
     .from("service_orders")
     .select(
       "*, client:clients(id, name, phone, address), appointment:appointments(id, title, scheduled_date)",
@@ -40,20 +80,29 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
     .eq("id", id)
     .maybeSingle();
 
-  if (!order) {
+  if (!orderRaw) {
     notFound();
   }
 
-  const { data: items } = await supabase
+  const order = orderRaw as OrderRow;
+  const cliente: ClienteResumo | null = Array.isArray(order.client)
+    ? ((order.client[0] as ClienteResumo | undefined) ?? null)
+    : ((order.client as ClienteResumo | null) ?? null);
+
+  const { data: itemsRaw } = await supabase
     .from("service_order_items")
     .select("id, quantity, unit_cost, unit_price, unit, product:products(name, unit)")
     .eq("order_id", id);
 
-  const { data: profile } = await supabase
+  const items = (itemsRaw ?? []) as OrderItemRow[];
+
+  const { data: profileRaw } = await supabase
     .from("profiles")
-    .select("company_name, watermark_base64")
+    .select("company_name, full_name, watermark_base64")
     .eq("id", user!.id)
     .maybeSingle();
+
+  const profile = profileRaw as ProfileEmbutido | null;
 
   const currency = (v: number) =>
     new Intl.NumberFormat("pt-BR", {
@@ -61,27 +110,27 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
       currency: "BRL",
     }).format(Number(v || 0));
 
-  const laborCost = Number((order as any).labor_cost || 0);
-  const markupPct = Number((order as any).materials_markup_pct || 0);
-  const extraCharges = Number((order as any).extra_charges || 0);
-  const discount = Number((order as any).discount || 0);
+  const laborCost = Number(order.labor_cost ?? 0);
+  const markupPct = Number(order.materials_markup_pct ?? 0);
+  const extraCharges = Number(order.extra_charges ?? 0);
+  const discount = Number(order.discount ?? 0);
 
-  const materialsBase = (items || []).reduce(
-    (s: number, it: any) => s + Number(it.unit_cost) * Number(it.quantity),
+  const materialsBase = items.reduce(
+    (s, it) => s + Number(it.unit_cost) * Number(it.quantity),
     0,
   );
-  const materialsPrice = (items || []).reduce(
-    (s: number, it: any) => s + Number(it.unit_price) * Number(it.quantity),
+  const materialsPrice = items.reduce(
+    (s, it) => s + Number(it.unit_price) * Number(it.quantity),
     0,
   );
   const markupAmount = materialsPrice - materialsBase;
-  const total = Number((order as any).total_amount || 0);
+  const total = Number(order.total_amount ?? 0);
 
-  const statusLabel = statusLabels[(order as any).status] ?? (order as any).status;
-  const statusColor = statusColors[(order as any).status] ?? "bg-muted text-muted-foreground";
+  const statusLabel = statusLabels[order.status] ?? order.status;
+  const statusColor = statusColors[order.status] ?? "bg-muted text-muted-foreground";
 
-  const typeLabel = (order as any).appointment
-    ? new Date((order as any).appointment.scheduled_date).toLocaleDateString("pt-BR", {
+  const typeLabel = order.appointment
+    ? new Date(order.appointment.scheduled_date).toLocaleDateString("pt-BR", {
         day: "2-digit",
         month: "short",
         year: "numeric",
@@ -101,7 +150,7 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
           </Button>
           <div className="min-w-0">
             <h1 className="text-2xl font-bold tracking-tight leading-tight truncate">
-              {(order as any).title}
+              {order.title}
             </h1>
             <p className="text-[13px] text-muted-foreground">Ordem de Serviço</p>
           </div>
@@ -113,9 +162,9 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
               <span className="sr-only">Editar</span>
             </Link>
           </Button>
-          {(order as any).transaction_id ? (
+          {order.transaction_id ? (
             <Button asChild variant="outline" size="sm" className="h-9 rounded-lg text-[12px]">
-              <Link href={`/dashboard/finance/transactions/${(order as any).transaction_id}`}>
+              <Link href={`/dashboard/finance/transactions/${order.transaction_id}`}>
                 Ver lançamento
               </Link>
             </Button>
@@ -123,8 +172,8 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
             <RecordIncomeButton
               orderId={id}
               amount={total}
-              clientId={(order as any).client_id}
-              title={(order as any).title}
+              clientId={order.client_id ?? ""}
+              title={order.title}
             />
           )}
           <ExportDashboardPDFButton
@@ -200,14 +249,14 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
         {/* Coluna esquerda */}
         <div className="flex flex-col gap-4">
           {/* Descrição */}
-          {(order as any).description && (
+          {order.description && (
             <Card className="py-0">
               <CardContent className="p-5">
                 <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground mb-2">
                   Descrição
                 </p>
                 <p className="text-[13px] text-muted-foreground leading-relaxed">
-                  {(order as any).description}
+                  {order.description}
                 </p>
               </CardContent>
             </Card>
@@ -238,16 +287,17 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
                     </span>
                   </div>
 
-                  {(items as any[]).map((it: any) => {
+                  {items.map((it) => {
                     const lineTotal = Number(it.unit_price) * Number(it.quantity);
-                    const unit = it.unit || it.product?.unit || "un";
+                    const produto = Array.isArray(it.product) ? it.product[0] : it.product;
+                    const unit = it.unit ?? produto?.unit ?? "un";
                     return (
                       <div
                         key={it.id}
                         className="grid grid-cols-[1fr_auto_auto] gap-x-4 py-2.5 border-b border-border/40 last:border-b-0"
                       >
                         <span className="text-[13px] font-medium truncate">
-                          {it.product?.name || "—"}
+                          {produto?.name ?? "—"}
                         </span>
                         <span className="text-[12px] text-muted-foreground text-right tabular-nums whitespace-nowrap">
                           {Number(it.quantity)} {unit}
@@ -326,7 +376,7 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
         {/* Coluna direita */}
         <div className="flex flex-col gap-4">
           {/* Cliente */}
-          {(order as any).client && (
+          {cliente && (
             <Card className="py-0">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
@@ -337,7 +387,7 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
                     <h2 className="text-[14px] font-semibold">Cliente</h2>
                   </div>
                   <Link
-                    href={`/dashboard/clients/${(order as any).client.id}`}
+                    href={`/dashboard/clients/${cliente.id}`}
                     className="text-[11px] text-primary hover:underline font-medium"
                   >
                     Ver perfil
@@ -346,7 +396,7 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
 
                 <div className="flex flex-col divide-y divide-border/60">
                   <Link
-                    href={`/dashboard/clients/${(order as any).client.id}`}
+                    href={`/dashboard/clients/${cliente.id}`}
                     className="flex items-center gap-3 py-2.5 hover:bg-accent/50 rounded-lg px-2 -mx-2 transition-colors"
                   >
                     <div className="flex-1 min-w-0">
@@ -354,14 +404,14 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
                         Nome
                       </p>
                       <p className="text-[13px] font-medium text-primary truncate">
-                        {(order as any).client.name}
+                        {cliente.name}
                       </p>
                     </div>
                   </Link>
 
-                  {(order as any).client.phone && (
+                  {cliente.phone && (
                     <a
-                      href={`tel:${(order as any).client.phone}`}
+                      href={`tel:${cliente.phone}`}
                       className="flex items-center gap-3 py-2.5 hover:bg-accent/50 rounded-lg px-2 -mx-2 transition-colors"
                     >
                       <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -372,13 +422,13 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
                           Telefone
                         </p>
                         <p className="text-[13px] font-medium text-primary truncate">
-                          {(order as any).client.phone}
+                          {cliente.phone}
                         </p>
                       </div>
                     </a>
                   )}
 
-                  {(order as any).client.address && (
+                  {cliente.address && (
                     <div className="flex items-start gap-3 py-2.5">
                       <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0 mt-0.5">
                         <MapPin className="h-3.5 w-3.5 text-muted-foreground" />
@@ -387,9 +437,7 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
                         <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground leading-none mb-0.5">
                           Endereço
                         </p>
-                        <p className="text-[13px] font-medium leading-snug">
-                          {(order as any).client.address}
-                        </p>
+                        <p className="text-[13px] font-medium leading-snug">{cliente.address}</p>
                       </div>
                     </div>
                   )}
@@ -399,7 +447,7 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
           )}
 
           {/* Agendamento vinculado */}
-          {(order as any).appointment && (
+          {order.appointment && (
             <Card className="py-0">
               <CardContent className="p-5">
                 <div className="flex items-center gap-2 mb-3">
@@ -410,12 +458,12 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
                 </div>
 
                 <Link
-                  href={`/dashboard/schedule/${(order as any).appointment.id}`}
+                  href={`/dashboard/schedule/${order.appointment.id}`}
                   className="flex items-start gap-3 hover:bg-accent/50 rounded-lg px-2 -mx-2 py-2 transition-colors"
                 >
                   <div className="flex-1 min-w-0">
                     <p className="text-[13px] font-semibold truncate leading-tight">
-                      {(order as any).appointment.title || "Agendamento"}
+                      {order.appointment.title ?? "Agendamento"}
                     </p>
                     {typeLabel && (
                       <p className="text-[11px] text-muted-foreground mt-0.5">{typeLabel}</p>
@@ -436,7 +484,7 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
                 <h2 className="text-[14px] font-semibold">Financeiro</h2>
               </div>
 
-              {(order as any).transaction_id ? (
+              {order.transaction_id ? (
                 <div>
                   <p className="text-[12px] text-emerald-600 dark:text-emerald-400 font-medium mb-2">
                     Receita registrada
@@ -447,7 +495,7 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
                     size="sm"
                     className="h-8 rounded-lg text-[12px] w-full"
                   >
-                    <Link href={`/dashboard/finance/transactions/${(order as any).transaction_id}`}>
+                    <Link href={`/dashboard/finance/transactions/${order.transaction_id}`}>
                       Ver lançamento
                     </Link>
                   </Button>
@@ -460,8 +508,8 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
                   <RecordIncomeButton
                     orderId={id}
                     amount={total}
-                    clientId={(order as any).client_id}
-                    title={(order as any).title}
+                    clientId={order.client_id ?? ""}
+                    title={order.title}
                   />
                 </div>
               )}
@@ -473,11 +521,12 @@ export default async function WorkOrderDetailPage({ params }: { params: Promise<
       {/* Nota de serviço para impressão */}
       <WorkOrderServiceNoteRich
         order={order}
-        items={items || []}
-        companyName={
-          (profile as any)?.company_name || (profile as any)?.full_name || "Gestão Garden"
-        }
-        watermarkBase64={(profile as any)?.watermark_base64 || undefined}
+        items={items.map((it) => ({
+          ...it,
+          product: Array.isArray(it.product) ? (it.product[0] ?? null) : (it.product ?? null),
+        }))}
+        companyName={profile?.company_name ?? profile?.full_name ?? "Gestão Garden"}
+        watermarkBase64={profile?.watermark_base64 ?? undefined}
       />
     </div>
   );

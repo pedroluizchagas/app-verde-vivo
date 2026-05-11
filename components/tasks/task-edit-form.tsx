@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -37,7 +38,7 @@ export function TaskEditForm({
 
   const [title, setTitle] = useState<string>(task.title || "");
   const [importance, setImportance] = useState<"low" | "medium" | "high">(
-    (task.importance as any) || "medium",
+    (task.importance as "low" | "medium" | "high" | null) || "medium",
   );
   const [tagsInput, setTagsInput] = useState<string>((task.tags || []).join(", "));
   const [description, setDescription] = useState<string>(task.description || "");
@@ -45,7 +46,7 @@ export function TaskEditForm({
     task.organized_description || "",
   );
   const [status, setStatus] = useState<"open" | "in_progress" | "done">(
-    (task.status as any) || "open",
+    (task.status as "open" | "in_progress" | "done" | null) || "open",
   );
   const [dueDate, setDueDate] = useState<string>(task.due_date || "");
 
@@ -58,7 +59,7 @@ export function TaskEditForm({
         .split(",")
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
-      const payload: any = {
+      const payload = {
         title: title || null,
         importance,
         tags: tags.length ? tags : null,
@@ -71,8 +72,8 @@ export function TaskEditForm({
       if (upErr) throw upErr;
       router.push(`/dashboard/tasks/${task.id}`);
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao salvar a tarefa");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao salvar a tarefa"));
       setIsLoading(false);
     }
   };
@@ -92,7 +93,7 @@ export function TaskEditForm({
             </div>
             <div>
               <Label>Prioridade</Label>
-              <Select value={importance} onValueChange={(v) => setImportance(v as any)}>
+              <Select value={importance} onValueChange={(v) => setImportance(v as "low" | "medium" | "high")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
@@ -108,7 +109,7 @@ export function TaskEditForm({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+              <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>

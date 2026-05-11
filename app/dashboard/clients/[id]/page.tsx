@@ -17,6 +17,9 @@ import {
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { DeleteClientButton } from "@/components/clients/delete-client-button";
+import type { Appointment, Budget, ClienteResumo } from "@/lib/domain/types";
+
+type ClienteDetalhado = ClienteResumo & { created_at: string };
 
 const appointmentStatusLabels: Record<string, string> = {
   scheduled: "Agendado",
@@ -77,16 +80,18 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: client } = await supabase
+  const { data: clientRaw } = await supabase
     .from("clients")
     .select("*")
     .eq("id", id)
     .eq("gardener_id", user!.id)
     .single();
 
-  if (!client) {
+  if (!clientRaw) {
     notFound();
   }
+
+  const client = clientRaw as ClienteDetalhado;
 
   const [
     { data: appointments },
@@ -116,8 +121,11 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
       .eq("status", "completed"),
   ]);
 
+  const appointmentsList = (appointments ?? []) as Appointment[];
+  const budgetsList = (budgets ?? []) as Budget[];
+
   // proximo agendamento futuro
-  const nextAppointment = (appointments || []).find(
+  const nextAppointment = appointmentsList.find(
     (a) => new Date(a.scheduled_date) >= new Date() && a.status !== "cancelled",
   );
 
@@ -356,9 +364,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 </Link>
               </div>
 
-              {appointments && appointments.length > 0 ? (
+              {appointmentsList.length > 0 ? (
                 <div className="flex flex-col">
-                  {appointments.map((apt: any) => {
+                  {appointmentsList.map((apt) => {
                     const statusLabel = appointmentStatusLabels[apt.status] ?? apt.status;
                     const statusColor =
                       appointmentStatusColors[apt.status] ?? "bg-muted text-muted-foreground";
@@ -414,9 +422,9 @@ export default async function ClientDetailPage({ params }: { params: Promise<{ i
                 </Link>
               </div>
 
-              {budgets && budgets.length > 0 ? (
+              {budgetsList.length > 0 ? (
                 <div className="flex flex-col">
-                  {budgets.map((budget: any) => {
+                  {budgetsList.map((budget) => {
                     const statusLabel = budgetStatusLabels[budget.status] ?? budget.status;
                     const statusColor =
                       budgetStatusColors[budget.status] ?? "bg-muted text-muted-foreground";

@@ -5,19 +5,18 @@ import { Clock, User, MapPin } from "lucide-react";
 interface Appointment {
   id: string;
   title: string;
-  description: string | null;
+  description?: string | null;
   scheduled_date: string;
   end_date?: string | null;
-  duration_minutes: number;
+  duration_minutes?: number | null;
   status: string;
-  type?: string;
+  type?: string | null;
   location?: string | null;
-  all_day?: boolean;
-  client: {
-    name: string;
-    phone: string;
-    address: string;
-  } | null;
+  all_day?: boolean | null;
+  client?:
+    | { name?: string | null; phone?: string | null; address?: string | null }
+    | { name?: string | null; phone?: string | null; address?: string | null }[]
+    | null;
 }
 
 const statusColors: Record<string, string> = {
@@ -85,6 +84,9 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
   const borderColor = statusBorderColors[appointment.status] ?? "border-l-border";
   const statusLabel = statusLabels[appointment.status] ?? appointment.status;
   const typeLabel = appointment.type ? typeLabels[appointment.type] : null;
+  const cliente = Array.isArray(appointment.client)
+    ? (appointment.client[0] ?? null)
+    : (appointment.client ?? null);
 
   const displayLocation = appointment.location || null;
 
@@ -120,11 +122,11 @@ export function AppointmentCard({ appointment }: { appointment: Appointment }) {
                   <Clock className="h-3 w-3 text-muted-foreground shrink-0" />
                   <span className="text-[11px] text-muted-foreground">{timeStr}</span>
                 </div>
-                {appointment.client && (
+                {cliente?.name && (
                   <div className="flex items-center gap-1 min-w-0">
                     <User className="h-3 w-3 text-muted-foreground shrink-0" />
                     <span className="text-[11px] text-muted-foreground truncate">
-                      {appointment.client.name}
+                      {cliente.name}
                     </span>
                   </div>
                 )}

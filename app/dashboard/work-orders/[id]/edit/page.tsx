@@ -16,13 +16,25 @@ export default async function EditWorkOrderPage({ params }: { params: Promise<{ 
     .eq("gardener_id", user!.id)
     .eq("id", id)
     .maybeSingle();
+  interface OrderItemRaw {
+    id: string;
+    product_id: string;
+    quantity: number;
+    unit_cost: number;
+    unit_price: number;
+    unit?: string | null;
+    product?:
+      | { name?: string | null; unit?: string | null }
+      | { name?: string | null; unit?: string | null }[]
+      | null;
+  }
   const { data: itemsRaw } = await supabase
     .from("service_order_items")
     .select("id, product_id, quantity, unit_cost, unit_price, unit, product:products(name, unit)")
     .eq("order_id", id);
-  const items = (itemsRaw || []).map((it: any) => ({
+  const items = ((itemsRaw ?? []) as OrderItemRaw[]).map((it) => ({
     ...it,
-    product: Array.isArray(it.product) ? it.product[0] : it.product,
+    product: Array.isArray(it.product) ? (it.product[0] ?? null) : (it.product ?? null),
   }));
   const { data: clients } = await supabase
     .from("clients")

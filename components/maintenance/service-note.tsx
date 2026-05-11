@@ -5,22 +5,48 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ExportDashboardPDFButton } from "@/components/reports/export-button";
 import { FileText, Share2 } from "lucide-react";
 
+interface ClienteEmbutido {
+  name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+}
+
+interface MaterialNota {
+  name?: string;
+  quantity?: number;
+  unit?: string;
+  unitCost?: number;
+}
+
+interface ExecucaoNota {
+  id: string;
+  status?: string | null;
+  final_amount?: number | null;
+  details?: {
+    labor?: number;
+    materials?: MaterialNota[];
+    markupPct?: number;
+    description?: string;
+    title?: string;
+  } | null;
+}
+
 export function MaintenanceServiceNote({
   planTitle,
   client,
   execution,
 }: {
   planTitle: string;
-  client?: any;
-  execution: any;
+  client?: ClienteEmbutido | null;
+  execution: ExecucaoNota;
 }) {
   const selectorId = `maintenance-note-${execution.id}`;
-  const details = (execution as any).details || {};
+  const details = execution.details ?? {};
   const labor = Number(details?.labor ?? 0);
-  const materials: any[] = Array.isArray(details?.materials) ? details.materials : [];
+  const materials: MaterialNota[] = Array.isArray(details?.materials) ? details.materials : [];
   const markupPct = Number(details?.markupPct ?? 0);
   const materialsTotalRaw = materials.reduce(
-    (sum, m: any) => sum + Number(m.quantity || 0) * Number(m.unitCost || 0),
+    (sum, m) => sum + Number(m.quantity ?? 0) * Number(m.unitCost ?? 0),
     0,
   );
   const materialsTotal = Number(
@@ -42,7 +68,7 @@ export function MaintenanceServiceNote({
       `Materiais:`,
       ...(materials.length > 0
         ? materials.map(
-            (m: any) =>
+            (m) =>
               `${String(m.name || "Material")} — ${Number(m.quantity || 0)} ${String(m.unit || "un")} (${currency(Number(m.quantity || 0) * Number(m.unitCost || 0) * (1 + (markupPct > 0 ? markupPct / 100 : 0)))})`,
           )
         : ["Nenhum"]),
@@ -58,9 +84,9 @@ export function MaintenanceServiceNote({
 
   const handleShare = async () => {
     const text = buildNoteText();
-    if ((navigator as any).share) {
+    if (navigator.share) {
       try {
-        await (navigator as any).share({ title, text });
+        await navigator.share({ title, text });
       } catch {}
     } else {
       const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
@@ -102,7 +128,7 @@ export function MaintenanceServiceNote({
             <p className="text-sm text-muted-foreground">Materiais</p>
             <div className="space-y-1">
               {materials.length > 0 ? (
-                materials.map((m: any, idx: number) => (
+                materials.map((m, idx) => (
                   <div key={idx} className="flex items-center justify-between text-sm">
                     <span>
                       {String(m.name || "Material")} — {Number(m.quantity || 0)}{" "}

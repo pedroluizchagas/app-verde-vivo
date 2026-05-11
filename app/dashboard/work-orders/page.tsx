@@ -5,6 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, ClipboardList, CheckCircle2, DollarSign, Loader2 } from "lucide-react";
 import { WorkOrderCard } from "@/components/work-orders/work-order-card";
+import type { WorkOrder } from "@/lib/domain/types";
 
 export default async function WorkOrdersPage() {
   const supabase = await createClient();
@@ -18,7 +19,7 @@ export default async function WorkOrdersPage() {
     .eq("gardener_id", user!.id)
     .order("created_at", { ascending: false });
 
-  const allOrders = (orders || []) as any[];
+  const allOrders = (orders ?? []) as WorkOrder[];
 
   const activeOrders = allOrders.filter((o) => o.status === "draft" || o.status === "issued");
   const historyOrders = allOrders.filter(
@@ -26,7 +27,7 @@ export default async function WorkOrdersPage() {
   );
   const completedOrders = allOrders.filter((o) => o.status === "completed");
 
-  const totalRevenue = completedOrders.reduce((s, o) => s + Number(o.total_amount || 0), 0);
+  const totalRevenue = completedOrders.reduce((s, o) => s + Number(o.total_amount ?? 0), 0);
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", {

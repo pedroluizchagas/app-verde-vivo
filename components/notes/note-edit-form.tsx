@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -35,7 +36,7 @@ export function NoteEditForm({
 
   const [title, setTitle] = useState<string>(note.title || "");
   const [importance, setImportance] = useState<"low" | "medium" | "high">(
-    (note.importance as any) || "medium",
+    (note.importance as "low" | "medium" | "high" | null) || "medium",
   );
   const [tagsInput, setTagsInput] = useState<string>((note.tags || []).join(", "));
   const [content, setContent] = useState<string>(note.content || "");
@@ -50,7 +51,7 @@ export function NoteEditForm({
         .split(",")
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
-      const payload: any = {
+      const payload = {
         title: title || null,
         importance,
         tags: tags.length ? tags : null,
@@ -61,8 +62,8 @@ export function NoteEditForm({
       if (upErr) throw upErr;
       router.push(`/dashboard/notes/${note.id}`);
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao salvar a nota");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao salvar a nota"));
       setIsLoading(false);
     }
   };
@@ -82,7 +83,7 @@ export function NoteEditForm({
             </div>
             <div>
               <Label>Prioridade</Label>
-              <Select value={importance} onValueChange={(v) => setImportance(v as any)}>
+              <Select value={importance} onValueChange={(v) => setImportance(v as "low" | "medium" | "high")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>

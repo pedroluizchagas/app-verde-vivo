@@ -41,9 +41,9 @@ export default async function NewAppointmentPage() {
 
       <AppointmentForm
         clients={clients || []}
-        orders={(orders || []).map((o: any) => ({
+        orders={((orders ?? []) as Array<{ id: string; title?: string | null }>).map((o) => ({
           id: String(o.id),
-          title: String(o.title || "OS"),
+          title: String(o.title ?? "OS"),
         }))}
       />
     </div>

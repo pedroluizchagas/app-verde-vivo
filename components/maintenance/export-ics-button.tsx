@@ -1,11 +1,22 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "lucide-react";
 
-function computePreferredDate(plan: any): Date {
+interface PlanoPreferencias {
+  preferred_weekday?: number | null;
+  preferred_week_of_month?: number | null;
+}
+
+interface PlanoIcs extends PlanoPreferencias {
+  title: string;
+  client?: { address?: string | null } | { address?: string | null }[] | null;
+}
+
+function computePreferredDate(plan: PlanoPreferencias | null | undefined): Date {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -32,12 +43,14 @@ export function ExportMaintenanceICSButton({ planId }: { planId: string }) {
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
-      const { data: plan } = await supabase
+      const { data: planRaw } = await supabase
         .from("maintenance_plans")
         .select("title, client:clients(name, address), preferred_weekday, preferred_week_of_month")
         .eq("id", planId)
         .maybeSingle();
-      if (!plan) throw new Error("Plano inválido");
+      if (!planRaw) throw new Error("Plano inválido");
+
+      const plan = planRaw as PlanoIcs;
 
       const { data: exec } = await supabase
         .from("plan_executions")
@@ -49,12 +62,11 @@ export function ExportMaintenanceICSButton({ planId }: { planId: string }) {
 
       let start: Date | null = null;
       let end: Date | null = null;
-      let title = `Manutenção: ${String((plan as any).title)}`;
-      let location = String(
-        Array.isArray((plan as any).client)
-          ? ((plan as any).client[0]?.address ?? "")
-          : ((plan as any).client?.address ?? ""),
-      );
+      const title = `Manutenção: ${String(plan.title)}`;
+      const cliente = Array.isArray(plan.client)
+        ? (plan.client[0] ?? null)
+        : (plan.client ?? null);
+      const location = String(cliente?.address ?? "");
 
       if (exec?.appointment_id) {
         const { data: ap } = await supabase
@@ -109,8 +121,8 @@ export function ExportMaintenanceICSButton({ planId }: { planId: string }) {
       a.remove();
       URL.revokeObjectURL(url);
       setMsg("Evento exportado");
-    } catch (err: any) {
-      setMsg(err?.message || "Falha ao exportar evento");
+    } catch (err: unknown) {
+      setMsg(extrairMensagemErro(err, "Falha ao exportar evento"));
     } finally {
       setLoading(false);
     }

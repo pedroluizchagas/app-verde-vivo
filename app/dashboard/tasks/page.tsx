@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, CheckSquare, CircleDot, CheckCircle2, AlertTriangle, Search } from "lucide-react";
 import { TaskCard } from "@/components/tasks/task-card";
+import type { Task } from "@/lib/domain/types";
 
 export default async function TasksPage({
   searchParams,
@@ -34,7 +35,7 @@ export default async function TasksPage({
   }
 
   const { data: tasks } = await query;
-  const allTasks = (tasks || []) as any[];
+  const allTasks = (tasks ?? []) as Task[];
 
   const openTasks = allTasks.filter((t) => t.status === "open");
   const inProgressTasks = allTasks.filter((t) => t.status === "in_progress");

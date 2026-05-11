@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Wrench } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, extrairMensagemErro } from "@/lib/utils";
 
 const MONTH_ABBR = [
   "Jan",
@@ -86,7 +86,20 @@ function nextPlannedDate(months: number[], weekday: string, weekOfMonth: string)
   return new Date(y, next - 1, day).toLocaleDateString("pt-BR");
 }
 
-export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
+interface PlanoInicial {
+  id?: string;
+  title?: string;
+  client_id?: string;
+  service_id?: string | null;
+  default_labor_cost?: number;
+  preferred_weekday?: number;
+  preferred_week_of_month?: number;
+  billing_day?: number;
+  status?: string;
+  default_description?: string;
+}
+
+export function MaintenancePlanForm({ initialPlan }: { initialPlan?: PlanoInicial }) {
   const router = useRouter();
   const supabase = createClient();
   const [isLoading, setIsLoading] = useState(false);
@@ -111,7 +124,7 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
     typeof initialPlan?.billing_day === "number" ? String(initialPlan.billing_day) : "",
   );
   const [status, setStatus] = useState<"active" | "paused">(
-    (initialPlan?.status as any) || "active",
+    (initialPlan?.status as "active" | "paused" | undefined) || "active",
   );
   const [description, setDescription] = useState<string>(initialPlan?.default_description || "");
 
@@ -141,7 +154,11 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
             .eq("plan_id", initialPlan.id)
             .eq("cycle", "template")
             .maybeSingle();
-          const schedule = (tmpl as any)?.details?.schedule || null;
+          const detalhesTmpl = (tmpl as { details?: { schedule?: Record<string, unknown> | null } | null } | null)?.details;
+          const schedule = (detalhesTmpl?.schedule ?? null) as {
+            fertilization_months?: number[];
+            pests_months?: number[];
+          } | null;
           if (schedule) {
             if (Array.isArray(schedule.fertilization_months))
               setFertMonths(schedule.fertilization_months);
@@ -165,7 +182,7 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
       if (!user) throw new Error("Não autenticado");
       if (!title || !clientId) throw new Error("Preencha título e cliente");
       const preservedServiceId = initialPlan?.id ? (initialPlan?.service_id ?? null) : null;
-      const payload: any = {
+      const payload = {
         gardener_id: user.id,
         client_id: clientId,
         service_id: preservedServiceId,
@@ -236,8 +253,8 @@ export function MaintenancePlanForm({ initialPlan }: { initialPlan?: any }) {
         router.push(`/dashboard/maintenance/${inserted?.id ?? ""}`);
         router.refresh();
       }
-    } catch (err: any) {
-      setError(err?.message || "Erro ao salvar plano");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao salvar plano"));
       setIsLoading(false);
     }
   };

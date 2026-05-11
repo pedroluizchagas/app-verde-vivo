@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -91,9 +92,9 @@ export function CloseExecutionForm({
       if (uerr) throw uerr;
       setOk(true);
       setMsg("Execução concluída");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setOk(false);
-      setMsg(err?.message || "Falha ao concluir execução");
+      setMsg(extrairMensagemErro(err, "Falha ao concluir execução"));
     } finally {
       setLoading(false);
     }

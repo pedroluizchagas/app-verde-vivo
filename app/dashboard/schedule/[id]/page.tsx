@@ -5,6 +5,9 @@ import { ArrowLeft, Edit, Calendar, Clock, MapPin, User, Phone, FileText } from 
 import Link from "next/link";
 import { Card, CardContent } from "@/components/ui/card";
 import { DeleteAppointmentButton } from "@/components/schedule/delete-appointment-button";
+import type { Appointment, ClienteResumo } from "@/lib/domain/types";
+
+type AppointmentDetalhe = Appointment & { service?: { name?: string | null } | null };
 
 const statusColors: Record<string, string> = {
   scheduled: "bg-blue-500/10 text-blue-600 dark:text-blue-400",
@@ -44,16 +47,21 @@ export default async function AppointmentDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: appointment } = await supabase
+  const { data: appointmentRaw } = await supabase
     .from("appointments")
     .select(`*, client:clients(id, name, phone, address), service:services(name)`)
     .eq("id", id)
     .eq("gardener_id", user!.id)
     .single();
 
-  if (!appointment) {
+  if (!appointmentRaw) {
     notFound();
   }
+
+  const appointment = appointmentRaw as AppointmentDetalhe;
+  const cliente = Array.isArray(appointment.client)
+    ? (appointment.client[0] ?? null)
+    : ((appointment.client as ClienteResumo | null) ?? null);
 
   const { data: order } = await supabase
     .from("service_orders")
@@ -73,18 +81,18 @@ export default async function AppointmentDetailPage({
     hour: "2-digit",
     minute: "2-digit",
   });
-  const endDate = (appointment as any).end_date ? new Date((appointment as any).end_date) : null;
+  const endDate = appointment.end_date ? new Date(appointment.end_date) : null;
   const timeEnd = endDate
     ? endDate.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
     : null;
-  const timeDisplay = (appointment as any).all_day
+  const timeDisplay = appointment.all_day
     ? "Dia inteiro"
     : `${timeStart}${timeEnd ? ` – ${timeEnd}` : ""}`;
 
   const statusColor = statusColors[appointment.status] ?? "bg-muted text-muted-foreground";
   const statusLabel = statusLabels[appointment.status] ?? appointment.status;
-  const typeLabel = (appointment as any).type ? typeLabels[(appointment as any).type] : null;
-  const location = (appointment as any).location || appointment.client?.address || null;
+  const typeLabel = appointment.type ? typeLabels[appointment.type] : null;
+  const location = appointment.location ?? cliente?.address ?? null;
 
   return (
     <div className="flex flex-col gap-4">
@@ -224,14 +232,14 @@ export default async function AppointmentDetailPage({
         </div>
 
         {/* Coluna direita: cliente */}
-        {appointment.client && (
+        {cliente && (
           <div className="flex flex-col gap-4">
             <Card className="py-0">
               <CardContent className="p-5">
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="text-[14px] font-semibold">Cliente</h2>
                   <Link
-                    href={`/dashboard/clients/${(appointment.client as any).id}`}
+                    href={`/dashboard/clients/${cliente.id}`}
                     className="text-[11px] text-primary hover:underline font-medium"
                   >
                     Ver perfil
@@ -240,7 +248,7 @@ export default async function AppointmentDetailPage({
 
                 <div className="flex flex-col divide-y divide-border/60">
                   <Link
-                    href={`/dashboard/clients/${(appointment.client as any).id}`}
+                    href={`/dashboard/clients/${cliente.id}`}
                     className="flex items-center gap-3 py-2.5 hover:bg-accent/50 rounded-lg px-2 -mx-2 transition-colors"
                   >
                     <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -251,13 +259,13 @@ export default async function AppointmentDetailPage({
                         Nome
                       </p>
                       <p className="text-[13px] font-medium text-primary truncate">
-                        {appointment.client.name}
+                        {cliente.name}
                       </p>
                     </div>
                   </Link>
 
                   <a
-                    href={`tel:${appointment.client.phone}`}
+                    href={`tel:${cliente.phone ?? ""}`}
                     className="flex items-center gap-3 py-2.5 hover:bg-accent/50 rounded-lg px-2 -mx-2 transition-colors"
                   >
                     <div className="h-7 w-7 rounded-full bg-muted flex items-center justify-center shrink-0">
@@ -268,7 +276,7 @@ export default async function AppointmentDetailPage({
                         Telefone
                       </p>
                       <p className="text-[13px] font-medium text-primary truncate">
-                        {appointment.client.phone}
+                        {cliente.phone}
                       </p>
                     </div>
                   </a>
@@ -281,9 +289,7 @@ export default async function AppointmentDetailPage({
                       <p className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground leading-none mb-0.5">
                         Endereço
                       </p>
-                      <p className="text-[13px] font-medium leading-snug">
-                        {appointment.client.address}
-                      </p>
+                      <p className="text-[13px] font-medium leading-snug">{cliente.address}</p>
                     </div>
                   </div>
                 </div>

@@ -6,14 +6,40 @@ import { Share2, FileText, Image as ImageIcon, Download } from "lucide-react";
 
 const NOW_MS = Date.now();
 
+interface OrderItemNota {
+  id: string;
+  product_id?: string;
+  quantity: number;
+  unit_cost?: number;
+  unit_price: number;
+  unit?: string | null;
+  product?: { name?: string | null; unit?: string | null } | null;
+}
+
+interface OrderNota {
+  id: string;
+  title?: string;
+  status?: string;
+  created_at?: string | null;
+  description?: string | null;
+  labor_cost?: number | null;
+  discount?: number | null;
+  total_amount?: number | null;
+  appointment?: { scheduled_date?: string | null } | null;
+  client?:
+    | { name?: string | null; phone?: string | null; address?: string | null }
+    | { name?: string | null; phone?: string | null; address?: string | null }[]
+    | null;
+}
+
 export function WorkOrderServiceNoteRich({
   order,
   items,
   companyName,
   watermarkBase64,
 }: {
-  order: any;
-  items: any[];
+  order: OrderNota;
+  items: OrderItemNota[];
   companyName?: string;
   watermarkBase64?: string;
 }) {
@@ -34,7 +60,7 @@ export function WorkOrderServiceNoteRich({
   })();
   const totals = (() => {
     const materials = (items || []).reduce(
-      (sum, it: any) => sum + Number(it.unit_price) * Number(it.quantity),
+      (sum, it) => sum + Number(it.unit_price) * Number(it.quantity),
       0,
     );
     const labor = Number(order?.labor_cost || 0);
@@ -43,6 +69,7 @@ export function WorkOrderServiceNoteRich({
     return { materials, labor, discount, total };
   })();
   const nsu = String(order?.id || "").slice(0, 8);
+  const cliente = Array.isArray(order?.client) ? (order.client[0] ?? null) : (order?.client ?? null);
 
   const buildImage = async () => {
     const bw = 360;
@@ -75,11 +102,9 @@ export function WorkOrderServiceNoteRich({
       if (cur) lines.push(cur);
       return lines;
     };
-    const nameLines = order?.client?.name ? wrap(String(order.client.name), bw - margin * 2) : [];
-    const phoneLines = order?.client?.phone ? [String(order.client.phone)] : [];
-    const addressLines = order?.client?.address
-      ? wrap(String(order.client.address), bw - margin * 2)
-      : [];
+    const nameLines = cliente?.name ? wrap(String(cliente.name), bw - margin * 2) : [];
+    const phoneLines = cliente?.phone ? [String(cliente.phone)] : [];
+    const addressLines = cliente?.address ? wrap(String(cliente.address), bw - margin * 2) : [];
     // Footer brand layout: if (company + " • Nota de serviço" + ID) doesn't fit
     // move "Nota de serviço" + ID to the next line and wrap company if needed
     measureCtx.font = "400 12px system-ui";
@@ -187,10 +212,10 @@ export function WorkOrderServiceNoteRich({
         ? items
         : [{ id: "none", product: { name: "Nenhum" }, quantity: 0, unit_price: 0, unit: "" }];
     for (const it of list) {
-      const name = fit(String((it as any).product?.name || (it as any).product_id), colW);
-      const qty = Number((it as any).quantity);
-      const unit = unitFmt(String((it as any).unit || (it as any).product?.unit || "un"));
-      const subtotal = currency(Number((it as any).unit_price) * qty);
+      const name = fit(String(it.product?.name ?? it.product_id ?? ""), colW);
+      const qty = Number(it.quantity);
+      const unit = unitFmt(String(it.unit ?? it.product?.unit ?? "un"));
+      const subtotal = currency(Number(it.unit_price) * qty);
       ctx.fillText(name, margin, y);
       const right = `${qty} ${unit} • ${subtotal}`;
       const wRight = ctx.measureText(right).width;
@@ -279,9 +304,13 @@ export function WorkOrderServiceNoteRich({
     const blob = await buildImage();
     if (!blob) return;
     const file = new File([blob], `nota-os-${order?.id}.png`, { type: "image/png" });
-    if ((navigator as any).canShare && (navigator as any).canShare({ files: [file] })) {
+    if (
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({ files: [file] }) &&
+      typeof navigator.share === "function"
+    ) {
       try {
-        await (navigator as any).share({ files: [file], title: order?.title || "Nota de serviço" });
+        await navigator.share({ files: [file], title: order?.title || "Nota de serviço" });
       } catch {}
       return;
     }
@@ -372,7 +401,7 @@ export function WorkOrderServiceNoteRich({
             <p className="text-sm text-muted-foreground mb-2">Itens</p>
             <div className="space-y-1">
               {items.length > 0 ? (
-                items.map((it: any) => (
+                items.map((it) => (
                   <div key={it.id} className="flex items-center justify-between text-sm">
                     <span>{it.product?.name || it.product_id}</span>
                     <span className="text-muted-foreground">
@@ -403,13 +432,9 @@ export function WorkOrderServiceNoteRich({
           <div className="px-5 py-3 border-t">
             <p className="text-sm text-muted-foreground mb-1">Cliente</p>
             <div className="space-y-1 text-sm">
-              <p className="font-medium">{order?.client?.name || ""}</p>
-              {order?.client?.phone && (
-                <p className="text-muted-foreground">{order.client.phone}</p>
-              )}
-              {order?.client?.address && (
-                <p className="text-muted-foreground">{order.client.address}</p>
-              )}
+              <p className="font-medium">{cliente?.name || ""}</p>
+              {cliente?.phone && <p className="text-muted-foreground">{cliente.phone}</p>}
+              {cliente?.address && <p className="text-muted-foreground">{cliente.address}</p>}
             </div>
           </div>
           <div className="px-5 py-4 bg-muted border-t text-xs text-muted-foreground">

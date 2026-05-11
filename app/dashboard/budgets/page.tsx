@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, FileText, CheckCircle2, Clock, TrendingUp } from "lucide-react";
 import Link from "next/link";
 import { BudgetCard } from "@/components/budgets/budget-card";
+import type { Budget } from "@/lib/domain/types";
 
 export default async function BudgetsPage() {
   const supabase = await createClient();
@@ -18,13 +19,13 @@ export default async function BudgetsPage() {
     .eq("gardener_id", user!.id)
     .order("created_at", { ascending: false });
 
-  const allBudgets = (budgets || []) as any[];
+  const allBudgets = (budgets ?? []) as Budget[];
 
   const pendingBudgets = allBudgets.filter((b) => b.status === "pending");
   const approvedBudgets = allBudgets.filter((b) => b.status === "approved");
   const rejectedBudgets = allBudgets.filter((b) => b.status === "rejected");
 
-  const approvedRevenue = approvedBudgets.reduce((s, b) => s + Number(b.total_amount || 0), 0);
+  const approvedRevenue = approvedBudgets.reduce((s, b) => s + Number(b.total_amount ?? 0), 0);
 
   const fmt = (v: number) =>
     new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(v);

@@ -5,14 +5,30 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Image as ImageIcon, Download } from "lucide-react";
 
+interface ExecucaoProgresso {
+  status: string;
+  created_at: string;
+  details?: {
+    fertilization?: unknown[];
+    pests?: unknown[];
+    checklist?: { label?: string; key?: string; done?: boolean }[];
+  } | null;
+}
+
+interface ClienteProgresso {
+  name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+}
+
 export function MaintenanceProgressNote({
   executions,
   client,
   companyName,
   watermarkBase64,
 }: {
-  executions: any[];
-  client?: any;
+  executions: ExecucaoProgresso[];
+  client?: ClienteProgresso | null;
   companyName?: string;
   watermarkBase64?: string;
 }) {
@@ -33,7 +49,7 @@ export function MaintenanceProgressNote({
     const checklistAgg: Record<string, { done: number; total: number }> = {};
     for (const e of periodExecs) {
       totalExec += 1;
-      const details = (e as any).details || {};
+      const details = e.details ?? {};
       const fert = Array.isArray(details?.fertilization) ? details.fertilization : [];
       totalFert += fert.length;
       const pest = Array.isArray(details?.pests) ? details.pests : [];
@@ -152,8 +168,8 @@ export function MaintenanceProgressNote({
         ? data.checklistSummary
         : [{ label: "Nenhum", pct: 0 }];
     for (const it of list) {
-      const label = String((it as any).label);
-      const pct = `${String((it as any).pct)}%`;
+      const label = String(it.label);
+      const pct = `${String(it.pct)}%`;
       ctx.fillText(label, margin, y);
       const wRight = ctx.measureText(pct).width;
       ctx.fillStyle = "#666";
@@ -216,9 +232,9 @@ export function MaintenanceProgressNote({
     const blob = await buildImage();
     if (!blob) return;
     const file = new File([blob], `progresso-manutencao-${months}m.png`, { type: "image/png" });
-    if ((navigator as any).canShare && (navigator as any).canShare({ files: [file] })) {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
       try {
-        await (navigator as any).share({ files: [file], title: `Progresso ${months} meses` });
+        await navigator.share({ files: [file], title: `Progresso ${months} meses` });
       } catch {}
       return;
     }

@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useEffect, useMemo, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -21,7 +22,7 @@ export function QuickActionForm({ planId }: { planId: string }) {
   const [planDefaults, setPlanDefaults] = useState<{
     default_labor_cost: number;
     materials_markup_pct: number;
-    client: any;
+    client: { id?: string; name?: string; phone?: string; address?: string } | null;
     title: string;
   } | null>(null);
   const [checklist, setChecklist] = useState<
@@ -45,21 +46,41 @@ export function QuickActionForm({ planId }: { planId: string }) {
   useEffect(() => {
     (async () => {
       try {
-        const { data: plan } = await supabase
+        type PlanoLista = {
+          default_labor_cost: number;
+          materials_markup_pct: number;
+          title: string;
+          client?:
+            | { id?: string; name?: string; phone?: string; address?: string }
+            | { id?: string; name?: string; phone?: string; address?: string }[]
+            | null;
+        };
+        const { data: planRaw } = await supabase
           .from("maintenance_plans")
           .select(
             "default_labor_cost, materials_markup_pct, title, client:clients(id, name, phone, address)",
           )
           .eq("id", planId)
           .maybeSingle();
-        if (plan) setPlanDefaults(plan as any);
+        const plan = planRaw as PlanoLista | null;
+        if (plan) {
+          const cliente = Array.isArray(plan.client)
+            ? (plan.client[0] ?? null)
+            : (plan.client ?? null);
+          setPlanDefaults({
+            default_labor_cost: plan.default_labor_cost,
+            materials_markup_pct: plan.materials_markup_pct,
+            client: cliente,
+            title: plan.title,
+          });
+        }
         const { data: tmpl } = await supabase
           .from("plan_executions")
           .select("id, details, cycle")
           .eq("plan_id", planId)
           .eq("cycle", "template")
           .maybeSingle();
-        const d = (tmpl as any)?.details || null;
+        const d = (tmpl as { details?: Record<string, unknown> | null } | null)?.details ?? null;
         if (d && Array.isArray(d.checklist)) setChecklist(d.checklist);
         if (d && Array.isArray(d.fertilization)) setFertilization(d.fertilization);
         if (d && Array.isArray(d.pests)) setPests(d.pests);
@@ -165,9 +186,9 @@ export function QuickActionForm({ planId }: { planId: string }) {
       setDescription("");
       setLabor("");
       setMaterials([]);
-    } catch (err: any) {
+    } catch (err: unknown) {
       setOk(false);
-      setMsg(err?.message || "Falha ao registrar ação");
+      setMsg(extrairMensagemErro(err, "Falha ao registrar ação"));
     } finally {
       setLoading(false);
     }
@@ -267,9 +288,9 @@ export function QuickActionForm({ planId }: { planId: string }) {
               }
               setOk(true);
               setMsg("Padrão salvo para o plano");
-            } catch (err: any) {
+            } catch (err: unknown) {
               setOk(false);
-              setMsg(err?.message || "Falha ao salvar padrão");
+              setMsg(extrairMensagemErro(err, "Falha ao salvar padrão"));
             } finally {
               setLoading(false);
             }

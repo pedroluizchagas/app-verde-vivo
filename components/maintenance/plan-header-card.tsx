@@ -37,7 +37,27 @@ const WEEKDAY_LABELS = [
 
 const WEEK_LABELS = ["1ª semana", "2ª semana", "3ª semana", "4ª semana"];
 
-export function MaintenancePlanHeaderCard({ plan, client }: { plan: any; client?: any }) {
+interface PlanoHeader {
+  default_description?: string | null;
+  default_labor_cost?: number | null;
+  billing_day?: number | null;
+  preferred_weekday?: number | null;
+  preferred_week_of_month?: number | null;
+}
+
+interface ClienteHeader {
+  id?: string | null;
+  name?: string | null;
+  phone?: string | null;
+}
+
+export function MaintenancePlanHeaderCard({
+  plan,
+  client,
+}: {
+  plan: PlanoHeader;
+  client?: ClienteHeader | null;
+}) {
   const clientName = String(client?.name || "Cliente");
   const clientPhone = String(client?.phone || "");
   const clientId = client?.id || null;

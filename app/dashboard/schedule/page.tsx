@@ -6,6 +6,7 @@ import { AppointmentCard } from "@/components/schedule/appointment-card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent } from "@/components/ui/card";
 import { MiniCalendar } from "@/components/dashboard/mini-calendar";
+import type { Appointment } from "@/lib/domain/types";
 
 const STATUS_DOT: Record<string, string> = {
   scheduled: "bg-blue-500",
@@ -14,7 +15,7 @@ const STATUS_DOT: Record<string, string> = {
   cancelled: "bg-red-400",
 };
 
-function groupByDate(appointments: any[]) {
+function groupByDate(appointments: Appointment[]) {
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const tomorrow = new Date(today);
@@ -32,8 +33,8 @@ function groupByDate(appointments: any[]) {
     "Sábado",
   ];
 
-  const groups: { label: string; date: Date; appointments: any[] }[] = [];
-  const groupMap = new Map<string, any[]>();
+  const groups: { label: string; date: Date; appointments: Appointment[] }[] = [];
+  const groupMap = new Map<string, Appointment[]>();
 
   for (const apt of appointments) {
     const d = new Date(apt.scheduled_date);
@@ -103,8 +104,8 @@ export default async function SchedulePage() {
     .gte("scheduled_date", monthStart.toISOString())
     .lte("scheduled_date", monthEnd.toISOString());
 
-  const upcomingList = upcomingAppointments || [];
-  const pastList = pastAppointments || [];
+  const upcomingList = (upcomingAppointments ?? []) as Appointment[];
+  const pastList = (pastAppointments ?? []) as Appointment[];
 
   const todayAppointments = upcomingList.filter((a) => {
     const d = new Date(a.scheduled_date);

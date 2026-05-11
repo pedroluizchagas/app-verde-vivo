@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, extrairMensagemErro } from "@/lib/utils";
 
 interface ParentCategory {
   id: string;
@@ -54,8 +54,8 @@ export function CategoryForm({ parents }: { parents: ParentCategory[] }) {
       setParentId(null);
       setKind(null);
       window?.location?.reload();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao criar categoria");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao criar categoria"));
       setIsLoading(false);
     }
   };

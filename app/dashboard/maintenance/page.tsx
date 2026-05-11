@@ -12,6 +12,14 @@ import {
   Sun,
   Calendar,
 } from "lucide-react";
+import type { MaintenancePlan, PlanExecution, MaintenanceTemplate } from "@/lib/domain/types";
+
+type PlanoLista = Pick<
+  MaintenancePlan,
+  "id" | "title" | "status" | "default_description" | "preferred_weekday" | "preferred_week_of_month"
+> & { client?: { name?: string | null } | { name?: string | null }[] | null };
+
+type ExecucaoLista = Pick<PlanExecution, "id" | "plan_id" | "status" | "created_at">;
 
 const NOW_MS = Date.now();
 
@@ -39,7 +47,7 @@ export default async function MaintenancePage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: plans } = await supabase
+  const { data: plansRaw } = await supabase
     .from("maintenance_plans")
     .select(
       "id, title, status, default_description, preferred_weekday, preferred_week_of_month, client:clients(name)",
@@ -47,11 +55,13 @@ export default async function MaintenancePage() {
     .eq("gardener_id", user!.id)
     .order("created_at", { ascending: false });
 
-  let latestExecs: any[] = [];
-  let templates: Record<string, any> = {};
+  const plans = (plansRaw ?? []) as PlanoLista[];
 
-  if (plans && plans.length > 0) {
-    const ids = plans.map((p: any) => p.id);
+  let latestExecs: ExecucaoLista[] = [];
+  const templates: Record<string, MaintenanceTemplate> = {};
+
+  if (plans.length > 0) {
+    const ids = plans.map((p) => p.id);
 
     const { data: execs } = await supabase
       .from("plan_executions")
@@ -59,24 +69,24 @@ export default async function MaintenancePage() {
       .in("plan_id", ids)
       .eq("status", "done")
       .order("created_at", { ascending: false });
-    latestExecs = execs || [];
+    latestExecs = (execs ?? []) as ExecucaoLista[];
 
     const { data: tmpls } = await supabase
       .from("plan_executions")
       .select("plan_id, details, cycle")
       .in("plan_id", ids)
       .eq("cycle", "template");
-    for (const t of tmpls || []) {
-      templates[String((t as any).plan_id)] = t;
+    for (const t of (tmpls ?? []) as MaintenanceTemplate[]) {
+      templates[String(t.plan_id)] = t;
     }
   }
 
-  const allPlans = plans || [];
-  const activePlans = allPlans.filter((p: any) => p.status === "active");
+  const allPlans = plans;
+  const activePlans = allPlans.filter((p) => p.status === "active");
 
   // Conta planos com alerta (mais de 25 dias sem manutenção)
-  const alertCount = allPlans.filter((p: any) => {
-    const last = latestExecs.find((e: any) => e.plan_id === p.id);
+  const alertCount = allPlans.filter((p) => {
+    const last = latestExecs.find((e) => e.plan_id === p.id);
     const lastDate = last ? new Date(String(last.created_at)) : null;
     const daysSince = lastDate
       ? Math.floor((NOW_MS - lastDate.getTime()) / (1000 * 60 * 60 * 24))
@@ -162,22 +172,24 @@ export default async function MaintenancePage() {
       {/* Lista de planos */}
       {allPlans.length > 0 ? (
         <div className="flex flex-col gap-2">
-          {allPlans.map((p: any) => {
-            const last = latestExecs.find((e: any) => e.plan_id === p.id);
-            const lastDate = last ? new Date(String(last.created_at)) : null;
+          {allPlans.map((p) => {
+            const last = latestExecs.find((e) => e.plan_id === p.id);
+            const lastDate = last?.created_at ? new Date(last.created_at) : null;
             const daysSince = lastDate
               ? Math.floor((NOW_MS - lastDate.getTime()) / (1000 * 60 * 60 * 24))
               : null;
             const showAlert = typeof daysSince === "number" ? daysSince > 25 : true;
 
-            const desc = String(p.default_description || "");
+            const desc = String(p.default_description ?? "");
             const hasSunFull = /sol\s*pleno/i.test(desc);
             const hasSunPartial = /meia\s*sombra/i.test(desc);
             const waterMatch = desc.match(/rega\s*(\d+)x/i);
             const waterFreq = waterMatch ? waterMatch[1] : null;
 
             const tmpl = templates[p.id];
-            const schedule = (tmpl as any)?.details?.schedule || null;
+            const schedule = (tmpl?.details?.schedule ?? null) as
+              | { fertilization_months?: number[] }
+              | null;
             const months: number[] = Array.isArray(schedule?.fertilization_months)
               ? schedule.fertilization_months
               : [];
@@ -228,14 +240,19 @@ export default async function MaintenancePage() {
                         </div>
 
                         {/* Cliente */}
-                        {p.client?.name && (
-                          <div className="flex items-center gap-1 mb-1.5">
-                            <User className="h-3 w-3 text-muted-foreground shrink-0" />
-                            <span className="text-[12px] text-muted-foreground truncate">
-                              {p.client.name}
-                            </span>
-                          </div>
-                        )}
+                        {(() => {
+                          const clienteNome = Array.isArray(p.client)
+                            ? (p.client[0]?.name ?? null)
+                            : (p.client?.name ?? null);
+                          return clienteNome ? (
+                            <div className="flex items-center gap-1 mb-1.5">
+                              <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                              <span className="text-[12px] text-muted-foreground truncate">
+                                {clienteNome}
+                              </span>
+                            </div>
+                          ) : null;
+                        })()}
 
                         {/* Chips de ambiente */}
                         {(hasSunFull || hasSunPartial || waterFreq) && (

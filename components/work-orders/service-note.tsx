@@ -5,7 +5,26 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Share2, FileText } from "lucide-react";
 import { ExportDashboardPDFButton } from "@/components/reports/export-button";
 
-export function WorkOrderServiceNote({ order, items }: { order: any; items: any[] }) {
+interface ItemNotaOs {
+  id: string;
+  product_id?: string;
+  quantity: number;
+  unit_price: number;
+  unit?: string | null;
+  product?: { name?: string | null; unit?: string | null } | null;
+}
+
+interface OrdemNota {
+  id: string;
+  title?: string | null;
+  status?: string | null;
+  description?: string | null;
+  labor_cost?: number | null;
+  discount?: number | null;
+  client?: { name?: string | null; phone?: string | null; address?: string | null } | null;
+}
+
+export function WorkOrderServiceNote({ order, items }: { order: OrdemNota; items: ItemNotaOs[] }) {
   const selectorId = "work-order-service-note";
 
   const currency = (value: number) =>
@@ -13,7 +32,7 @@ export function WorkOrderServiceNote({ order, items }: { order: any; items: any[
 
   const totals = (() => {
     const materials = (items || []).reduce(
-      (sum, it: any) => sum + Number(it.unit_price) * Number(it.quantity),
+      (sum, it) => sum + Number(it.unit_price) * Number(it.quantity),
       0,
     );
     const labor = Number(order?.labor_cost || 0);
@@ -30,7 +49,7 @@ export function WorkOrderServiceNote({ order, items }: { order: any; items: any[
       `Materiais:`,
       ...(items.length > 0
         ? items.map(
-            (it: any) =>
+            (it) =>
               `${it.product?.name || it.product_id} — ${Number(it.quantity)} ${String(it.unit || it.product?.unit || "un")} (${currency(Number(it.unit_price) * Number(it.quantity))})`,
           )
         : ["Nenhum"]),
@@ -46,9 +65,9 @@ export function WorkOrderServiceNote({ order, items }: { order: any; items: any[
 
   const handleShare = async () => {
     const text = buildNoteText();
-    if ((navigator as any).share) {
+    if (navigator.share) {
       try {
-        await (navigator as any).share({ title: order?.title || "Ordem de serviço", text });
+        await navigator.share({ title: order?.title || "Ordem de serviço", text });
       } catch {}
     } else {
       const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
@@ -88,7 +107,7 @@ export function WorkOrderServiceNote({ order, items }: { order: any; items: any[
             <p className="text-sm text-muted-foreground">Materiais</p>
             <div className="space-y-1">
               {items.length > 0 ? (
-                items.map((it: any) => (
+                items.map((it) => (
                   <div key={it.id} className="flex items-center justify-between text-sm">
                     <span>
                       {it.product?.name || it.product_id} — {Number(it.quantity)}{" "}

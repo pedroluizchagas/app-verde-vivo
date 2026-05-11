@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -41,7 +42,7 @@ export function NoteCreateForm() {
         .split(",")
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
-      const payload: any = {
+      const payload = {
         gardener_id: user.id,
         title: title || null,
         importance,
@@ -53,8 +54,8 @@ export function NoteCreateForm() {
       if (insertError) throw insertError;
       router.push("/dashboard/notes");
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao criar nota");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao criar nota"));
       setIsLoading(false);
     }
   };
@@ -74,7 +75,7 @@ export function NoteCreateForm() {
             </div>
             <div>
               <Label>Prioridade</Label>
-              <Select value={importance} onValueChange={(v) => setImportance(v as any)}>
+              <Select value={importance} onValueChange={(v) => setImportance(v as "low" | "medium" | "high")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>

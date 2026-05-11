@@ -10,6 +10,11 @@ import { MaintenancePlanHeaderCard } from "@/components/maintenance/plan-header-
 import { MaintenanceTimeline } from "@/components/maintenance/timeline";
 import { MaintenanceSimpleControl } from "@/components/maintenance/simple-control";
 import { GenerateMaintenanceCertificateButton } from "@/components/maintenance/generate-certificate-button";
+import type { MaintenancePlan, PlanExecution, ClienteResumo } from "@/lib/domain/types";
+
+type PlanoDetalhado = MaintenancePlan & {
+  service?: { name?: string | null } | null;
+};
 
 const NOW_MS = Date.now();
 
@@ -36,16 +41,18 @@ export default async function MaintenanceDetailPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const { data: plan } = await supabase
+  const { data: planRaw } = await supabase
     .from("maintenance_plans")
     .select("*, client:clients(id, name, phone), service:services(name)")
     .eq("gardener_id", user!.id)
     .eq("id", id)
     .maybeSingle();
 
-  if (!plan) {
+  if (!planRaw) {
     notFound();
   }
+
+  const plan = planRaw as PlanoDetalhado;
 
   const { data: executions } = await supabase
     .from("plan_executions")
@@ -55,21 +62,23 @@ export default async function MaintenanceDetailPage({
     .eq("plan_id", id)
     .order("created_at", { ascending: false });
 
-  const visibleExecutions = (executions || []).filter((e: any) => String(e.cycle) !== "template");
+  const visibleExecutions = ((executions ?? []) as PlanExecution[]).filter(
+    (e) => String(e.cycle) !== "template",
+  );
 
-  const lastDone = visibleExecutions.filter((e: any) => String(e.status) === "done")[0];
-  const lastDate = lastDone ? new Date(String(lastDone.created_at)) : null;
+  const lastDone = visibleExecutions.filter((e) => String(e.status) === "done")[0];
+  const lastDate = lastDone?.created_at ? new Date(lastDone.created_at) : null;
   const daysSince = lastDate
     ? Math.floor((NOW_MS - lastDate.getTime()) / (1000 * 60 * 60 * 24))
     : null;
   const showAlert = typeof daysSince === "number" ? daysSince > 25 : true;
 
-  const planClient = Array.isArray((plan as any).client)
-    ? ((plan as any).client[0] ?? null)
-    : (plan as any).client;
+  const planClient: ClienteResumo | null = Array.isArray(plan.client)
+    ? ((plan.client[0] as ClienteResumo | undefined) ?? null)
+    : ((plan.client as ClienteResumo | null) ?? null);
 
-  const statusLabel = statusLabels[(plan as any).status] ?? (plan as any).status;
-  const statusColor = statusColors[(plan as any).status] ?? "bg-muted text-muted-foreground";
+  const statusLabel = statusLabels[plan.status] ?? plan.status;
+  const statusColor = statusColors[plan.status] ?? "bg-muted text-muted-foreground";
 
   return (
     <div className="flex flex-col gap-4">
@@ -84,7 +93,7 @@ export default async function MaintenanceDetailPage({
           </Button>
           <div className="min-w-0">
             <h1 className="text-2xl font-bold tracking-tight leading-tight truncate">
-              {(plan as any).title}
+              {plan.title}
             </h1>
             <p className="text-[13px] text-muted-foreground">Plano de manutenção</p>
           </div>
@@ -148,9 +157,9 @@ export default async function MaintenanceDetailPage({
             </div>
             {lastDone.details ? (
               <MaintenanceServiceNoteRich
-                planTitle={String((plan as any).title)}
+                planTitle={String(plan.title)}
                 client={planClient}
-                execution={lastDone}
+                execution={lastDone as Parameters<typeof MaintenanceServiceNoteRich>[0]["execution"]}
               />
             ) : lastDone.notes ? (
               <div className="rounded-lg bg-muted p-3 text-[13px] whitespace-pre-wrap">
@@ -165,21 +174,21 @@ export default async function MaintenanceDetailPage({
       <Card className="py-0">
         <CardContent className="p-5">
           <h2 className="text-[14px] font-semibold mb-4">Histórico de manutenções</h2>
-          {visibleExecutions.filter((e: any) => String(e.status) === "done").length > 0 ? (
+          {visibleExecutions.filter((e) => String(e.status) === "done").length > 0 ? (
             <div className="flex flex-col divide-y divide-border/40">
               {visibleExecutions
-                .filter((e: any) => String(e.status) === "done")
-                .map((e: any) => (
+                .filter((e) => String(e.status) === "done")
+                .map((e) => (
                   <div key={e.id} className="flex items-center justify-between py-3">
                     <div>
                       <p className="text-[13px] font-medium capitalize">
-                        {new Date(e.created_at).toLocaleDateString("pt-BR", {
+                        {new Date(e.created_at!).toLocaleDateString("pt-BR", {
                           month: "long",
                           year: "numeric",
                         })}
                       </p>
                       <p className="text-[11px] text-muted-foreground">
-                        Realizada em {new Date(e.created_at).toLocaleDateString("pt-BR")}
+                        Realizada em {new Date(e.created_at!).toLocaleDateString("pt-BR")}
                       </p>
                     </div>
                     <Button

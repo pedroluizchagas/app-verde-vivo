@@ -6,6 +6,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
+import { extrairMensagemErro } from "@/lib/utils";
 
 export function PreferencesForm({
   initial,
@@ -36,7 +37,7 @@ export function PreferencesForm({
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
-      const payload: any = {
+      const payload = {
         gardener_id: user.id,
         credit_card_due_day: creditDue === "" ? null : Number(creditDue),
         default_pending_days: Number(pendingDays),
@@ -45,8 +46,8 @@ export function PreferencesForm({
       const { error } = await supabase.from("user_preferences").upsert(payload);
       if (error) throw error;
       setMessage("Preferências salvas com sucesso");
-    } catch (e: any) {
-      setMessage(e?.message || "Erro ao salvar");
+    } catch (e: unknown) {
+      setMessage(extrairMensagemErro(e, "Erro ao salvar"));
     } finally {
       setSaving(false);
     }

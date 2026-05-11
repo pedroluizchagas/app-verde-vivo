@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import type React from "react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -66,7 +67,7 @@ export function WorkOrderForm({
   const [discount, setDiscount] = useState<number>(0);
   const [items, setItems] = useState<
     { product_id: string; quantity: number; unit_cost: number; unit_price: number; unit?: string }[]
-  >(defaultItems as any);
+  >(defaultItems);
   const [newProductId, setNewProductId] = useState<string | null>(null);
   const [newQuantity, setNewQuantity] = useState<number>(1);
   const [newUnit, setNewUnit] = useState<string>("un");
@@ -124,7 +125,7 @@ export function WorkOrderForm({
         unit_cost: base,
         unit_price: price,
         unit: newUnit || p.unit || "un",
-      } as any,
+      },
     ]);
     setNewProductId(null);
     setNewQuantity(1);
@@ -149,7 +150,7 @@ export function WorkOrderForm({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
       if (!clientId) throw new Error("Selecione um cliente");
-      const payload: any = {
+      const payload = {
         gardener_id: user.id,
         appointment_id: appointmentId,
         client_id: clientId,
@@ -176,15 +177,15 @@ export function WorkOrderForm({
           unit_cost: it.unit_cost,
           unit_price: it.unit_price,
           total_price: Number(it.unit_price) * Number(it.quantity),
-          unit: (it as any).unit || null,
+          unit: it.unit || null,
         }));
         const { error: itemsErr } = await supabase.from("service_order_items").insert(rows);
         if (itemsErr) throw itemsErr;
       }
       router.push("/dashboard/work-orders");
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao criar ordem de serviço");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao criar ordem de serviço"));
       setIsLoading(false);
     }
   };
@@ -237,7 +238,7 @@ export function WorkOrderForm({
 
           <div className="grid gap-2">
             <Label>Status</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+            <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
               <SelectTrigger className="h-11">
                 <SelectValue />
               </SelectTrigger>
@@ -420,7 +421,7 @@ export function WorkOrderForm({
                       <div>
                         <p className="font-medium">{p?.name || it.product_id}</p>
                         <p className="text-xs text-muted-foreground">
-                          {Number(it.quantity)} {String((it as any).unit || p?.unit || "un")}
+                          {Number(it.quantity)} {String(it.unit || p?.unit || "un")}
                         </p>
                       </div>
                       <div className="text-right">

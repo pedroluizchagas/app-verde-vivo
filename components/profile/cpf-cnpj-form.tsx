@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -44,12 +45,13 @@ export function CpfCnpjForm() {
         setLoading(false);
         return;
       }
-      const { data: profile } = await supabase
+      const { data: profileRaw } = await supabase
         .from("profiles")
         .select("cpf_cnpj")
         .eq("id", user.id)
         .maybeSingle();
-      const raw = (profile as any)?.cpf_cnpj ?? "";
+      const profile = profileRaw as { cpf_cnpj?: string | null } | null;
+      const raw = profile?.cpf_cnpj ?? "";
       setValue(raw ? formatCpfCnpj(raw) : "");
       setLoading(false);
     })();
@@ -85,8 +87,8 @@ export function CpfCnpjForm() {
       if (upErr) throw upErr;
       setSuccess(true);
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao salvar");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao salvar"));
     } finally {
       setSaving(false);
     }

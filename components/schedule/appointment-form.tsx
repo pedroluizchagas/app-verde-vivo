@@ -25,12 +25,15 @@ interface AppointmentFormProps {
   appointment?: {
     id: string;
     title: string;
-    description: string | null;
-    client_id: string;
+    description?: string | null;
+    client_id?: string | null;
     scheduled_date: string;
     end_date?: string | null;
-    duration_minutes: number;
+    duration_minutes?: number | null;
     status: string;
+    type?: string | null;
+    location?: string | null;
+    all_day?: boolean | null;
   };
 }
 
@@ -50,10 +53,10 @@ export function AppointmentForm({ clients, orders, appointment }: AppointmentFor
   const [selectedClient, setSelectedClient] = useState(appointment?.client_id || "");
   const [selectedOrder, setSelectedOrder] = useState("");
   const [status, setStatus] = useState(appointment?.status || "scheduled");
-  const [type, setType] = useState((appointment as any)?.type || "service");
-  const [location, setLocation] = useState((appointment as any)?.location || "");
+  const [type, setType] = useState(appointment?.type || "service");
+  const [location, setLocation] = useState(appointment?.location || "");
   const [allDay, setAllDay] = useState(
-    Boolean((appointment as any)?.all_day) || Boolean(allDayFromQuery),
+    Boolean(appointment?.all_day) || Boolean(allDayFromQuery),
   );
 
   useEffect(() => {
@@ -64,15 +67,22 @@ export function AppointmentForm({ clients, orders, appointment }: AppointmentFor
       .select("client_id, client:clients(id, address)")
       .eq("id", planIdFromQuery)
       .maybeSingle()
-      .then(({ data: plan }) => {
+      .then(({ data: planRaw }) => {
+        type PlanoEmbutido = {
+          client_id?: string;
+          client?:
+            | { id?: string; address?: string }
+            | { id?: string; address?: string }[]
+            | null;
+        };
+        const plan = planRaw as PlanoEmbutido | null;
         if (!plan) return;
-        const cid = Array.isArray((plan as any)?.client)
-          ? ((plan as any)?.client[0]?.id ?? (plan as any)?.client_id ?? "")
-          : ((plan as any)?.client_id ?? (plan as any)?.client?.id ?? "");
+        const cliente = Array.isArray(plan.client)
+          ? (plan.client[0] ?? null)
+          : (plan.client ?? null);
+        const cid = cliente?.id ?? plan.client_id ?? "";
         if (cid) setSelectedClient(String(cid));
-        const addr = Array.isArray((plan as any)?.client)
-          ? ((plan as any)?.client[0]?.address ?? "")
-          : ((plan as any)?.client?.address ?? "");
+        const addr = cliente?.address ?? "";
         if (!location && addr) setLocation(String(addr));
       });
   }, [planIdFromQuery]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -100,7 +110,19 @@ export function AppointmentForm({ clients, orders, appointment }: AppointmentFor
     const startDate = new Date(`${dateStr}T${allDay ? "00:00" : startStr || "00:00"}`);
     const endDate = new Date(`${dateStr}T${allDay ? "23:59" : endStr || "23:59"}`);
 
-    const appointmentData: any = {
+    const appointmentData: {
+      title: string;
+      description: string | null;
+      client_id: string | null;
+      scheduled_date: string;
+      end_date: string;
+      duration_minutes: number;
+      status: string;
+      type: string;
+      location: string | null;
+      all_day: boolean;
+      gardener_id: string;
+    } = {
       title: formData.get("title") as string,
       description: (formData.get("description") as string) || null,
       client_id: selectedClient || null,

@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Upload, X, ImagePlus } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, extrairMensagemErro } from "@/lib/utils";
 
 export function AvatarUpload() {
   const router = useRouter();
@@ -84,8 +84,8 @@ export function AvatarUpload() {
       reader.onerror = () => {
         throw new Error("Erro ao processar imagem");
       };
-    } catch (err: any) {
-      setError(err?.message || "Erro ao enviar foto");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao enviar foto"));
       setIsLoading(false);
     }
   };

@@ -11,11 +11,16 @@ interface TimelineEntry {
   label: string;
 }
 
+interface ExecucaoTimeline {
+  cycle: string | number;
+  status: string;
+}
+
 export function MaintenanceTimeline({
   executions,
   months = 6,
 }: {
-  executions: any[];
+  executions: ExecucaoTimeline[];
   months?: number;
 }) {
   const now = new Date();
@@ -27,7 +32,7 @@ export function MaintenanceTimeline({
     const shortMonth = d.toLocaleString("pt-BR", { month: "short" }).replace(".", "");
     const label = shortMonth.charAt(0).toUpperCase() + shortMonth.slice(1);
 
-    const exec = (executions || []).find((e: any) => String(e.cycle) === key);
+    const exec = (executions || []).find((e) => String(e.cycle) === key);
     const rawStatus = exec ? String(exec.status) : "pending";
     const isCurrentMonth = i === 0;
 

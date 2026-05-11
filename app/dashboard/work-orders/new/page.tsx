@@ -34,6 +34,21 @@ export default async function NewWorkOrderPage({
     .eq("gardener_id", user!.id)
     .order("name");
 
+  interface AppointmentEmbutido {
+    id: string;
+    title: string | null;
+    client_id: string | null;
+    scheduled_date: string;
+    labor_cost: number | null;
+  }
+  type ProdutoMov = { cost?: number | null; unit?: string | null };
+  interface MaterialUsado {
+    product_id: string;
+    quantity: number;
+    unit_cost: number | null;
+    product?: ProdutoMov | ProdutoMov[] | null;
+  }
+
   let defaultClientId: string | null = null;
   let defaultTitle: string | null = null;
   let defaultLaborCost = 0;
@@ -43,6 +58,7 @@ export default async function NewWorkOrderPage({
     quantity: number;
     unit_cost: number;
     unit_price: number;
+    unit: string;
   }[] = [];
 
   const { data: prefs } = await supabase
@@ -50,27 +66,30 @@ export default async function NewWorkOrderPage({
     .select("default_product_margin_pct")
     .eq("gardener_id", user!.id)
     .maybeSingle();
-  defaultMarkupPct = Number((prefs as any)?.default_product_margin_pct ?? 0);
+  const prefsTyped = prefs as { default_product_margin_pct?: number | null } | null;
+  defaultMarkupPct = Number(prefsTyped?.default_product_margin_pct ?? 0);
 
   if (appointment) {
-    const { data: ap } = await supabase
+    const { data: apRaw } = await supabase
       .from("appointments")
       .select("id, title, client_id, scheduled_date, labor_cost")
       .eq("id", appointment)
       .eq("gardener_id", user!.id)
       .maybeSingle();
+    const ap = apRaw as AppointmentEmbutido | null;
     if (ap) {
-      defaultClientId = (ap as any).client_id || null;
-      defaultTitle = (ap as any).title || null;
-      defaultLaborCost = Number((ap as any).labor_cost || 0);
+      defaultClientId = ap.client_id ?? null;
+      defaultTitle = ap.title ?? null;
+      defaultLaborCost = Number(ap.labor_cost ?? 0);
       const { data: usedMaterials } = await supabase
         .from("product_movements")
         .select("product_id, quantity, unit_cost, product:products(cost, unit)")
         .eq("gardener_id", user!.id)
         .eq("appointment_id", ap.id)
         .eq("type", "out");
-      defaultItems = (usedMaterials || []).map((m: any) => {
-        const base = Number(m.unit_cost ?? m.product?.cost ?? 0);
+      defaultItems = ((usedMaterials ?? []) as MaterialUsado[]).map((m) => {
+        const produto = Array.isArray(m.product) ? m.product[0] : m.product;
+        const base = Number(m.unit_cost ?? produto?.cost ?? 0);
         const price =
           base * (1 + (Number(defaultMarkupPct) > 0 ? Number(defaultMarkupPct) / 100 : 0));
         return {
@@ -78,7 +97,7 @@ export default async function NewWorkOrderPage({
           quantity: Number(m.quantity),
           unit_cost: base,
           unit_price: price,
-          unit: String(m.product?.unit || "un"),
+          unit: String(produto?.unit ?? "un"),
         };
       });
     }

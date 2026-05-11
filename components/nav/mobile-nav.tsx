@@ -17,6 +17,7 @@ import {
   Bot,
   CalendarCheck,
   ClipboardList,
+  type LucideIcon,
 } from "lucide-react";
 
 export function MobileNav() {
@@ -319,7 +320,7 @@ function SheetLink({
   active,
 }: {
   href: string;
-  icon: any;
+  icon: LucideIcon;
   label: string;
   onClose: () => void;
   active?: boolean;

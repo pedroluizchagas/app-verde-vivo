@@ -6,10 +6,13 @@ import Link from "next/link";
 import { ClientCard } from "@/components/clients/client-card";
 import { ClientsSearch } from "@/components/clients/clients-search";
 import { Card, CardContent } from "@/components/ui/card";
+import type { ClienteResumo } from "@/lib/domain/types";
 
-function groupAlphabetically(clients: any[]) {
+type ClienteListado = ClienteResumo & { created_at?: string | null };
+
+function groupAlphabetically(clients: ClienteListado[]) {
   const sorted = [...clients].sort((a, b) => a.name.localeCompare(b.name, "pt-BR"));
-  const groups = new Map<string, any[]>();
+  const groups = new Map<string, ClienteListado[]>();
   for (const client of sorted) {
     const letter = client.name.charAt(0).toUpperCase();
     if (!groups.has(letter)) groups.set(letter, []);
@@ -37,12 +40,14 @@ export default async function ClientsPage({
     .eq("gardener_id", user!.id)
     .order("created_at", { ascending: false });
 
-  const allClients = clients || [];
+  const allClients = (clients ?? []) as ClienteListado[];
 
   // KPI: novos este mes
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
-  const newThisMonth = allClients.filter((c) => new Date(c.created_at) >= monthStart).length;
+  const newThisMonth = allClients.filter(
+    (c) => c.created_at != null && new Date(c.created_at) >= monthStart,
+  ).length;
 
   // KPI: ativos (com agendamento nos ultimos 30 dias)
   const since30 = new Date();
@@ -60,7 +65,7 @@ export default async function ClientsPage({
     ? allClients.filter(
         (c) =>
           c.name.toLowerCase().includes(query) ||
-          c.phone.includes(query) ||
+          (c.phone ?? "").includes(query) ||
           c.email?.toLowerCase().includes(query) ||
           c.address?.toLowerCase().includes(query),
       )

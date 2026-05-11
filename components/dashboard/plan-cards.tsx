@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Check, X, Sparkles, Loader2, AlertCircle, Clock, CheckCircle2 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, extrairMensagemErro } from "@/lib/utils";
 
 type Plan = "basic" | "plus";
 
@@ -116,8 +116,8 @@ export function PlanCards({
       } else {
         setError("Link de pagamento nao disponivel. Tente novamente.");
       }
-    } catch (err: any) {
-      setError(err?.message ?? "Erro ao iniciar assinatura");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao iniciar assinatura"));
     } finally {
       setLoading(null);
     }
@@ -141,8 +141,8 @@ export function PlanCards({
           data.message ?? "Pagamento nao encontrado. Aguarde alguns minutos e tente novamente.",
         );
       }
-    } catch (err: any) {
-      setError(err?.message ?? "Erro ao verificar pagamento");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao verificar pagamento"));
     } finally {
       setVerifyLoading(false);
     }
@@ -164,8 +164,8 @@ export function PlanCards({
       } else {
         setError("Link de pagamento nao disponivel. Tente iniciar uma nova assinatura.");
       }
-    } catch (err: any) {
-      setError(err?.message ?? "Erro ao recuperar link de pagamento");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao recuperar link de pagamento"));
     } finally {
       setReopenLoading(false);
     }

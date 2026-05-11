@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -44,9 +45,9 @@ export function SkipExecutionButton({
       if (error) throw error;
       setOk(true);
       setMsg("Execução marcada como pulada");
-    } catch (err: any) {
+    } catch (err: unknown) {
       setOk(false);
-      setMsg(err?.message || "Falha ao pular execução");
+      setMsg(extrairMensagemErro(err, "Falha ao pular execução"));
     } finally {
       setLoading(false);
     }

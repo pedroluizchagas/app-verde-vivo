@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { extrairMensagemErro } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -53,7 +54,7 @@ export function IrisChat() {
   const [recordingSeconds, setRecordingSeconds] = useState(0);
   const [pending, setPending] = useState<{
     intent: string;
-    params: any;
+    params: Record<string, unknown>;
     reply: string;
   } | null>(null);
 
@@ -140,10 +141,10 @@ export function IrisChat() {
           setItems((prev) => [...prev, { role: "assistant", content: execMsg }]);
         }
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       setItems((prev) => [
         ...prev,
-        { role: "assistant", content: `Erro: ${err?.message ?? String(err)}` },
+        { role: "assistant", content: `Erro: ${extrairMensagemErro(err)}` },
       ]);
     } finally {
       setIsLoading(false);
@@ -411,12 +412,12 @@ export function IrisChat() {
                     msg += ` (lancado com sucesso)`;
                   }
                   setItems((prev) => [...prev, { role: "assistant", content: msg }]);
-                } catch (err: any) {
+                } catch (err: unknown) {
                   setItems((prev) => [
                     ...prev,
                     {
                       role: "assistant",
-                      content: `Erro: ${err?.message ?? String(err)}`,
+                      content: `Erro: ${extrairMensagemErro(err)}`,
                     },
                   ]);
                 } finally {

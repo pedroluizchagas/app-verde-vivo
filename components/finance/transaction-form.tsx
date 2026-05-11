@@ -17,7 +17,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ArrowUpRight, ArrowDownRight } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, extrairMensagemErro } from "@/lib/utils";
 
 interface TransactionFormProps {
   categories: {
@@ -75,7 +75,17 @@ export function TransactionForm({ categories, clients }: TransactionFormProps) {
     setIsLoading(true);
     setError(null);
     try {
-      const payload: any = {
+      const payload: {
+        type: typeof type;
+        amount: number;
+        transaction_date: string;
+        description: string | null;
+        category_id: string | null;
+        client_id: string | null;
+        status: typeof status;
+        paid_at?: string | null;
+        due_date?: string | null;
+      } = {
         type,
         amount: Number(amount) || 0,
         transaction_date: transactionDate,
@@ -96,9 +106,9 @@ export function TransactionForm({ categories, clients }: TransactionFormProps) {
       if (insertError) throw insertError;
       router.push("/dashboard/finance");
       router.refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err?.message || "Erro ao salvar o lançamento");
+      setError(extrairMensagemErro(err, "Erro ao salvar o lançamento"));
       setIsLoading(false);
     }
   };

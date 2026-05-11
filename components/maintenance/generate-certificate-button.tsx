@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -18,34 +19,49 @@ export function GenerateMaintenanceCertificateButton({ planId }: { planId: strin
         data: { user },
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
-      const { data: plan } = await supabase
+      interface PlanoCert {
+        title: string;
+        client?:
+          | { name?: string | null; phone?: string | null; address?: string | null }
+          | { name?: string | null; phone?: string | null; address?: string | null }[]
+          | null;
+      }
+      interface ExecucaoCert {
+        id: string;
+        status: string;
+        details?: {
+          labor?: number;
+          materials?: { quantity?: number; unitCost?: number; name?: string; unit?: string }[];
+          markupPct?: number;
+        } | null;
+        final_amount?: number | null;
+        created_at?: string | null;
+      }
+      const { data: planRaw } = await supabase
         .from("maintenance_plans")
         .select("title, client:clients(name, phone, address)")
         .eq("id", planId)
         .maybeSingle();
-      const { data: execs } = await supabase
+      const plan = planRaw as PlanoCert | null;
+      const { data: execsRaw } = await supabase
         .from("plan_executions")
         .select("id, status, details, final_amount, created_at")
         .eq("plan_id", planId)
         .order("created_at", { ascending: false })
         .limit(5);
-      const latest =
-        (execs || []).find((e: any) => String(e.status) === "done") || (execs || [])[0];
+      const execs = (execsRaw ?? []) as ExecucaoCert[];
+      const latest = execs.find((e) => String(e.status) === "done") || execs[0];
       if (!latest) throw new Error("Sem execução para gerar comprovante");
-      const build = await import("./service-note-rich");
-      const node = document.createElement("div");
-      document.body.appendChild(node);
-      const { MaintenanceServiceNoteRich } = build as any;
       const tmp = document.createElement("div");
       tmp.id = `tmp-cert-${latest.id}`;
       document.body.appendChild(tmp);
       const canvasBlob = await (async () => {
-        const details = (latest as any).details || {};
+        const details = latest.details ?? {};
         const labor = Number(details?.labor ?? 0);
-        const materials: any[] = Array.isArray(details?.materials) ? details.materials : [];
+        const materials = Array.isArray(details?.materials) ? details.materials : [];
         const markupPct = Number(details?.markupPct ?? 0);
         const materialsTotalRaw = materials.reduce(
-          (sum, m: any) => sum + Number(m.quantity || 0) * Number(m.unitCost || 0),
+          (sum, m) => sum + Number(m.quantity ?? 0) * Number(m.unitCost ?? 0),
           0,
         );
         const materialsTotal = Number(
@@ -90,15 +106,10 @@ export function GenerateMaintenanceCertificateButton({ planId }: { planId: strin
         ctx.fillText("Cliente", margin, 110);
         ctx.fillStyle = "#111";
         ctx.font = "400 14px system-ui";
-        ctx.fillText(
-          String(
-            Array.isArray((plan as any).client)
-              ? ((plan as any).client[0]?.name ?? "")
-              : ((plan as any).client?.name ?? ""),
-          ),
-          margin,
-          130,
-        );
+        const clientePlan = Array.isArray(plan?.client)
+          ? (plan?.client?.[0] ?? null)
+          : (plan?.client ?? null);
+        ctx.fillText(String(clientePlan?.name ?? ""), margin, 130);
         ctx.strokeStyle = "#e9e9e9";
         ctx.beginPath();
         ctx.moveTo(margin, 150);
@@ -118,9 +129,9 @@ export function GenerateMaintenanceCertificateButton({ planId }: { planId: strin
       })();
       if (!canvasBlob) throw new Error("Falha ao gerar imagem");
       const file = new File([canvasBlob], `comprovante-${latest.id}.png`, { type: "image/png" });
-      if ((navigator as any).canShare && (navigator as any).canShare({ files: [file] })) {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
         try {
-          await (navigator as any).share({ files: [file], title: "Comprovante de manutenção" });
+          await navigator.share({ files: [file], title: "Comprovante de manutenção" });
         } catch {}
       } else {
         const url = URL.createObjectURL(canvasBlob);
@@ -128,8 +139,8 @@ export function GenerateMaintenanceCertificateButton({ planId }: { planId: strin
         setTimeout(() => URL.revokeObjectURL(url), 5000);
       }
       setMsg("Comprovante gerado");
-    } catch (err: any) {
-      setMsg(err?.message || "Falha ao gerar comprovante");
+    } catch (err: unknown) {
+      setMsg(extrairMensagemErro(err, "Falha ao gerar comprovante"));
     } finally {
       setLoading(false);
     }

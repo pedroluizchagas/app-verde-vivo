@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent } from "@/components/ui/card";
 import { Package } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, extrairMensagemErro } from "@/lib/utils";
 
 const PRESET_UNITS = ["un", "kg", "L", "m", "m²", "saco", "cx"];
 
@@ -63,8 +63,8 @@ export function ProductForm() {
       if (insertError) throw insertError;
       router.push("/dashboard/stock");
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao criar produto");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao criar produto"));
       setIsLoading(false);
     }
   };

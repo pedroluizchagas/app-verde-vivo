@@ -5,12 +5,12 @@ import { User, Clock } from "lucide-react";
 interface Budget {
   id: string;
   title: string;
-  description: string | null;
+  description?: string | null;
   total_amount: number;
   status: string;
-  valid_until: string | null;
-  created_at: string;
-  client: { name: string } | null;
+  valid_until?: string | null;
+  created_at?: string | null;
+  client?: { name?: string | null } | { name?: string | null }[] | null;
 }
 
 export const statusLabels: Record<string, string> = {
@@ -65,14 +65,19 @@ export function BudgetCard({ budget }: { budget: Budget }) {
                 </span>
               </div>
               <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5">
-                {budget.client && (
-                  <div className="flex items-center gap-1">
-                    <User className="h-3 w-3 text-muted-foreground shrink-0" />
-                    <span className="text-[11px] text-muted-foreground truncate">
-                      {budget.client.name}
-                    </span>
-                  </div>
-                )}
+                {(() => {
+                  const cliente = Array.isArray(budget.client)
+                    ? (budget.client[0] ?? null)
+                    : (budget.client ?? null);
+                  return cliente?.name ? (
+                    <div className="flex items-center gap-1">
+                      <User className="h-3 w-3 text-muted-foreground shrink-0" />
+                      <span className="text-[11px] text-muted-foreground truncate">
+                        {cliente.name}
+                      </span>
+                    </div>
+                  ) : null;
+                })()}
                 {validStr && (
                   <div className="flex items-center gap-1">
                     <Clock className="h-3 w-3 text-muted-foreground shrink-0" />

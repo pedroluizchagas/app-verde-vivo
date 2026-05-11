@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
+import { extrairMensagemErro } from "@/lib/utils";
 
 type SuggestedMap = Record<string, string[]>;
 
@@ -56,9 +57,15 @@ export function CategorySeedButton() {
         .select("id, name, parent_id, kind")
         .eq("gardener_id", user.id);
 
+      interface CategoriaRow {
+        id: string;
+        name: string;
+        parent_id: string | null;
+        kind: "expense" | "income" | null;
+      }
       const byNameRoot = new Map<string, { id: string; kind: "expense" | "income" | null }>(); // root name -> info
       const childrenByName = new Map<string, string>(); // child name -> id
-      (existing || []).forEach((c: any) => {
+      ((existing ?? []) as CategoriaRow[]).forEach((c) => {
         if (c.parent_id == null) byNameRoot.set(c.name, { id: c.id, kind: c.kind ?? null });
         else childrenByName.set(c.name, c.id);
       });
@@ -105,8 +112,8 @@ export function CategorySeedButton() {
       }
 
       setMsg("Categorias sugeridas adicionadas.");
-    } catch (e: any) {
-      setMsg(e?.message || "Erro ao adicionar categorias");
+    } catch (e: unknown) {
+      setMsg(extrairMensagemErro(e, "Erro ao adicionar categorias"));
     } finally {
       setBusy(false);
     }

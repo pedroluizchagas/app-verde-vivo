@@ -21,13 +21,14 @@ import {
   X,
   ArrowRight,
   CreditCard,
+  type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 
 const sections: Array<{
   title: string;
-  items: { href: string; icon: any; label: string }[];
+  items: { href: string; icon: LucideIcon; label: string }[];
 }> = [
   {
     title: "Menu Principal",
@@ -71,11 +72,11 @@ const typeLabels: Record<string, string> = {
 
 type NextAppointment = {
   id: string;
-  title: string | null;
-  type: string;
+  title?: string | null;
+  type?: string | null;
   scheduled_date: string;
-  all_day: boolean;
-  clientName: string | null;
+  all_day?: boolean | null;
+  clientName?: string | null;
 };
 
 export function Sidebar({
@@ -140,7 +141,10 @@ export function Sidebar({
   let nextApptTimeStr = "";
   if (nextAppointment) {
     const date = new Date(nextAppointment.scheduled_date);
-    nextApptTitle = nextAppointment.title || typeLabels[nextAppointment.type] || "Serviço";
+    nextApptTitle =
+      nextAppointment.title ||
+      (nextAppointment.type ? typeLabels[nextAppointment.type] : null) ||
+      "Serviço";
     nextApptDateStr = `${DAY_NAMES[date.getDay()]}, ${date.getDate()} ${MONTH_NAMES[date.getMonth()]}`;
     nextApptTimeStr = nextAppointment.all_day
       ? "Dia inteiro"
@@ -380,7 +384,7 @@ export function Sidebar({
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
                   <span className="text-[9px] font-semibold px-2 py-0.5 rounded-full bg-primary/15 text-primary shrink-0">
-                    {typeLabels[nextAppointment.type] || "Serviço"}
+                    {(nextAppointment.type ? typeLabels[nextAppointment.type] : null) || "Serviço"}
                   </span>
                   {nextAppointment.clientName && (
                     <span className="text-[9px] font-medium px-2 py-0.5 rounded-full bg-sidebar-foreground/[0.07] text-sidebar-foreground/45 truncate">

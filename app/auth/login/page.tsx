@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import type React from "react";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
@@ -24,8 +25,8 @@ export default function LoginPage() {
       const { error: signErr } = await supabase.auth.signInWithPassword({ email, password });
       if (signErr) throw signErr;
       window.location.href = "/dashboard";
-    } catch (err: any) {
-      const msg = String(err?.message || "");
+    } catch (err: unknown) {
+      const msg = extrairMensagemErro(err, "");
       const isNetwork = /Failed to fetch|NetworkError|TypeError/i.test(msg);
       const rawEnvUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
       const looksLocal = /localhost|127\.0\.0\.1/i.test(String(rawEnvUrl));
@@ -56,8 +57,8 @@ export default function LoginPage() {
       if (resetErr) throw resetErr;
       setResetSent(true);
       setError(null);
-    } catch (err: any) {
-      setError(err?.message || "Erro ao solicitar redefinicao de senha");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao solicitar redefinicao de senha"));
     } finally {
       setResetLoading(false);
     }

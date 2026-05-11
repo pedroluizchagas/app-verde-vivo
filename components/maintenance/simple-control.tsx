@@ -1,12 +1,18 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { CheckCircle2, Leaf, Bug } from "lucide-react";
 
-function computePreferredDate(plan: any): Date {
+interface PlanoPreferencias {
+  preferred_weekday?: number | null;
+  preferred_week_of_month?: number | null;
+}
+
+function computePreferredDate(plan: PlanoPreferencias | null | undefined): Date {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -76,7 +82,12 @@ export function MaintenanceSimpleControl({
             .eq("plan_id", planId)
             .eq("cycle", "template")
             .maybeSingle();
-          const schedule = (tmpl as any)?.details?.schedule || null;
+          const detalhesTmpl = (tmpl as { details?: { schedule?: Record<string, unknown> | null } | null } | null)?.details;
+          const schedule = (detalhesTmpl?.schedule ?? null) as {
+            fertilization_months?: number[];
+            pests_months?: number[];
+            weeds_months?: number[];
+          } | null;
           const months =
             type === "fertilization"
               ? schedule?.fertilization_months || []
@@ -126,9 +137,10 @@ export function MaintenanceSimpleControl({
         .eq("plan_id", planId)
         .eq("cycle", cyc)
         .maybeSingle();
-      const details = (exec as any)?.details || {};
-      const list = Array.isArray(details?.[type]) ? details[type] : [];
-      const entry: any =
+      const details = ((exec as { details?: Record<string, unknown> | null } | null)?.details ??
+        {}) as Record<string, unknown>;
+      const list = Array.isArray(details[type]) ? (details[type] as unknown[]) : [];
+      const entry: Record<string, string> =
         type === "fertilization"
           ? {
               product: "Adubo",
@@ -156,8 +168,8 @@ export function MaintenanceSimpleControl({
         if (ierr) throw ierr;
       }
       setMsg("Marcado como realizado");
-    } catch (err: any) {
-      setMsg(err?.message || "Falha ao registrar");
+    } catch (err: unknown) {
+      setMsg(extrairMensagemErro(err, "Falha ao registrar"));
     } finally {
       setLoading(false);
     }

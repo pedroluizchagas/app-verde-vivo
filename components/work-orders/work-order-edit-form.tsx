@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import type React from "react";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
@@ -27,16 +28,30 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
+interface WorkOrderOrderInput {
+  id: string;
+  title: string;
+  client_id?: string | null;
+  appointment_id?: string | null;
+  description?: string | null;
+  status: string;
+  labor_cost?: number | null;
+  materials_markup_pct?: number | null;
+  extra_charges?: number | null;
+  discount?: number | null;
+  total_amount?: number | null;
+}
+
 interface WorkOrderEditFormProps {
-  order: any;
+  order: WorkOrderOrderInput;
   items: {
     id: string;
     product_id: string;
     quantity: number;
     unit_cost: number;
     unit_price: number;
-    unit?: string;
-    product?: { name: string; unit: string };
+    unit?: string | null;
+    product?: { name?: string | null; unit?: string | null } | null;
   }[];
   clients: { id: string; name: string }[];
   appointments: { id: string; title: string | null }[];
@@ -60,7 +75,7 @@ export function WorkOrderEditForm({
   const [title, setTitle] = useState<string>(order?.title || "");
   const [description, setDescription] = useState<string>(order?.description || "");
   const [status, setStatus] = useState<"draft" | "issued" | "completed" | "cancelled">(
-    order?.status || "issued",
+    (order?.status as "draft" | "issued" | "completed" | "cancelled") || "issued",
   );
 
   const [laborCost, setLaborCost] = useState<number>(Number(order?.labor_cost || 0));
@@ -73,7 +88,7 @@ export function WorkOrderEditForm({
       quantity: Number(it.quantity),
       unit_cost: Number(it.unit_cost),
       unit_price: Number(it.unit_price),
-      unit: String((it as any).unit || it.product?.unit || "un"),
+      unit: String(it.unit || it.product?.unit || "un"),
     })),
   );
 
@@ -168,7 +183,7 @@ export function WorkOrderEditForm({
       } = await supabase.auth.getUser();
       if (!user) throw new Error("Não autenticado");
       if (!clientId) throw new Error("Selecione um cliente");
-      const payload: any = {
+      const payload = {
         client_id: clientId,
         appointment_id: appointmentId,
         title: title || "Serviço",
@@ -202,8 +217,8 @@ export function WorkOrderEditForm({
       }
       router.push(`/dashboard/work-orders/${order.id}`);
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao atualizar OS");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao atualizar OS"));
       setIsLoading(false);
     }
   };
@@ -254,7 +269,7 @@ export function WorkOrderEditForm({
           </div>
           <div className="grid gap-2">
             <Label>Status</Label>
-            <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+            <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
               <SelectTrigger className="h-11">
                 <SelectValue />
               </SelectTrigger>

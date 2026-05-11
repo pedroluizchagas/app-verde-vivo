@@ -5,11 +5,11 @@ import { MapPin, Phone, Mail } from "lucide-react";
 interface Client {
   id: string;
   name: string;
-  email: string | null;
-  phone: string;
-  address: string;
-  notes: string | null;
-  created_at?: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+  notes?: string | null;
+  created_at?: string | null;
 }
 
 const AVATAR_COLORS = [

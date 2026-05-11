@@ -5,6 +5,28 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Package, AlertTriangle, Plus, ArrowDownCircle, ArrowUpCircle } from "lucide-react";
 
+type ProdutoEmbutido = { name?: string | null; unit?: string | null };
+
+interface MovementRow {
+  id: string;
+  product_id: string;
+  type: "in" | "out";
+  quantity: number;
+  movement_date: string;
+  description?: string | null;
+  unit_cost?: number | null;
+  product?: ProdutoEmbutido | ProdutoEmbutido[] | null;
+}
+
+type MovementNormalizado = Omit<MovementRow, "product"> & { product?: ProdutoEmbutido | null };
+
+interface DespesaCandidata {
+  id: string;
+  amount: number;
+  transaction_date: string;
+  status: string;
+}
+
 const number = (v: number) => new Intl.NumberFormat("pt-BR").format(v);
 const currency = (v: number) =>
   new Intl.NumberFormat("pt-BR", {
@@ -72,7 +94,7 @@ export default async function StockPage() {
   const lastTotalRounded = Math.round(lastTotal * 100) / 100;
   const lastDateISO = lastIn ? new Date(lastIn.movement_date).toISOString().slice(0, 10) : null;
 
-  let lastExpense: any = null;
+  let lastExpense: DespesaCandidata | null = null;
   if (lastIn && lastDateISO) {
     const { data: expenseCandidates } = await supabase
       .from("financial_transactions")
@@ -85,12 +107,14 @@ export default async function StockPage() {
       .eq("transaction_date", lastDateISO)
       .eq("amount", lastTotalRounded)
       .limit(1);
-    lastExpense = (expenseCandidates || [])[0] || null;
+    lastExpense = ((expenseCandidates ?? []) as DespesaCandidata[])[0] ?? null;
   }
 
-  const recentMovementsNorm = (recentMovements || []).map((m: any) => ({
+  const recentMovementsNorm: MovementNormalizado[] = (
+    (recentMovements ?? []) as MovementRow[]
+  ).map((m) => ({
     ...m,
-    product: Array.isArray(m.product) ? m.product[0] : m.product,
+    product: Array.isArray(m.product) ? (m.product[0] ?? null) : (m.product ?? null),
   }));
 
   return (
@@ -253,7 +277,7 @@ export default async function StockPage() {
           <TabsContent value="recent" className="mt-3">
             {recentMovementsNorm && recentMovementsNorm.length > 0 ? (
               <div className="space-y-2">
-                {recentMovementsNorm.map((m: any) => (
+                {recentMovementsNorm.map((m) => (
                   <div
                     key={m.id}
                     className="flex items-center justify-between rounded-lg border border-border/50 p-2.5"
@@ -294,11 +318,11 @@ export default async function StockPage() {
           </TabsContent>
           <TabsContent value="outs" className="mt-3">
             {recentMovementsNorm &&
-            recentMovementsNorm.filter((m: any) => m.type === "out").length > 0 ? (
+            recentMovementsNorm.filter((m) => m.type === "out").length > 0 ? (
               <div className="space-y-2">
                 {recentMovementsNorm
-                  .filter((m: any) => m.type === "out")
-                  .map((m: any) => (
+                  .filter((m) => m.type === "out")
+                  .map((m) => (
                     <div
                       key={m.id}
                       className="flex items-center justify-between rounded-lg border border-border/50 p-2.5"
@@ -326,11 +350,11 @@ export default async function StockPage() {
           </TabsContent>
           <TabsContent value="ins" className="mt-3">
             {recentMovementsNorm &&
-            recentMovementsNorm.filter((m: any) => m.type === "in").length > 0 ? (
+            recentMovementsNorm.filter((m) => m.type === "in").length > 0 ? (
               <div className="space-y-2">
                 {recentMovementsNorm
-                  .filter((m: any) => m.type === "in")
-                  .map((m: any) => (
+                  .filter((m) => m.type === "in")
+                  .map((m) => (
                     <div
                       key={m.id}
                       className="flex items-center justify-between rounded-lg border border-border/50 p-2.5"

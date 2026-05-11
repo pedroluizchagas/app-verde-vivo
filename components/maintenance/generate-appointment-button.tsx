@@ -7,7 +7,13 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-function computePreferredDate(plan: any): Date {
+interface PlanoPreferencias {
+  preferred_weekday?: number | null;
+  preferred_week_of_month?: number | null;
+  title?: string | null;
+}
+
+function computePreferredDate(plan: PlanoPreferencias | null | undefined): Date {
   const now = new Date();
   const year = now.getFullYear();
   const month = now.getMonth();
@@ -32,18 +38,19 @@ export function GenerateMonthlyAppointmentButton({ planId }: { planId: string })
 
   const prefillDefaults = async () => {
     try {
-      const { data: plan } = await supabase
+      const { data: planRaw } = await supabase
         .from("maintenance_plans")
         .select("preferred_weekday, preferred_week_of_month, title")
         .eq("id", planId)
         .maybeSingle();
+      const plan = planRaw as PlanoPreferencias | null;
       if (plan) {
         const cycle = computePreferredDate(plan);
         const isoDate = cycle.toISOString().split("T")[0];
         setDate((d) => d || isoDate);
         setStartTime((t) => t || "09:00");
         setEndTime((t) => t || "10:00");
-        setPlanTitle(String((plan as any).title || "Manutenção"));
+        setPlanTitle(String(plan.title ?? "Manutenção"));
       }
     } catch {}
   };

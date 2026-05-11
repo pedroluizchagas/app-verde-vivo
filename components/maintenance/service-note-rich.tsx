@@ -4,6 +4,58 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { FileText, Image as ImageIcon, Download, Share2 } from "lucide-react";
 
+interface ClienteEmbutido {
+  id?: string;
+  name?: string | null;
+  phone?: string | null;
+  address?: string | null;
+}
+
+interface MaterialNota {
+  name?: string;
+  quantity?: number;
+  unitCost?: number;
+  unit?: string;
+}
+
+interface ChecklistItem {
+  label?: string;
+  key?: string;
+  done?: boolean;
+  notes?: string;
+}
+
+interface FertilizacaoItem {
+  product?: string;
+  dose?: string;
+  area?: string;
+}
+
+interface PragaItem {
+  type?: string;
+  pest?: string;
+  severity?: string;
+  treatment?: string;
+}
+
+interface ExecucaoNota {
+  id: string;
+  status?: string | null;
+  created_at?: string | null;
+  final_amount?: number | null;
+  details?: {
+    labor?: number;
+    materials?: MaterialNota[];
+    markupPct?: number;
+    description?: string;
+    title?: string;
+    checklist?: ChecklistItem[];
+    fertilization?: FertilizacaoItem[];
+    pests?: PragaItem[];
+    photos?: string[];
+  } | null;
+}
+
 export function MaintenanceServiceNoteRich({
   planTitle,
   client,
@@ -12,18 +64,18 @@ export function MaintenanceServiceNoteRich({
   watermarkBase64,
 }: {
   planTitle: string;
-  client?: any;
-  execution: any;
+  client?: ClienteEmbutido | null;
+  execution: ExecucaoNota;
   companyName?: string;
   watermarkBase64?: string;
 }) {
   const selectorId = `maintenance-note-${execution.id}`;
-  const details = (execution as any).details || {};
+  const details = execution.details ?? {};
   const labor = Number(details?.labor ?? 0);
-  const materials: any[] = Array.isArray(details?.materials) ? details.materials : [];
+  const materials: MaterialNota[] = Array.isArray(details?.materials) ? details.materials : [];
   const markupPct = Number(details?.markupPct ?? 0);
   const materialsTotalRaw = materials.reduce(
-    (sum, m: any) => sum + Number(m.quantity || 0) * Number(m.unitCost || 0),
+    (sum, m) => sum + Number(m.quantity ?? 0) * Number(m.unitCost ?? 0),
     0,
   );
   const materialsTotal = Number(
@@ -35,11 +87,13 @@ export function MaintenanceServiceNoteRich({
       : labor + materialsTotal
     ).toFixed(2),
   );
-  const description = String(details?.description || "");
-  const title = String(details?.title || planTitle || "Manutenção");
-  const checklist: any[] = Array.isArray(details?.checklist) ? details.checklist : [];
-  const fertilization: any[] = Array.isArray(details?.fertilization) ? details.fertilization : [];
-  const pests: any[] = Array.isArray(details?.pests) ? details.pests : [];
+  const description = String(details?.description ?? "");
+  const title = String(details?.title ?? planTitle ?? "Manutenção");
+  const checklist: ChecklistItem[] = Array.isArray(details?.checklist) ? details.checklist : [];
+  const fertilization: FertilizacaoItem[] = Array.isArray(details?.fertilization)
+    ? details.fertilization
+    : [];
+  const pests: PragaItem[] = Array.isArray(details?.pests) ? details.pests : [];
   const photos: string[] = Array.isArray(details?.photos) ? details.photos : [];
 
   const dateStr = (() => {
@@ -164,11 +218,11 @@ export function MaintenanceServiceNoteRich({
     const list =
       materials.length > 0 ? materials : [{ name: "Nenhum", quantity: 0, unitCost: 0, unit: "" }];
     for (const it of list) {
-      const name = fit(String((it as any).name || "Material"), bw - margin * 2 - 80);
-      const qty = Number((it as any).quantity);
-      const unit = String((it as any).unit || "un");
+      const name = fit(String(it.name ?? "Material"), bw - margin * 2 - 80);
+      const qty = Number(it.quantity);
+      const unit = String(it.unit ?? "un");
       const subtotal = currency(
-        Number((it as any).unitCost) * qty * (1 + (markupPct > 0 ? markupPct / 100 : 0)),
+        Number(it.unitCost) * qty * (1 + (markupPct > 0 ? markupPct / 100 : 0)),
       );
       ctx.fillText(name, margin, y);
       const right = `${qty} ${unit} • ${subtotal}`;
@@ -370,9 +424,13 @@ export function MaintenanceServiceNoteRich({
     const blob = await buildImage();
     if (!blob) return;
     const file = new File([blob], `nota-manutencao-${execution.id}.png`, { type: "image/png" });
-    if ((navigator as any).canShare && (navigator as any).canShare({ files: [file] })) {
+    if (
+      typeof navigator.canShare === "function" &&
+      navigator.canShare({ files: [file] }) &&
+      typeof navigator.share === "function"
+    ) {
       try {
-        await (navigator as any).share({ files: [file], title: title });
+        await navigator.share({ files: [file], title });
       } catch {}
       return;
     }
@@ -388,28 +446,28 @@ export function MaintenanceServiceNoteRich({
       `Checklist:`,
       ...(checklist.length > 0
         ? checklist.map(
-            (c: any) =>
+            (c) =>
               `${String(c.label || c.key || "Item")} — ${Boolean(c.done) ? "feito" : "pendente"}${c.notes ? ` (${String(c.notes)})` : ""}`,
           )
         : ["Nenhum"]),
       `Adubação:`,
       ...(fertilization.length > 0
         ? fertilization.map(
-            (f: any) =>
+            (f) =>
               `${String(f.product || "Produto")} — ${String(f.dose || "")} ${String(f.area || "")}`,
           )
         : ["Nenhuma"]),
       `Pragas:`,
       ...(pests.length > 0
         ? pests.map(
-            (p: any) =>
+            (p) =>
               `${String(p.type || "Praga")} — ${String(p.severity || "")} • ${String(p.treatment || "")}`,
           )
         : ["Nenhuma"]),
       `Materiais:`,
       ...(materials.length > 0
         ? materials.map(
-            (m: any) =>
+            (m) =>
               `${String(m.name || "Material")} — ${Number(m.quantity || 0)} ${String(m.unit || "un")} (${currency(Number(m.quantity || 0) * Number(m.unitCost || 0) * (1 + (markupPct > 0 ? markupPct / 100 : 0)))})`,
           )
         : ["Nenhum"]),
@@ -425,9 +483,9 @@ export function MaintenanceServiceNoteRich({
 
   const handleShareText = async () => {
     const text = buildNoteText();
-    if ((navigator as any).share) {
+    if (typeof navigator.share === "function") {
       try {
-        await (navigator as any).share({ title, text });
+        await navigator.share({ title, text });
       } catch {}
     } else {
       const url = `https://wa.me/?text=${encodeURIComponent(text)}`;
@@ -462,7 +520,7 @@ export function MaintenanceServiceNoteRich({
             <p className="text-sm text-muted-foreground">Materiais</p>
             <div className="space-y-1">
               {materials.length > 0 ? (
-                materials.map((m: any, idx: number) => (
+                materials.map((m, idx) => (
                   <div key={idx} className="flex items-center justify-between text-sm">
                     <span>
                       {String(m.name || "Material")} — {Number(m.quantity || 0)}{" "}
@@ -500,7 +558,7 @@ export function MaintenanceServiceNoteRich({
             <p className="text-sm text-muted-foreground">Checklist</p>
             <div className="space-y-1">
               {checklist.length > 0 ? (
-                checklist.map((c: any, idx: number) => (
+                checklist.map((c, idx) => (
                   <div key={idx} className="flex items-center justify-between text-sm">
                     <span>{String(c.label || c.key || "Item")}</span>
                     <span className={Boolean(c.done) ? "text-green-600" : "text-destructive"}>
@@ -517,7 +575,7 @@ export function MaintenanceServiceNoteRich({
             <p className="text-sm text-muted-foreground">Adubação</p>
             <div className="space-y-1">
               {fertilization.length > 0 ? (
-                fertilization.map((f: any, idx: number) => (
+                fertilization.map((f, idx) => (
                   <div key={idx} className="flex items-center justify-between text-sm">
                     <span>{String(f.product || "Produto")}</span>
                     <span className="text-muted-foreground">
@@ -534,7 +592,7 @@ export function MaintenanceServiceNoteRich({
             <p className="text-sm text-muted-foreground">Pragas</p>
             <div className="space-y-1">
               {pests.length > 0 ? (
-                pests.map((p: any, idx: number) => (
+                pests.map((p, idx) => (
                   <div key={idx} className="flex items-center justify-between text-sm">
                     <span>{String(p.type || "Praga")}</span>
                     <span className="text-muted-foreground">

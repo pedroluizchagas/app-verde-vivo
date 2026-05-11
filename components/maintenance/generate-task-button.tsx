@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -53,9 +54,9 @@ export function GenerateMonthlyTaskButton({ planId }: { planId: string }) {
               setOk(true);
               setMsg("Tarefa do mês criada");
             }
-          } catch (err: any) {
+          } catch (err: unknown) {
             setOk(false);
-            setMsg(err?.message || "Falha ao gerar tarefa");
+            setMsg(extrairMensagemErro(err, "Falha ao gerar tarefa"));
           } finally {
             setLoading(false);
           }

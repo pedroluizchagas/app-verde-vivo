@@ -10,8 +10,23 @@ import { ArrowUpCircle, ArrowDownCircle, Calendar } from "lucide-react";
 const currency = (value: number) =>
   new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" }).format(value);
 
+interface TransacaoDetalhe {
+  id: string;
+  type: "income" | "expense";
+  amount: number;
+  transaction_date: string;
+  description?: string | null;
+  category_id?: string | null;
+  client_id?: string | null;
+  status: "paid" | "pending" | string;
+  due_date?: string | null;
+  paid_at?: string | null;
+  category?: { id?: string; name?: string | null; parent_id?: string | null } | null;
+  client?: { id?: string; name?: string | null } | null;
+}
+
 interface TransactionDetailProps {
-  transaction: any;
+  transaction: TransacaoDetalhe;
   categories: { id: string; name: string; parent_id: string | null }[];
   clients: { id: string; name: string }[];
 }

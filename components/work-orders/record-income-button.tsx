@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -52,15 +53,16 @@ export function RecordIncomeButton({
               .select("id")
               .single();
             if (terr) throw terr;
+            const trxRow = trx as { id?: string } | null;
             const { error: uerr } = await supabase
               .from("service_orders")
-              .update({ transaction_id: (trx as any)?.id })
+              .update({ transaction_id: trxRow?.id })
               .eq("id", orderId);
             if (uerr) throw uerr;
-            router.push(`/dashboard/finance/transactions/${(trx as any)?.id}`);
+            router.push(`/dashboard/finance/transactions/${trxRow?.id}`);
             router.refresh();
-          } catch (err: any) {
-            setError(err?.message || "Erro ao gerar receita");
+          } catch (err: unknown) {
+            setError(extrairMensagemErro(err, "Erro ao gerar receita"));
           } finally {
             setLoading(false);
           }

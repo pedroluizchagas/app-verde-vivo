@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -43,7 +44,7 @@ export function TaskCreateForm() {
         .split(",")
         .map((t) => t.trim())
         .filter((t) => t.length > 0);
-      const payload: any = {
+      const payload = {
         gardener_id: user.id,
         title: title || null,
         importance,
@@ -57,8 +58,8 @@ export function TaskCreateForm() {
       if (insertError) throw insertError;
       router.push("/dashboard/tasks");
       router.refresh();
-    } catch (err: any) {
-      setError(err?.message || "Erro ao criar tarefa");
+    } catch (err: unknown) {
+      setError(extrairMensagemErro(err, "Erro ao criar tarefa"));
       setIsLoading(false);
     }
   };
@@ -78,7 +79,7 @@ export function TaskCreateForm() {
             </div>
             <div>
               <Label>Prioridade</Label>
-              <Select value={importance} onValueChange={(v) => setImportance(v as any)}>
+              <Select value={importance} onValueChange={(v) => setImportance(v as "low" | "medium" | "high")}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>
@@ -94,7 +95,7 @@ export function TaskCreateForm() {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <Label>Status</Label>
-              <Select value={status} onValueChange={(v) => setStatus(v as any)}>
+              <Select value={status} onValueChange={(v) => setStatus(v as typeof status)}>
                 <SelectTrigger>
                   <SelectValue placeholder="Selecione" />
                 </SelectTrigger>

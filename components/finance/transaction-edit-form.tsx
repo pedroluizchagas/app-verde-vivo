@@ -1,5 +1,6 @@
 "use client";
 
+import { extrairMensagemErro } from "@/lib/utils";
 import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
@@ -22,12 +23,12 @@ interface TransactionEditFormProps {
     type: "income" | "expense";
     amount: number;
     transaction_date: string;
-    status: "paid" | "pending";
-    due_date: string | null;
-    paid_at: string | null;
-    category_id: string | null;
-    client_id: string | null;
-    description: string | null;
+    status: "paid" | "pending" | string;
+    due_date?: string | null;
+    paid_at?: string | null;
+    category_id?: string | null;
+    client_id?: string | null;
+    description?: string | null;
   };
   categories: {
     id: string;
@@ -55,10 +56,12 @@ export function TransactionEditForm({
   const [transactionDate, setTransactionDate] = useState<string>(() =>
     transaction.transaction_date.slice(0, 10),
   );
-  const [status, setStatus] = useState<"paid" | "pending">(transaction.status);
+  const [status, setStatus] = useState<"paid" | "pending">(
+    transaction.status === "pending" ? "pending" : "paid",
+  );
   const [dueDate, setDueDate] = useState<string>(transaction.due_date || "");
-  const [categoryId, setCategoryId] = useState<string | null>(transaction.category_id);
-  const [clientId, setClientId] = useState<string | null>(transaction.client_id);
+  const [categoryId, setCategoryId] = useState<string | null>(transaction.category_id ?? null);
+  const [clientId, setClientId] = useState<string | null>(transaction.client_id ?? null);
   const [description, setDescription] = useState<string>(transaction.description || "");
 
   const categoryOptions = useMemo(() => {
@@ -85,7 +88,17 @@ export function TransactionEditForm({
     setIsLoading(true);
     setError(null);
     try {
-      const payload: any = {
+      const payload: {
+        type: typeof type;
+        amount: number;
+        transaction_date: string;
+        description: string | null;
+        category_id: string | null;
+        client_id: string | null;
+        status: typeof status;
+        paid_at?: string | null;
+        due_date?: string | null;
+      } = {
         type,
         amount,
         transaction_date: transactionDate,
@@ -109,9 +122,9 @@ export function TransactionEditForm({
       if (updateError) throw updateError;
       if (onDone) onDone();
       router.refresh();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      setError(err?.message || "Erro ao atualizar o lançamento");
+      setError(extrairMensagemErro(err, "Erro ao atualizar o lançamento"));
       setIsLoading(false);
     }
   };

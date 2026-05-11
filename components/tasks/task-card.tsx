@@ -4,13 +4,13 @@ import { Calendar, AlertTriangle } from "lucide-react";
 
 interface Task {
   id: string;
-  title: string | null;
+  title?: string | null;
   status: string;
-  importance: string | null;
-  tags: string[] | null;
-  organized_description: string | null;
-  due_date: string | null;
-  created_at: string;
+  importance?: string | null;
+  tags?: string[] | null;
+  organized_description?: string | null;
+  due_date?: string | null;
+  created_at?: string | null;
 }
 
 export const statusLabels: Record<string, string> = {
