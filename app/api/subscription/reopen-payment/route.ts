@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server"
-import { createServiceRoleClient } from "@/lib/supabase/server"
-import { getAuthUserFromApiRequest } from "@/lib/supabase/api-route-auth"
+import { randomUUID } from "crypto"
+import { authErrorResponse, requireUser } from "@/lib/auth/api"
+import { enforceRateLimit } from "@/lib/rate-limit"
 import {
   cancelStripeSubscription,
   createStripeCheckoutSession,
   createStripePortalSession,
 } from "@/lib/stripe/client"
-import { randomUUID } from "crypto"
 
 export const runtime = "nodejs"
 
@@ -16,74 +16,69 @@ const PLAN_PRICE_IDS: Record<string, () => string> = {
 }
 
 export async function POST(request: Request) {
-  const user = await getAuthUserFromApiRequest(request)
-  if (!user) {
-    return NextResponse.json({ error: "not_authenticated" }, { status: 401 })
-  }
-
-  const admin = createServiceRoleClient()
-
-  const { data: sub } = await admin
-    .from("subscriptions")
-    .select("id, plan, status, stripe_subscription_id")
-    .eq("user_id", user.id)
-    .in("status", ["pending", "overdue"])
-    .order("created_at", { ascending: false })
-    .limit(1)
-    .maybeSingle()
-
-  if (!sub) {
-    return NextResponse.json(
-      { error: "no_pending_subscription", message: "Nenhuma assinatura pendente encontrada." },
-      { status: 404 }
-    )
-  }
-
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
-
-  // Para assinatura inadimplente (pagamento falhou no Stripe): Customer Portal
-  // O usuario pode atualizar o metodo de pagamento diretamente la.
-  if (sub.status === "overdue" && sub.stripe_subscription_id) {
-    try {
-      const { data: profile } = await admin
-        .from("profiles")
-        .select("stripe_customer_id")
-        .eq("id", user.id)
-        .maybeSingle()
-
-      const stripeCustomerId = (profile as any)?.stripe_customer_id as string | null | undefined
-
-      if (stripeCustomerId) {
-        const portalUrl = await createStripePortalSession(stripeCustomerId, `${appUrl}/`)
-        return NextResponse.json({ paymentUrl: portalUrl })
-      }
-    } catch (err: unknown) {
-      console.error("[reopen-payment] Customer Portal error:", err)
-      // Fallback: cria nova sessao de checkout abaixo
-    }
-  }
-
-  // Para assinatura pendente (checkout nao foi concluido) ou fallback do overdue:
-  // Cria nova sessao de Checkout e substitui o registro pendente.
-  const priceId = PLAN_PRICE_IDS[sub.plan]?.()
-  if (!priceId) {
-    return NextResponse.json(
-      {
-        error: "price_not_configured",
-        message: "Preco do plano nao configurado. Verifique as variaveis de ambiente Stripe.",
-      },
-      { status: 500 }
-    )
-  }
-
   try {
-    const { data: profile } = await admin
+    const { supabase, user } = await requireUser(request)
+
+    const limited = await enforceRateLimit("checkout", user.id)
+    if (limited) return limited
+
+    // RLS garante isolamento por user_id / id.
+    const { data: sub } = await supabase
+      .from("subscriptions")
+      .select("id, plan, status, stripe_subscription_id")
+      .eq("user_id", user.id)
+      .in("status", ["pending", "overdue"])
+      .order("created_at", { ascending: false })
+      .limit(1)
+      .maybeSingle()
+
+    if (!sub) {
+      return NextResponse.json(
+        { error: "no_pending_subscription", message: "Nenhuma assinatura pendente encontrada." },
+        { status: 404 }
+      )
+    }
+
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000"
+
+    if (sub.status === "overdue" && sub.stripe_subscription_id) {
+      try {
+        const { data: profile } = await supabase
+          .from("profiles")
+          .select("stripe_customer_id")
+          .eq("id", user.id)
+          .maybeSingle()
+
+        const stripeCustomerId = (profile as { stripe_customer_id?: string | null } | null)?.stripe_customer_id
+
+        if (stripeCustomerId) {
+          const portalUrl = await createStripePortalSession(stripeCustomerId, `${appUrl}/`)
+          return NextResponse.json({ paymentUrl: portalUrl })
+        }
+      } catch (err: unknown) {
+        console.error("[reopen-payment] Customer Portal error:", err)
+        // Fallback: cria nova sessao de checkout abaixo
+      }
+    }
+
+    const priceId = PLAN_PRICE_IDS[sub.plan]?.()
+    if (!priceId) {
+      return NextResponse.json(
+        {
+          error: "price_not_configured",
+          message: "Preco do plano nao configurado. Verifique as variaveis de ambiente Stripe.",
+        },
+        { status: 500 }
+      )
+    }
+
+    const { data: profile } = await supabase
       .from("profiles")
       .select("stripe_customer_id")
       .eq("id", user.id)
       .maybeSingle()
 
-    const stripeCustomerId = (profile as any)?.stripe_customer_id as string | null | undefined
+    const stripeCustomerId = (profile as { stripe_customer_id?: string | null } | null)?.stripe_customer_id
     if (!stripeCustomerId) {
       return NextResponse.json(
         {
@@ -94,7 +89,6 @@ export async function POST(request: Request) {
       )
     }
 
-    // Cancela assinatura pendente no Stripe se houver
     if (sub.stripe_subscription_id) {
       try {
         await cancelStripeSubscription(sub.stripe_subscription_id)
@@ -103,19 +97,25 @@ export async function POST(request: Request) {
       }
     }
 
-    // Atualiza registro atual como cancelado e cria novo pendente
-    await admin
+    await supabase
       .from("subscriptions")
       .update({ status: "cancelled", updated_at: new Date().toISOString() })
       .eq("id", sub.id)
 
     const newSubscriptionDbId = randomUUID()
-    await admin.from("subscriptions").insert({
+    const { error: insertError } = await supabase.from("subscriptions").insert({
       id: newSubscriptionDbId,
       user_id: user.id,
       plan: sub.plan,
       status: "pending",
     })
+    if (insertError) {
+      console.error("[reopen-payment] erro ao inserir nova subscription:", insertError.message)
+      return NextResponse.json(
+        { error: "subscription_insert_failed", message: insertError.message },
+        { status: 500 }
+      )
+    }
 
     const { url: checkoutUrl } = await createStripeCheckoutSession({
       stripeCustomerId,
@@ -127,9 +127,11 @@ export async function POST(request: Request) {
     })
 
     return NextResponse.json({ paymentUrl: checkoutUrl })
-  } catch (err: unknown) {
+  } catch (err) {
+    const authResponse = authErrorResponse(err)
+    if (authResponse) return authResponse
     const message = err instanceof Error ? err.message : "Erro ao recuperar link de pagamento"
-    console.error("[reopen-payment] Stripe error:", message)
+    console.error("[reopen-payment] erro:", message)
     return NextResponse.json({ error: message }, { status: 500 })
   }
 }

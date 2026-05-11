@@ -89,8 +89,6 @@ export function AssistantScreen() {
     isDev && Platform.OS === "android" && /localhost|127\.0\.0\.1/i.test(secureBase)
       ? secureBase.replace(/localhost|127\.0\.0\.1/i, "10.0.2.2")
       : secureBase
-  const supabaseUrlHeader = normalizeEnvValue(process.env.EXPO_PUBLIC_SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL) || ""
-  const supabaseAnonKeyHeader = normalizeEnvValue(process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY) || ""
   const lastAssistantBase = useRef<string | null>(null)
   const getApiCandidates = () => {
     const bases = Array.from(new Set([
@@ -124,9 +122,6 @@ export function AssistantScreen() {
             "Content-Type": "application/json",
             Accept: "application/json",
             Authorization: `Bearer ${token}`,
-            "x-supabase-access-token": `Bearer ${token}`,
-            "x-supabase-url": supabaseUrlHeader,
-            "x-supabase-anon-key": supabaseAnonKeyHeader,
           },
           body: JSON.stringify(body),
         }, 20000)
@@ -156,9 +151,6 @@ export function AssistantScreen() {
           headers: {
             Accept: "application/json",
             Authorization: `Bearer ${token}`,
-            "x-supabase-access-token": `Bearer ${token}`,
-            "x-supabase-url": supabaseUrlHeader,
-            "x-supabase-anon-key": supabaseAnonKeyHeader,
           },
           body: form,
         }, 60000)

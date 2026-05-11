@@ -207,7 +207,6 @@ export function PlanScreen() {
       const res = await fetch(`${base}/api/subscription/status`, {
         headers: {
           Authorization: `Bearer ${token}`,
-          "x-supabase-access-token": `Bearer ${token}`,
         },
       })
       const raw = await res.text()
@@ -303,7 +302,6 @@ export function PlanScreen() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          "x-supabase-access-token": `Bearer ${token}`,
         },
         body: JSON.stringify({ plan }),
       })
@@ -375,7 +373,6 @@ export function PlanScreen() {
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
-          "x-supabase-access-token": `Bearer ${token}`,
         },
       })
       const rawReopen = await res.text()
