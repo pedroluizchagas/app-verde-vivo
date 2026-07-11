@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   Home,
@@ -21,10 +21,13 @@ import {
   X,
   ArrowRight,
   CreditCard,
+  LogOut,
+  Settings,
   type LucideIcon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { createClient } from "@/lib/supabase/client";
 
 const sections: Array<{
   title: string;
@@ -58,6 +61,7 @@ const sections: Array<{
       },
       { href: "/dashboard/assistant", icon: Bot, label: "Assistente" },
       { href: "/dashboard/plan", icon: CreditCard, label: "Plano" },
+      { href: "/dashboard/profile", icon: Settings, label: "Perfil" },
     ],
   },
 ];
@@ -96,8 +100,20 @@ export function Sidebar({
   nextAppointment?: NextAppointment | null;
 }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [collapsed, setCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push("/auth/login");
+      router.refresh();
+    } catch (e) {
+      console.error("Erro ao sair:", e);
+    }
+  };
 
   const allItems = sections.flatMap((s) => s.items);
   const filteredItems = searchQuery.trim()
@@ -326,9 +342,15 @@ export function Sidebar({
         )}
       </nav>
 
-      {/* Card Próximo Serviço */}
-      {!collapsed && (
-        <div className="mt-auto border-t border-sidebar-border px-3 pt-3 pb-4">
+      {/* Rodapé: plano, próximo serviço e sair */}
+      <div
+        className={cn(
+          "mt-auto border-t border-sidebar-border",
+          collapsed ? "px-1 pt-2 pb-4" : "px-3 pt-3 pb-4",
+        )}
+      >
+        {!collapsed && (
+          <>
           {/* Badge de plano */}
           <Link
             href="/dashboard/plan"
@@ -408,8 +430,23 @@ export function Sidebar({
               <p className="text-[11px] text-sidebar-foreground/30">Nenhum serviço agendado.</p>
             </div>
           )}
-        </div>
-      )}
+          </>
+        )}
+
+        {/* Botão sair */}
+        <button
+          type="button"
+          onClick={handleLogout}
+          title="Sair da conta"
+          className={cn(
+            "flex w-full items-center rounded-xl py-2.5 text-sm transition-colors text-sidebar-foreground/55 hover:text-destructive hover:bg-destructive/10",
+            collapsed ? "justify-center px-2" : "mt-2 gap-3 px-3",
+          )}
+        >
+          <LogOut className="h-[18px] w-[18px] shrink-0" />
+          {!collapsed && <span>Sair da conta</span>}
+        </button>
+      </div>
     </aside>
   );
 }

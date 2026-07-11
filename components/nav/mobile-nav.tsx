@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import {
@@ -17,15 +17,30 @@ import {
   Bot,
   CalendarCheck,
   ClipboardList,
+  LogOut,
   type LucideIcon,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 
 export function MobileNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const [open, setOpen] = useState<null | "operacao" | "negocios" | "config">(null);
   const [closing, setClosing] = useState(false);
 
   const isActive = (href: string) => pathname === href;
+
+  const handleLogout = async () => {
+    try {
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      setOpen(null);
+      router.push("/auth/login");
+      router.refresh();
+    } catch (e) {
+      console.error("Erro ao sair:", e);
+    }
+  };
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-card">
@@ -302,6 +317,14 @@ export function MobileNav() {
                     }}
                     active={isActive("/dashboard/finance/settings")}
                   />
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="flex items-center gap-2 rounded-md border border-destructive/30 px-3 py-2 text-sm text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    <LogOut className="h-4 w-4" />
+                    <span className="font-medium">Sair da conta</span>
+                  </button>
                 </div>
               )}
             </div>

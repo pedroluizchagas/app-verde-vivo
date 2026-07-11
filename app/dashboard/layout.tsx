@@ -38,14 +38,16 @@ export default async function DashboardLayout({ children }: { children: React.Re
 
   const headersList = await headers();
   const pathname = headersList.get("x-pathname") ?? "";
-  const isOnPlanPage = pathname.startsWith("/dashboard/plan");
+  // Rotas acessíveis mesmo sem plano ativo (gerenciar assinatura e conta)
+  const isAllowedWithoutPlan =
+    pathname.startsWith("/dashboard/plan") || pathname.startsWith("/dashboard/profile");
 
   const hasPlan = !!profile?.plan;
   const trialActive =
     profile?.trial_ends_at != null && new Date(profile.trial_ends_at) > new Date();
   const hasAccess = hasPlan || trialActive;
 
-  if (!hasAccess && !isOnPlanPage) {
+  if (!hasAccess && !isAllowedWithoutPlan) {
     redirect("/dashboard/plan");
   }
 
